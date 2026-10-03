@@ -11,8 +11,19 @@ export const CATEGORIES: Category[] = [
 ];
 
 export const SUBCATEGORIES: Record<Category, Subcategory[]> = {
-  Tops: ['t-shirt', 'shirt', 'crop top', 'hoodie', 'sweater'],
-  Bottoms: ['jeans', 'trousers', 'shorts', 'skirt', 'leggings', 'joggers', 'pajama'],
+  Tops: ['t-shirt', 'shirt', 'top', 'crop top', 'hoodie', 'sweater'],
+  Bottoms: [
+    'jeans',
+    'trousers',
+    'salwar',
+    'churidar',
+    'palazzo',
+    'pajama',
+    'shorts',
+    'skirt',
+    'leggings',
+    'joggers',
+  ],
   Ethnic: [
     'kurta',
     'kurti',
@@ -20,6 +31,7 @@ export const SUBCATEGORIES: Record<Category, Subcategory[]> = {
     'saree',
     'blouse',
     'lehenga',
+    'salwar',
     'salwar set',
     'sherwani',
     'palazzo',
@@ -28,11 +40,12 @@ export const SUBCATEGORIES: Record<Category, Subcategory[]> = {
     'dupatta',
     'nehru jacket',
   ],
-  Dresses: ['western dress', 'co-ord set'],
+  Dresses: ['dress', 'western dress', 'co-ord set'],
   Outerwear: ['jacket', 'blazer', 'shrug'],
   Footwear: [
     'sneakers',
     'formal shoes',
+    'loafers',
     'heels',
     'flats',
     'sandals',

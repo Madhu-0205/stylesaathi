@@ -23,7 +23,12 @@ export const TEMPLATES: Template[] = [
   {
     name: 'Kurta look',
     required: { top: ['Ethnic'], bottom: ['Bottoms', 'Ethnic'], footwear: ['Footwear'] },
-    optional: { dupatta: ['Ethnic'], jacket: ['Ethnic'], accessory: ['Accessories'] },
+    optional: { jacket: ['Ethnic'], accessory: ['Accessories'] },
+  },
+  {
+    name: 'Kurta with dupatta',
+    required: { top: ['Ethnic'], bottom: ['Bottoms', 'Ethnic'], dupatta: ['Ethnic'], footwear: ['Footwear'] },
+    optional: { accessory: ['Accessories'] },
   },
   {
     name: 'Kurta & Nehru jacket',
@@ -38,6 +43,11 @@ export const TEMPLATES: Template[] = [
   {
     name: 'Salwar/lehenga set',
     required: { set: ['Ethnic'], dupatta: ['Ethnic'], footwear: ['Footwear'] },
+    optional: { accessory: ['Accessories'] },
+  },
+  {
+    name: 'Lehenga ensemble',
+    required: { blouse: ['Ethnic', 'Tops'], lehenga: ['Ethnic'], dupatta: ['Ethnic'], footwear: ['Footwear'] },
     optional: { accessory: ['Accessories'] },
   },
   {

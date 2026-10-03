@@ -49,9 +49,6 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
             <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
               WARDROBE
             </span>
-            <span className="text-[10px] text-(--muted) font-devanagari">
-              तुम्हारी वॉर्डरोब
-            </span>
           </div>
           <h1 className="mt-0.5 font-serif text-2xl sm:text-3xl font-normal text-(--ink) tracking-tight">
             Personal Archive

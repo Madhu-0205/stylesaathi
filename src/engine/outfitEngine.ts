@@ -28,6 +28,27 @@ export function generateOutfits(
     if (t.name === 'Tailored Western') {
       return ['office', 'interview', 'date', 'party', 'family function', 'family gathering', 'celebration'].includes(occasion);
     }
+    if (t.name === 'Lehenga ensemble') {
+      return ['wedding guest', 'celebration', 'festive', 'Diwali', 'family function'].includes(occasion);
+    }
+    if (t.name === 'Kurta with dupatta') {
+      return [
+        'puja',
+        'festive',
+        'wedding guest',
+        'celebration',
+        'Diwali',
+        'Eid',
+        'family function',
+        'family gathering',
+        'office',
+        'college',
+        'everyday',
+      ].includes(occasion);
+    }
+    if (t.name === 'Western dress') {
+      return !['puja', 'wedding guest'].includes(occasion);
+    }
     return true;
   });
 

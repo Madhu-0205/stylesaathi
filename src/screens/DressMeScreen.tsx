@@ -21,6 +21,7 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe }) 
     season,
     setSeason,
     outfits,
+    emptyStateInfo,
     shuffle,
     availableAccessories,
     activeAccessories,
@@ -46,9 +47,6 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe }) 
           <div className="flex items-center gap-2">
             <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
               DRESS ME
-            </span>
-            <span className="text-[10px] text-(--muted) font-devanagari">
-              आज क्या पहनना है?
             </span>
           </div>
           <h1 className="mt-0.5 font-serif text-2xl sm:text-3xl italic text-(--ink) tracking-tight">
@@ -126,10 +124,13 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe }) 
       {outfits.length === 0 ? (
         <EmptyState
           icon={<AlertCircle className="h-7 w-7 text-(--kumkum)" />}
-          title="Not enough clean pieces for this look yet"
-          description={`Add clean pieces suitable for ${occasion}, or check if matching garments are currently in laundry.`}
+          title={emptyStateInfo?.title || 'Not enough clean pieces for this look yet'}
+          description={
+            emptyStateInfo?.description ||
+            `Add clean pieces suitable for ${occasion}, or check if matching garments are currently in laundry.`
+          }
           action={{
-            label: 'Open Wardrobe',
+            label: emptyStateInfo?.actionLabel || 'Open Wardrobe',
             onClick: onGoToWardrobe,
           }}
         />

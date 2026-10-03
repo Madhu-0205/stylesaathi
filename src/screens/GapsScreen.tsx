@@ -40,9 +40,6 @@ export const GapsScreen: React.FC = () => {
             <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
               INSIGHT
             </span>
-            <span className="text-[10px] text-(--muted) font-devanagari">
-              वॉर्डरोब समझ
-            </span>
           </div>
           <h1 className="mt-0.5 font-serif text-2xl sm:text-3xl font-normal text-(--ink) tracking-tight">
             Your wardrobe has a gap.
