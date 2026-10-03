@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useWardrobeContext } from './context/WardrobeContext';
 import { BottomNav, NavTab } from './components/navigation/BottomNav';
+import { TopNav } from './components/navigation/TopNav';
 import { WardrobeScreen } from './screens/WardrobeScreen';
 import { DressMeScreen } from './screens/DressMeScreen';
 import { GapsScreen } from './screens/GapsScreen';
@@ -10,7 +11,7 @@ import { AddItemSheet } from './components/wardrobe/AddItemSheet';
 import { Toast } from './components/common/Toast';
 
 export const App: React.FC = () => {
-  const { onboarded, addItem, toast, clearToast } = useWardrobeContext();
+  const { onboarded, addItem, toast, clearToast, theme, toggleTheme } = useWardrobeContext();
   const [currentTab, setCurrentTab] = useState<NavTab>('Wardrobe');
   const [isAddOpen, setIsAddOpen] = useState(false);
 
@@ -20,10 +21,21 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-(--background)">
-      {/* Centered mobile-first shell (max-w-[440px] on desktop) */}
-      <div className="mobile-shell safe-bottom px-4 pt-4 sm:px-6">
-        <main>
+    <div className="min-h-[100dvh] bg-(--background) text-(--text) transition-colors">
+      {/* Desktop & Tablet Top Navigation (hidden on mobile) */}
+      <div className="hidden md:block">
+        <TopNav
+          currentTab={currentTab}
+          onChangeTab={setCurrentTab}
+          onOpenAddItem={() => setIsAddOpen(true)}
+          theme={theme}
+          toggleTheme={toggleTheme}
+        />
+      </div>
+
+      {/* Universal Responsive Application Container */}
+      <div className="app-container safe-bottom px-3.5 sm:px-6 md:px-8 pt-3 sm:pt-4 md:pt-6">
+        <main className="w-full">
           {currentTab === 'Wardrobe' && (
             <WardrobeScreen onOpenAddItem={() => setIsAddOpen(true)} />
           )}
@@ -34,10 +46,10 @@ export const App: React.FC = () => {
           {currentTab === 'You' && <ProfileScreen />}
         </main>
 
-        {/* Global sticky 4-tab bottom navigation */}
+        {/* Global sticky 4-tab bottom navigation (mobile only) */}
         <BottomNav currentTab={currentTab} onChangeTab={setCurrentTab} />
 
-        {/* Global Add Item Sheet */}
+        {/* Global Add Item Sheet / Dialog */}
         <AddItemSheet
           isOpen={isAddOpen}
           onClose={() => setIsAddOpen(false)}

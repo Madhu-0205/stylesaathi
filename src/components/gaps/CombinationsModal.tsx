@@ -62,7 +62,7 @@ export const CombinationsModal: React.FC<CombinationsModalProps> = ({
                 {compatibleExistingItems.length} matching pieces
               </span>
             </div>
-            <div className="no-scrollbar -mx-4 flex gap-2.5 overflow-x-auto px-4 py-1">
+            <div className="no-scrollbar -mx-5 sm:-mx-6 flex gap-2.5 overflow-x-auto px-5 sm:px-6 py-1">
               {compatibleExistingItems.map((item) => (
                 <div
                   key={item.id}

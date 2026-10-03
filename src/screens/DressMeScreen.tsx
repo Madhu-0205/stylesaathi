@@ -58,7 +58,7 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe }) 
           <button
             type="button"
             onClick={toggleTheme}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-(--border) text-(--muted) transition-colors hover:border-(--ink) hover:text-(--ink)"
+            className="md:hidden flex h-9 w-9 items-center justify-center rounded-full border border-(--border) text-(--muted) transition-colors hover:border-(--ink) hover:text-(--ink)"
             aria-label="Toggle theme"
           >
             {theme === 'light' ? '☾' : '☼'}
@@ -77,9 +77,9 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe }) 
       </header>
 
       {/* Ultra-Compact Context Controls: Occasions + Seasons in one unified bar */}
-      <div className="mb-3.5 space-y-2 border-b border-(--border)/70 pb-2.5">
+      <div className="mb-4 space-y-2.5 border-b border-(--border)/70 pb-3">
         {/* Occasion Selector Chips */}
-        <div className="no-scrollbar -mx-4 flex gap-1.5 overflow-x-auto px-4 py-0.5">
+        <div className="no-scrollbar -mx-3.5 sm:-mx-6 md:mx-0 flex gap-1.5 overflow-x-auto px-3.5 sm:px-6 md:px-0 py-0.5 md:flex-wrap">
           {OCCASIONS.map((occ) => (
             <Chip
               key={occ}

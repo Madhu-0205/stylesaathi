@@ -48,7 +48,7 @@ export const OnboardingScreen: React.FC = () => {
   };
 
   return (
-    <div className="mobile-shell flex min-h-screen flex-col justify-between p-6 sm:p-8 animate-fade-in bg-(--background)">
+    <div className="w-full max-w-lg md:max-w-xl mx-auto flex min-h-[100dvh] flex-col justify-between p-5 sm:p-8 animate-fade-in bg-(--background)">
       {/* Refined Brand Header */}
       <div className="flex items-center justify-between pt-2 border-b border-(--border) pb-3">
         <div>

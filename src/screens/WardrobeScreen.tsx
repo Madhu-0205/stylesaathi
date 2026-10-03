@@ -62,7 +62,7 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
           <button
             type="button"
             onClick={toggleTheme}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-(--border) text-(--muted) transition-colors hover:border-(--ink) hover:text-(--ink)"
+            className="md:hidden flex h-9 w-9 items-center justify-center rounded-full border border-(--border) text-(--muted) transition-colors hover:border-(--ink) hover:text-(--ink)"
             aria-label="Toggle theme"
           >
             {theme === 'light' ? '☾' : '☼'}
@@ -80,87 +80,90 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
         </div>
       </header>
 
-      {/* Search Input */}
-      <div className="relative mb-3.5">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-(--muted) pointer-events-none" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search garments by name, color, fabric..."
-          className="w-full min-h-11 rounded-xl border border-(--border) bg-(--card)/60 pl-10 pr-4 text-xs font-medium text-(--text) outline-none transition-colors placeholder:text-(--muted) focus:border-(--accent) focus:bg-(--card)"
-        />
-        {search && (
-          <button
-            type="button"
-            onClick={() => setSearch('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-(--muted) px-2 py-1"
-          >
-            Clear
-          </button>
-        )}
-      </div>
-
-      {/* Horizontal Category Chips */}
-      <div className="no-scrollbar -mx-4 mb-3 flex gap-2 overflow-x-auto px-4 py-1">
-        <Chip
-          label="All"
-          count={stats.total}
-          active={selectedCategory === 'All'}
-          onClick={() => setSelectedCategory('All')}
-        />
-        {CATEGORIES.map((cat) => (
-          <Chip
-            key={cat}
-            label={cat}
-            count={stats.byCategory[cat]}
-            active={selectedCategory === cat}
-            onClick={() => setSelectedCategory(cat)}
+      {/* Search Input and Filters */}
+      <div className="mb-4 space-y-2.5 md:space-y-3">
+        {/* Search Bar */}
+        <div className="relative">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-(--muted) pointer-events-none" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search garments by name, color, fabric..."
+            className="w-full min-h-11 rounded-xl border border-(--border) bg-(--card)/60 pl-10 pr-12 text-xs font-medium text-(--text) outline-none transition-colors placeholder:text-(--muted) focus:border-(--accent) focus:bg-(--card)"
           />
-        ))}
-      </div>
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              className="absolute right-1 top-1/2 -translate-y-1/2 flex min-h-11 min-w-11 items-center justify-center text-[11px] font-bold text-(--muted) hover:text-(--ink) transition-colors active:scale-95"
+              aria-label="Clear search"
+            >
+              Clear
+            </button>
+          )}
+        </div>
 
-      {/* Secondary Status & Favorite Filters */}
-      <div className="no-scrollbar -mx-4 mb-5 flex gap-2 overflow-x-auto px-4 py-0.5">
-        <button
-          type="button"
-          onClick={() => setFavoriteOnly(!favoriteOnly)}
-          className={`inline-flex min-h-8.5 items-center gap-1 rounded-lg px-3 text-[10px] font-semibold tracking-wider uppercase transition-all whitespace-nowrap ${
-            favoriteOnly
-              ? 'border border-(--kumkum) bg-(--kumkum) text-white shadow-2xs'
-              : 'border border-(--border) bg-(--card) text-(--muted) hover:border-(--ink)'
-          }`}
-        >
-          <span>Favorites ({stats.favorites})</span>
-        </button>
+        {/* Category Filter Chips */}
+        <div className="no-scrollbar -mx-3.5 sm:-mx-6 md:mx-0 flex gap-2 overflow-x-auto px-3.5 sm:px-6 md:px-0 py-1 md:flex-wrap">
+          <Chip
+            label="All"
+            count={stats.total}
+            active={selectedCategory === 'All'}
+            onClick={() => setSelectedCategory('All')}
+          />
+          {CATEGORIES.map((cat) => (
+            <Chip
+              key={cat}
+              label={cat}
+              count={stats.byCategory[cat]}
+              active={selectedCategory === cat}
+              onClick={() => setSelectedCategory(cat)}
+            />
+          ))}
+        </div>
 
-        {(
-          [
-            { id: 'clean', label: `Clean (${stats.clean})` },
-            { id: 'needs_washing', label: `Needs Wash (${stats.needsWashing})` },
-            { id: 'in_laundry', label: `In Laundry (${stats.inLaundry})` },
-          ] as { id: Status; label: string }[]
-        ).map((s) => (
+        {/* Secondary Status & Favorite Filters */}
+        <div className="no-scrollbar -mx-3.5 sm:-mx-6 md:mx-0 flex gap-2 overflow-x-auto px-3.5 sm:px-6 md:px-0 py-0.5 md:flex-wrap">
           <button
-            key={s.id}
             type="button"
-            onClick={() => setStatusFilter(statusFilter === s.id ? 'All' : s.id)}
-            className={`inline-flex min-h-8.5 items-center gap-1 rounded-lg px-3 text-[10px] font-semibold tracking-wider uppercase transition-all whitespace-nowrap ${
-              statusFilter === s.id
-                ? 'border border-(--ink) bg-(--ink) text-(--paper) shadow-2xs'
+            onClick={() => setFavoriteOnly(!favoriteOnly)}
+            className={`inline-flex min-h-8.5 items-center gap-1 rounded-lg px-3 text-[10px] font-semibold tracking-wider uppercase transition-all whitespace-nowrap active:scale-95 ${
+              favoriteOnly
+                ? 'border border-(--kumkum) bg-(--kumkum) text-white shadow-2xs'
                 : 'border border-(--border) bg-(--card) text-(--muted) hover:border-(--ink)'
             }`}
           >
-            <span>{s.label}</span>
+            <span>Favorites ({stats.favorites})</span>
           </button>
-        ))}
-      </div>
 
+          {(
+            [
+              { id: 'clean', label: `Clean (${stats.clean})` },
+              { id: 'needs_washing', label: `Needs Wash (${stats.needsWashing})` },
+              { id: 'in_laundry', label: `In Laundry (${stats.inLaundry})` },
+            ] as { id: Status; label: string }[]
+          ).map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => setStatusFilter(statusFilter === s.id ? 'All' : s.id)}
+              className={`inline-flex min-h-8.5 items-center gap-1 rounded-lg px-3 text-[10px] font-semibold tracking-wider uppercase transition-all whitespace-nowrap active:scale-95 ${
+                statusFilter === s.id
+                  ? 'border border-(--ink) bg-(--ink) text-(--paper) shadow-2xs'
+                  : 'border border-(--border) bg-(--card) text-(--muted) hover:border-(--ink)'
+              }`}
+            >
+              <span>{s.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Loading Skeleton */}
       {loading && (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          {[1, 2, 3, 4].map((n) => (
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5">
+          {[1, 2, 3, 4, 5, 6].map((n) => (
             <div
               key={n}
               className="aspect-4/5 animate-pulse rounded-2xl border border-(--border) bg-(--card)"
@@ -198,9 +201,9 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
         />
       )}
 
-      {/* 2-Column Editorial Garment Grid */}
+      {/* Responsive Garment Grid: 2-col on phone, 3-col on tablet, 4-col on desktop, 5-col on wide desktop */}
       {!loading && filteredItems.length > 0 && (
-        <div className="grid grid-cols-2 gap-x-3.5 gap-y-5 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:gap-x-4 sm:gap-y-5 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
           {filteredItems.map((item) => (
             <ItemCard
               key={item.id}

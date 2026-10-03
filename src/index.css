@@ -211,28 +211,54 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   }
 }
 
-/* Responsive shell styling */
-.mobile-shell {
+/* Responsive container system */
+.app-container {
   width: 100%;
-  max-width: 440px;
   margin-left: auto;
   margin-right: auto;
-  min-height: 100vh;
+  min-height: calc(100dvh - 60px);
   position: relative;
-  background-color: var(--background);
 }
 
-@media (min-width: 640px) {
-  body {
-    background-color: #EDE7DC;
+@media (max-width: 639px) {
+  .app-container {
+    max-width: 100%;
   }
-  .dark body {
-    background-color: #0c0b0a;
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .app-container {
+    max-width: 860px;
   }
-  .mobile-shell {
-    box-shadow: 0 0 50px -10px rgba(23, 21, 20, 0.09);
-    border-left: 1px solid var(--border);
-    border-right: 1px solid var(--border);
+}
+
+@media (min-width: 1024px) and (max-width: 1535px) {
+  .app-container {
+    max-width: 1140px;
   }
+}
+
+@media (min-width: 1536px) {
+  .app-container {
+    max-width: 1360px;
+  }
+}
+
+/* Safe area padding utilities */
+.safe-bottom {
+  padding-bottom: calc(72px + env(safe-area-inset-bottom, 16px));
+}
+
+@media (min-width: 768px) {
+  .safe-bottom {
+    padding-bottom: 3rem;
+  }
+}
+
+/* Prevent accidental horizontal overflow across all viewports */
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+  min-height: 100dvh;
 }
 

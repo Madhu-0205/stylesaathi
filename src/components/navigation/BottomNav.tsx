@@ -17,7 +17,7 @@ const TABS: { id: NavTab; label: string; icon: React.FC<{ className?: string }> 
 
 export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onChangeTab }) => {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-(--border) bg-(--card)/95 backdrop-blur-md">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden border-t border-(--border) bg-(--card)/95 backdrop-blur-md">
       <div className="mx-auto grid max-w-110 grid-cols-4 px-2 py-2 safe-nav-padding">
         {TABS.map((tab) => {
           const Icon = tab.icon;
