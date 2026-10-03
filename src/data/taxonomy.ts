@@ -12,10 +12,11 @@ export const CATEGORIES: Category[] = [
 
 export const SUBCATEGORIES: Record<Category, Subcategory[]> = {
   Tops: ['t-shirt', 'shirt', 'crop top', 'hoodie', 'sweater'],
-  Bottoms: ['jeans', 'trousers', 'shorts', 'skirt', 'leggings', 'joggers'],
+  Bottoms: ['jeans', 'trousers', 'shorts', 'skirt', 'leggings', 'joggers', 'pajama'],
   Ethnic: [
     'kurta',
     'kurti',
+    'anarkali',
     'saree',
     'blouse',
     'lehenga',
@@ -23,6 +24,7 @@ export const SUBCATEGORIES: Record<Category, Subcategory[]> = {
     'sherwani',
     'palazzo',
     'churidar',
+    'pajama',
     'dupatta',
     'nehru jacket',
   ],
@@ -44,16 +46,18 @@ export const SEASONS: Season[] = ['summer', 'monsoon', 'winter'];
 
 export const OCCASIONS: Occasion[] = [
   'college',
+  'everyday',
   'office',
+  'interview',
   'casual outing',
   'date',
   'party',
   'family function',
-  'wedding guest',
-  'Diwali',
-  'Holi',
-  'Eid',
+  'family gathering',
   'puja',
+  'festive',
+  'wedding guest',
+  'celebration',
   'travel',
 ];
 

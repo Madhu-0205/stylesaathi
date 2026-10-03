@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Search, Plus } from 'lucide-react';
 import { useWardrobe } from '../hooks/useWardrobe';
-import { Header } from '../components/common/Header';
 import { Chip } from '../components/common/Chip';
 import { ItemCard } from '../components/wardrobe/ItemCard';
 import { ItemDetailSheet } from '../components/wardrobe/ItemDetailSheet';
@@ -43,37 +42,46 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
 
   return (
     <div className="pb-8 animate-fade-in">
-      {/* Top Header */}
-      <Header
-        title="Your Wardrobe"
-        subtitle={`${stats.total} pieces · ${stats.clean} ready to style`}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-        action={
+      {/* Compact Fashion Archive Header */}
+      <header className="mb-3 flex items-center justify-between border-b border-(--border) pb-2.5">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
+              WARDROBE
+            </span>
+            <span className="text-[10px] text-(--muted) font-devanagari">
+              तुम्हारी वॉर्डरोब
+            </span>
+          </div>
+          <h1 className="mt-0.5 font-serif text-2xl sm:text-3xl font-normal text-(--ink) tracking-tight">
+            Personal Archive
+          </h1>
+          <p className="text-[11px] text-(--muted) font-medium">
+            {stats.total} pieces in rotation · {stats.clean} ready to wear
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-(--border) text-(--muted) transition-colors hover:border-(--ink) hover:text-(--ink)"
+            aria-label="Toggle theme"
+          >
+            {theme === 'light' ? '☾' : '☼'}
+          </button>
+
           <button
             type="button"
             onClick={onOpenAddItem}
             aria-label="Add clothing item"
-            className="flex min-h-11 items-center gap-1.5 rounded-full bg-(--accent) px-4 py-2 text-xs font-bold text-white shadow-2xs transition-transform hover:opacity-95 active:scale-95"
+            className="flex min-h-9 items-center gap-1.5 rounded-full bg-(--accent) px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs transition-transform hover:opacity-95 active:scale-95"
           >
-            <Plus className="h-4 w-4 stroke-[2.5]" />
+            <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
             <span>Add Piece</span>
           </button>
-        }
-      />
-
-      {/* Subtle Typography Stats Line */}
-      <div className="mb-4 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] font-bold uppercase tracking-widest text-(--muted) border-y border-(--border)/60 py-2.5">
-        <span className="text-(--text)">{stats.total} PIECES</span>
-        <span className="text-(--border)">·</span>
-        <span>{stats.byCategory.Tops || 0} TOPS</span>
-        <span className="text-(--border)">·</span>
-        <span>{stats.byCategory.Bottoms || 0} BOTTOMS</span>
-        <span className="text-(--border)">·</span>
-        <span>{stats.byCategory.Ethnic || 0} ETHNIC</span>
-        <span className="text-(--border)">·</span>
-        <span>{stats.clean} READY</span>
-      </div>
+        </div>
+      </header>
 
       {/* Search Input */}
       <div className="relative mb-3.5">

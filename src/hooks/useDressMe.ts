@@ -34,16 +34,18 @@ export function useDressMe() {
     }));
   }, []);
 
-  // Mark all pieces in outfit as worn today (increments timesWorn)
+  // Mark all pieces in outfit as worn today (increments timesWorn and records lastWorn)
   const markWoreOutfit = useCallback(
     async (outfit: GeneratedOutfit, accessory?: WardrobeItem | null) => {
       const allPieces = Object.values(outfit.slots).flat();
       if (accessory) {
         allPieces.push(accessory);
       }
+      const now = Date.now();
       for (const piece of allPieces) {
         await updateItem(piece.id, {
-          timesWorn: piece.timesWorn + 1,
+          timesWorn: (piece.timesWorn || 0) + 1,
+          lastWorn: now,
         });
       }
     },

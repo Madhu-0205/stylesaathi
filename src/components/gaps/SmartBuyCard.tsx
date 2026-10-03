@@ -18,91 +18,81 @@ export const SmartBuyCard: React.FC<SmartBuyCardProps> = ({
 }) => {
   const { candidate, newOutfitsUnlocked, reason, compatibleExistingItems } = recommendation;
 
-  // Breakdown compatible pieces by category for genuine wardrobe intelligence
-  const compatibleTops = compatibleExistingItems.filter(
-    (i) => i.category === 'Tops' || i.category === 'Dresses'
-  ).length;
-  const compatibleBottoms = compatibleExistingItems.filter(
-    (i) => i.category === 'Bottoms'
-  ).length;
-  const compatibleEthnic = compatibleExistingItems.filter(
-    (i) => i.category === 'Ethnic'
-  ).length;
+  const compatibleNames = compatibleExistingItems
+    .slice(0, 3)
+    .map((i) => i.name)
+    .join(' · ');
 
   return (
     <article
-      className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border bg-(--card) p-5 transition-all duration-300 ${
+      className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border bg-(--card) p-4 sm:p-5 transition-all duration-300 ${
         isHero
-          ? 'border-(--kumkum)/60 shadow-sm'
+          ? 'border-(--kumkum)/60 shadow-2xs'
           : 'border-(--border) hover:border-(--ink)'
       }`}
     >
       <div>
         {/* Header Tag */}
-        <div className="flex items-center justify-between border-b border-(--border) pb-2.5 mb-3.5">
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
-            {isHero ? 'THE ONE TO ADD' : `RECOMMENDATION 0${rank}`}
+        <div className="flex items-center justify-between border-b border-(--border) pb-2 mb-3">
+          <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
+            {isHero ? 'THE ONE TO ADD' : `STRATEGIC ADDITION 0${rank}`}
           </span>
-          <span className="rounded bg-(--ivory) px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-(--burnished-gold) border border-(--border)">
+          <span className="rounded-md bg-(--ivory) px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wider text-(--burnished-gold) border border-(--border)">
             +{newOutfitsUnlocked} New Looks
           </span>
         </div>
 
         {/* Piece Preview & Details */}
-        <div className="flex gap-4 items-start">
-          <div className="relative aspect-4/5 w-24 shrink-0 overflow-hidden rounded-xl border border-(--border) bg-(--ivory)">
+        <div className="flex gap-3.5 items-start">
+          <div className="relative aspect-4/5 w-20 shrink-0 overflow-hidden rounded-xl border border-(--border) bg-(--ivory)">
             <LazyImage
               src={candidate.photo}
               alt={candidate.name}
               category={candidate.category}
               subcategory={candidate.subcategory}
               colors={candidate.colors}
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-103"
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-102"
             />
           </div>
 
           <div className="min-w-0 flex-1">
-            <h4 className="font-serif text-lg sm:text-xl font-normal text-(--ink) leading-snug">
+            <h4 className="font-serif text-lg font-normal text-(--ink) leading-snug">
               {candidate.name}
             </h4>
-            <p className="mt-1 text-xs font-semibold text-(--muted)">
-              {candidate.priceRange || '₹1,299–₹1,999'}
-            </p>
+            <span className="inline-block mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-(--muted)">
+              {candidate.category} Staple
+            </span>
 
-            {/* Works with summary */}
-            {compatibleExistingItems.length > 0 && (
-              <div className="mt-2 text-[10px] font-medium text-(--muted) uppercase tracking-wide">
-                <span>Works with: </span>
-                <span className="text-(--ink) font-semibold">
-                  {compatibleTops > 0 && `${compatibleTops} tops `}
-                  {compatibleBottoms > 0 && `${compatibleBottoms} bottoms `}
-                  {compatibleEthnic > 0 && `${compatibleEthnic} ethnic`}
-                </span>
+            {/* Works with exact existing items */}
+            {compatibleNames && (
+              <div className="mt-2 text-[10px] text-(--muted) leading-relaxed">
+                <span className="font-bold uppercase tracking-wider text-(--burnished-gold)">Works with: </span>
+                <span className="text-(--ink) font-medium">{compatibleNames}</span>
               </div>
             )}
           </div>
         </div>
 
-        {/* Stylist Rationale: "WHY THIS ONE" */}
-        <div className="mt-3.5 rounded-xl bg-(--ivory) p-3 border border-(--border)/70">
+        {/* Stylist Rationale: "Why this piece" */}
+        <div className="mt-3 rounded-xl bg-(--ivory) p-3 border border-(--border)/70">
           <span className="block text-[9px] font-bold uppercase tracking-[0.18em] text-(--burnished-gold)">
-            WHY THIS ONE
+            WHY THIS PIECE
           </span>
-          <p className="mt-0.5 font-serif text-xs italic text-(--ink) leading-relaxed">
-            &ldquo;{reason}&rdquo;
+          <p className="mt-1 text-xs text-(--ink) font-normal leading-relaxed">
+            {reason}
           </p>
         </div>
       </div>
 
       {/* Action Button */}
-      <div className="mt-4 pt-3 border-t border-(--border) flex items-center justify-between">
+      <div className="mt-3.5 pt-2.5 border-t border-(--border) flex items-center justify-between">
         <span className="text-[10px] uppercase tracking-wider text-(--muted) font-medium">
-          {candidate.category} Staple
+          Wardrobe Expansion
         </span>
         <button
           type="button"
           onClick={() => onSeeCombinations(recommendation)}
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-(--ink) bg-(--ink) px-4 py-2 text-xs font-semibold uppercase tracking-wider text-(--paper) transition-all hover:bg-(--ink)/90 active:scale-95"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-(--ink) bg-(--ink) px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider text-(--paper) transition-all hover:bg-(--ink)/90 active:scale-95"
         >
           <span>See {newOutfitsUnlocked} Looks</span>
           <ArrowRight className="h-3.5 w-3.5 text-(--burnished-gold)" />

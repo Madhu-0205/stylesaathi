@@ -219,6 +219,40 @@ async function run() {
     await new Promise(r => setTimeout(r, 600));
     await cdp.captureScreenshot(path.join(ARTIFACTS_DIR, 'flow_08_dress_me_screen.png'));
 
+    // Wear Today interaction
+    console.log('Testing "Wear Today" interaction...');
+    await cdp.eval(`(() => {
+      const wearBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Wear Today') || b.textContent.includes('Wore This'));
+      if (wearBtn) wearBtn.click();
+    })()`);
+    await new Promise(r => setTimeout(r, 500));
+    await cdp.captureScreenshot(path.join(ARTIFACTS_DIR, 'flow_08b_worn_today.png'));
+
+    // Shuffle interaction
+    console.log('Testing Shuffle button...');
+    await cdp.eval(`(() => {
+      const shuffleBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Shuffle'));
+      if (shuffleBtn) shuffleBtn.click();
+    })()`);
+    await new Promise(r => setTimeout(r, 600));
+    await cdp.captureScreenshot(path.join(ARTIFACTS_DIR, 'flow_08c_shuffled.png'));
+
+    // Switch Occasion to "puja" or "wedding guest"
+    console.log('Switching occasion to Puja...');
+    await cdp.eval(`(() => {
+      const pujaChip = Array.from(document.querySelectorAll('button')).find(b => b.textContent.trim().toLowerCase() === 'puja');
+      if (pujaChip) pujaChip.click();
+    })()`);
+    await new Promise(r => setTimeout(r, 600));
+    await cdp.captureScreenshot(path.join(ARTIFACTS_DIR, 'flow_08d_puja_look.png'));
+
+    // Switch back to "college"
+    await cdp.eval(`(() => {
+      const collegeChip = Array.from(document.querySelectorAll('button')).find(b => b.textContent.trim().toLowerCase() === 'college');
+      if (collegeChip) collegeChip.click();
+    })()`);
+    await new Promise(r => setTimeout(r, 400));
+
     // Open Accessory Drawer in Dress Me
     console.log('Opening Finish The Look Drawer in Dress...');
     await cdp.eval(`(() => {
@@ -298,13 +332,34 @@ async function run() {
       if (lightBtn) lightBtn.click();
     })()`);
     await new Promise(r => setTimeout(r, 300));
-    await cdp.eval(`(() => {
-      const btn = Array.from(document.querySelectorAll('nav button')).find(b => b.textContent.includes('WARDROBE') || b.textContent.includes('Wardrobe'));
-      if (btn) btn.click();
-    })()`);
+
+    // Responsive Viewports Verification
+    console.log('Verifying Responsive Viewports...');
+    // 375 x 812 (iPhone Mini / X)
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: 2, mobile: true });
+    await new Promise(r => setTimeout(r, 300));
+    await cdp.captureScreenshot(path.join(ARTIFACTS_DIR, 'viewport_375x812_wardrobe.png'));
+
+    // 430 x 932 (iPhone 14/15 Pro Max)
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 430, height: 932, deviceScaleFactor: 2, mobile: true });
+    await new Promise(r => setTimeout(r, 300));
+    await cdp.captureScreenshot(path.join(ARTIFACTS_DIR, 'viewport_430x932_wardrobe.png'));
+
+    // 768 x 1024 (Tablet)
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 768, height: 1024, deviceScaleFactor: 2, mobile: false });
+    await new Promise(r => setTimeout(r, 300));
+    await cdp.captureScreenshot(path.join(ARTIFACTS_DIR, 'viewport_768x1024_wardrobe.png'));
+
+    // 1440 x 900 (Desktop Centered Compact App Shell)
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 2, mobile: false });
+    await new Promise(r => setTimeout(r, 300));
+    await cdp.captureScreenshot(path.join(ARTIFACTS_DIR, 'viewport_1440x900_desktop.png'));
+
+    // Restore to primary mobile 390x844
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 2, mobile: true });
     await new Promise(r => setTimeout(r, 300));
 
-    console.log('All QA flows executed and captured successfully!');
+    console.log('All QA flows and viewports executed and captured successfully!');
     cdp.close();
   } finally {
     chrome.kill();

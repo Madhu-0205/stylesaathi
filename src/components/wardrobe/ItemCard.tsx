@@ -35,20 +35,20 @@ export const ItemCard: React.FC<ItemCardProps> = ({
           className="h-full w-full object-contain p-2"
         />
 
-        {/* Quiet status tag */}
-        <div className="absolute left-2.5 top-2.5 z-10">
-          <span
-            className={`rounded-full px-2 py-0.5 text-[9.5px] font-bold tracking-wider uppercase backdrop-blur-md ${
-              item.status === 'clean'
-                ? 'bg-(--card)/90 text-(--muted) border border-(--border)/50'
-                : isWash
-                ? 'bg-amber-50/90 text-amber-900 border border-amber-200 dark:bg-amber-950/80 dark:text-amber-300'
-                : 'bg-stone-200/90 text-stone-700 border border-stone-300 dark:bg-stone-800/80 dark:text-stone-300'
-            }`}
-          >
-            {item.status === 'clean' ? 'Ready' : isWash ? 'Wash' : 'In Laundry'}
-          </span>
-        </div>
+        {/* Subtle status indicator: only shown when garment is not clean */}
+        {(isWash || isLaundry) && (
+          <div className="absolute left-2 top-2 z-10">
+            <span
+              className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold tracking-wider uppercase backdrop-blur-md ${
+                isWash
+                  ? 'bg-amber-100/90 text-amber-900 border border-amber-300 dark:bg-amber-950/80 dark:text-amber-300'
+                  : 'bg-stone-200/90 text-stone-700 border border-stone-300 dark:bg-stone-800/80 dark:text-stone-300'
+              }`}
+            >
+              {isWash ? 'Needs Wash' : 'In Laundry'}
+            </span>
+          </div>
+        )}
 
         {/* Favorite heart button */}
         <button

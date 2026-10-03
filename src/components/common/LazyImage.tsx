@@ -10,6 +10,7 @@ interface LazyImageProps {
   colors?: string[];
   className?: string;
   isHero?: boolean;
+  showLabel?: boolean;
 }
 
 export const LazyImage: React.FC<LazyImageProps> = ({
@@ -20,6 +21,7 @@ export const LazyImage: React.FC<LazyImageProps> = ({
   colors,
   className = '',
   isHero = false,
+  showLabel = false,
 }) => {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
@@ -32,6 +34,7 @@ export const LazyImage: React.FC<LazyImageProps> = ({
         name={alt}
         colors={colors}
         className={className}
+        showLabel={showLabel}
       />
     );
   }

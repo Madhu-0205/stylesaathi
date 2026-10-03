@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { ShoppingBag, ArrowUpRight } from 'lucide-react';
 import { useSmartBuys } from '../hooks/useSmartBuys';
 import { useWardrobeContext } from '../context/WardrobeContext';
-import { Header } from '../components/common/Header';
 import { CategoryBalanceBar } from '../components/gaps/CategoryBalanceBar';
 import { OccasionCoverageList } from '../components/gaps/OccasionCoverageList';
 import { SmartBuyCard } from '../components/gaps/SmartBuyCard';
@@ -33,14 +32,35 @@ export const GapsScreen: React.FC = () => {
       : 'LAYERED SILHOUETTES';
 
   return (
-    <div className="pb-12 animate-fade-in space-y-6">
-      {/* Top Header */}
-      <Header
-        title="INSIGHT"
-        subtitle="Wardrobe intelligence & gap analysis"
-        theme={theme}
-        onToggleTheme={toggleTheme}
-      />
+    <div className="pb-12 animate-fade-in space-y-4">
+      {/* Compact Editorial Header: "INSIGHT · Your wardrobe has a gap" */}
+      <header className="flex items-center justify-between border-b border-(--border) pb-2.5">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
+              INSIGHT
+            </span>
+            <span className="text-[10px] text-(--muted) font-devanagari">
+              वॉर्डरोब समझ
+            </span>
+          </div>
+          <h1 className="mt-0.5 font-serif text-2xl sm:text-3xl font-normal text-(--ink) tracking-tight">
+            Your wardrobe has a gap.
+          </h1>
+          <p className="text-[11px] text-(--muted) font-medium">
+            {topsCount} tops · {bottomsCount} bottoms · {ethnicCount} ethnic pieces
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-(--border) text-(--muted) transition-colors hover:border-(--ink) hover:text-(--ink)"
+          aria-label="Toggle theme"
+        >
+          {theme === 'light' ? '☾' : '☼'}
+        </button>
+      </header>
 
       {items.length === 0 ? (
         <EmptyState
@@ -54,60 +74,29 @@ export const GapsScreen: React.FC = () => {
         />
       ) : (
         <>
-          {/* Editorial Wardrobe Narrative Overview */}
-          <section className="border-b border-(--border) pb-4">
-            <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-(--kumkum)">
-              YOUR WARDROBE
-            </span>
-            <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xs text-(--muted)">
-              <span className="text-sm font-serif italic text-(--ink)">
-                {topsCount} tops
+          {/* Stylist Insight Narrative: "GAP DIAGNOSIS" */}
+          <section className="rounded-xl border border-(--border) bg-(--card) p-3.5 sm:p-4 shadow-2xs">
+            <div className="flex items-baseline justify-between">
+              <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
+                GAP DIAGNOSIS
               </span>
-              <span className="text-(--border)">·</span>
-              <span className="text-sm font-serif italic text-(--ink)">
-                {bottomsCount} bottoms
+              <span className="text-[10px] font-bold uppercase tracking-wider text-(--burnished-gold)">
+                {biggestGapLabel}
               </span>
-              <span className="text-(--border)">·</span>
-              <span className="text-sm font-serif italic text-(--ink)">
-                {ethnicCount} ethnic pieces
-              </span>
-              {dressesCount > 0 && (
-                <>
-                  <span className="text-(--border)">·</span>
-                  <span className="text-sm font-serif italic text-(--ink)">
-                    {dressesCount} dresses
-                  </span>
-                </>
-              )}
             </div>
-          </section>
-
-          {/* Stylist Insight Narrative: "YOUR BIGGEST GAP" */}
-          <section className="rounded-2xl border border-(--border) bg-(--card) p-5 sm:p-6 shadow-2xs">
-            <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-(--kumkum)">
-              YOUR BIGGEST GAP
-            </span>
-            <h3 className="mt-1 font-serif text-2xl font-normal text-(--ink) tracking-tight">
-              {biggestGapLabel}
-            </h3>
-            <p className="mt-2 text-xs sm:text-sm text-(--muted) font-normal leading-relaxed">
+            <p className="mt-1.5 text-xs text-(--muted) font-normal leading-relaxed">
               {insight}
             </p>
           </section>
 
           {/* "THE ONE TO ADD" — Hero Smart Buy Recommendation */}
           {topRecommendation && (
-            <section className="space-y-3">
+            <section className="space-y-2">
               <div className="flex items-baseline justify-between px-0.5">
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
-                    RECOMMENDED PURCHASE
-                  </span>
-                  <h3 className="mt-0.5 font-serif text-2xl font-normal text-(--ink)">
-                    The One To Add
-                  </h3>
-                </div>
-                <span className="text-[11px] text-(--muted)">
+                <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
+                  THE ONE TO ADD
+                </span>
+                <span className="text-[10.5px] text-(--muted)">
                   Highest combination multiplier
                 </span>
               </div>

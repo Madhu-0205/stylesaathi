@@ -7,6 +7,7 @@ interface ClothingFallbackProps {
   name?: string;
   colors?: string[];
   className?: string;
+  showLabel?: boolean;
 }
 
 export const ClothingFallback: React.FC<ClothingFallbackProps> = ({
@@ -15,6 +16,7 @@ export const ClothingFallback: React.FC<ClothingFallbackProps> = ({
   name,
   colors = [],
   className = '',
+  showLabel = false,
 }) => {
   // Editorial SVG silhouettes for different clothing types
   const renderSilhouette = () => {
@@ -138,7 +140,7 @@ export const ClothingFallback: React.FC<ClothingFallbackProps> = ({
         {renderSilhouette()}
       </div>
 
-      {name && (
+      {showLabel && name && (
         <span className="mt-2 text-center text-[11px] font-medium tracking-tight text-(--muted) line-clamp-1 max-w-[90%]">
           {name}
         </span>

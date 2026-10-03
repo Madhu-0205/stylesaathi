@@ -1,7 +1,6 @@
 import React from 'react';
 import { Sun, Moon, Shield, RotateCcw, Trash2, Sparkles } from 'lucide-react';
 import { useWardrobeContext } from '../context/WardrobeContext';
-import { Header } from '../components/common/Header';
 import { STYLE_VIBES } from '../data/taxonomy';
 
 export const ProfileScreen: React.FC = () => {
@@ -43,41 +42,35 @@ export const ProfileScreen: React.FC = () => {
   };
 
   return (
-    <div className="pb-12 animate-fade-in space-y-7">
-      {/* Top Header */}
-      <Header
-        title="YOU"
-        subtitle="Your personal wardrobe story & preferences"
-        theme={theme}
-        onToggleTheme={toggleTheme}
-      />
-
-      {/* Wardrobe Story Typography Line */}
-      <section className="border-b border-(--border) pb-5">
-        <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-(--kumkum)">
-          WARDROBE STORY
-        </span>
-        <h2 className="mt-1 font-serif text-3xl font-normal text-(--ink) tracking-tight">
-          Your Wardrobe Archive
-        </h2>
-        <div className="mt-3 flex flex-wrap items-baseline gap-x-3 text-xs text-(--muted)">
-          <span className="font-serif text-base italic text-(--ink)">
-            {totalPieces} pieces
-          </span>
-          <span className="text-(--border)">·</span>
-          <span className="font-serif text-base italic text-(--ink)">
-            {favoritesCount} favorites
-          </span>
-          <span className="text-(--border)">·</span>
-          <span className="font-serif text-base italic text-(--ink)">
-            {savedOutfits.length} saved looks
-          </span>
-          <span className="text-(--border)">·</span>
-          <span className="font-serif text-base italic text-(--ink)">
-            {totalWears} times worn
-          </span>
+    <div className="pb-12 animate-fade-in space-y-4">
+      {/* Compact Editorial Header: "YOU · Personal Archive" */}
+      <header className="flex items-center justify-between border-b border-(--border) pb-2.5">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
+              YOU
+            </span>
+            <span className="text-[10px] text-(--muted) font-devanagari">
+              आपकी शैली
+            </span>
+          </div>
+          <h1 className="mt-0.5 font-serif text-2xl sm:text-3xl font-normal text-(--ink) tracking-tight">
+            Style & Archive
+          </h1>
+          <p className="text-[11px] text-(--muted) font-medium">
+            {totalPieces} pieces · {favoritesCount} favorites · {savedOutfits.length} saved · {totalWears} wears
+          </p>
         </div>
-      </section>
+
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-(--border) text-(--muted) transition-colors hover:border-(--ink) hover:text-(--ink)"
+          aria-label="Toggle theme"
+        >
+          {theme === 'light' ? '☾' : '☼'}
+        </button>
+      </header>
 
       {/* Style Preferences Section */}
       <section className="rounded-2xl border border-(--border) bg-(--card) p-5 sm:p-6 shadow-2xs">

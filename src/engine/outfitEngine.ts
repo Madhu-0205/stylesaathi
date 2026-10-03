@@ -15,11 +15,21 @@ export function generateOutfits(
     (i) => i.status === 'clean' && seasonFit(i, season) && occasionFit(i, occasion)
   );
 
-  const occasionTemplates = TEMPLATES.filter(
-    (t) =>
-      (t.name === 'Indo-western' && ['college', 'casual outing'].includes(occasion)) ||
-      t.name !== 'Indo-western'
-  );
+  const occasionTemplates = TEMPLATES.filter((t) => {
+    if (t.name === 'Indo-western') {
+      return ['college', 'casual outing', 'everyday', 'date', 'travel', 'party'].includes(occasion);
+    }
+    if (t.name === 'Indo-western tailored') {
+      return ['office', 'date', 'party', 'college', 'casual outing', 'family function', 'family gathering'].includes(occasion);
+    }
+    if (t.name === 'Kurta & Nehru jacket') {
+      return ['wedding guest', 'celebration', 'festive', 'Diwali', 'Eid', 'family function', 'family gathering', 'puja'].includes(occasion);
+    }
+    if (t.name === 'Tailored Western') {
+      return ['office', 'interview', 'date', 'party', 'family function', 'family gathering', 'celebration'].includes(occasion);
+    }
+    return true;
+  });
 
   const results: GeneratedOutfit[] = [];
 
@@ -57,7 +67,7 @@ export function generateOutfits(
       if (new Set(all.map((x) => x.id)).size !== all.length) continue;
 
       const score = calculateOutfitScore(all, occasion, seed);
-      const why = generateOutfitWhy(score);
+      const why = generateOutfitWhy(all, occasion, score);
 
       results.push({
         template: t.name,

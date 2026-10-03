@@ -231,4 +231,133 @@ describe('Outfit Engine — Core Invariants & Scoring', () => {
     const delta = simulateBuy([top, shoes], candidateBottom, ['college'], 'summer');
     expect(delta).toBeGreaterThan(0);
   });
+
+  // 14: Kurta & Nehru jacket combination
+  it('supports Kurta & Nehru jacket combination for festive/wedding occasions', () => {
+    const kurta = createItem({
+      category: 'Ethnic',
+      subcategory: 'kurta',
+      occasions: ['wedding guest', 'festive', 'puja'],
+      formality: 4,
+    });
+    const nehruJacket = createItem({
+      category: 'Ethnic',
+      subcategory: 'nehru jacket',
+      occasions: ['wedding guest', 'festive', 'puja'],
+      formality: 4,
+    });
+    const pajama = createItem({
+      category: 'Ethnic',
+      subcategory: 'pajama',
+      occasions: ['wedding guest', 'festive', 'puja'],
+      formality: 3,
+    });
+    const juttis = createItem({
+      category: 'Footwear',
+      subcategory: 'juttis',
+      occasions: ['wedding guest', 'festive', 'puja'],
+      formality: 4,
+    });
+
+    const outfits = generateOutfits([kurta, nehruJacket, pajama, juttis], 'wedding guest', 'summer');
+    expect(outfits.length).toBeGreaterThan(0);
+    expect(outfits.some((o) => o.template === 'Kurta & Nehru jacket')).toBe(true);
+  });
+
+  // 15: Kurta + Pajama pairing
+  it('supports Kurta + Pajama pairing in ethnic occasions', () => {
+    const kurta = createItem({
+      category: 'Ethnic',
+      subcategory: 'kurta',
+      occasions: ['puja', 'festive', 'college'],
+      formality: 3,
+    });
+    const pajama = createItem({
+      category: 'Ethnic',
+      subcategory: 'pajama',
+      occasions: ['puja', 'festive', 'college'],
+      formality: 3,
+    });
+    const sandals = createItem({
+      category: 'Footwear',
+      subcategory: 'sandals',
+      occasions: ['puja', 'festive', 'college'],
+      formality: 3,
+    });
+
+    const outfits = generateOutfits([kurta, pajama, sandals], 'puja', 'summer');
+    expect(outfits.length).toBeGreaterThan(0);
+    expect(outfits[0].template).toBe('Kurta look');
+  });
+
+  // 16: Anarkali + Dupatta pairing
+  it('supports Anarkali + Dupatta pairing', () => {
+    const anarkali = createItem({
+      category: 'Ethnic',
+      subcategory: 'anarkali',
+      occasions: ['festive', 'wedding guest'],
+      formality: 4,
+    });
+    const dupatta = createItem({
+      category: 'Ethnic',
+      subcategory: 'dupatta',
+      occasions: ['festive', 'wedding guest'],
+      formality: 4,
+    });
+    const juttis = createItem({
+      category: 'Footwear',
+      subcategory: 'juttis',
+      occasions: ['festive', 'wedding guest'],
+      formality: 4,
+    });
+
+    const outfits = generateOutfits([anarkali, dupatta, juttis], 'festive', 'summer');
+    expect(outfits.length).toBeGreaterThan(0);
+    expect(outfits[0].template).toBe('Anarkali look');
+  });
+
+  // 17: Tailored Western with Blazer for Office
+  it('supports Tailored Western with Blazer, Shirt, and Trousers for Office', () => {
+    const blazer = createItem({
+      category: 'Outerwear',
+      subcategory: 'blazer',
+      occasions: ['office', 'interview'],
+      formality: 4,
+    });
+    const shirt = createItem({
+      category: 'Tops',
+      subcategory: 'shirt',
+      occasions: ['office', 'interview'],
+      formality: 4,
+    });
+    const trousers = createItem({
+      category: 'Bottoms',
+      subcategory: 'trousers',
+      occasions: ['office', 'interview'],
+      formality: 4,
+    });
+    const formalShoes = createItem({
+      category: 'Footwear',
+      subcategory: 'formal shoes',
+      occasions: ['office', 'interview'],
+      formality: 4,
+    });
+
+    const outfits = generateOutfits([blazer, shirt, trousers, formalShoes], 'office', 'summer');
+    expect(outfits.length).toBeGreaterThan(0);
+    expect(outfits.some((o) => o.template === 'Tailored Western')).toBe(true);
+  });
+
+  // 18: Recency penalty for worn-today pieces
+  it('heavily penalizes items worn today via lastWorn timestamp', () => {
+    const today = Date.now();
+    const wornTodayItem = createItem({ timesWorn: 1, lastWorn: today });
+    const unwornItem = createItem({ timesWorn: 0 });
+    const bottom = createItem({ category: 'Bottoms' });
+    const footwear = createItem({ category: 'Footwear' });
+
+    const unwornScore = calculateOutfitScore([unwornItem, bottom, footwear], 'college');
+    const wornScore = calculateOutfitScore([wornTodayItem, bottom, footwear], 'college');
+    expect(unwornScore).toBeGreaterThan(wornScore);
+  });
 });

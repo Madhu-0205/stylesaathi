@@ -11,6 +11,11 @@ export const TEMPLATES: Template[] = [
     optional: { outerwear: ['Outerwear'], accessory: ['Accessories'] },
   },
   {
+    name: 'Tailored Western',
+    required: { outerwear: ['Outerwear'], top: ['Tops'], bottom: ['Bottoms'], footwear: ['Footwear'] },
+    optional: { accessory: ['Accessories'] },
+  },
+  {
     name: 'Western dress',
     required: { dress: ['Dresses'], footwear: ['Footwear'] },
     optional: { outerwear: ['Outerwear'], accessory: ['Accessories'] },
@@ -19,6 +24,11 @@ export const TEMPLATES: Template[] = [
     name: 'Kurta look',
     required: { top: ['Ethnic'], bottom: ['Bottoms', 'Ethnic'], footwear: ['Footwear'] },
     optional: { dupatta: ['Ethnic'], jacket: ['Ethnic'], accessory: ['Accessories'] },
+  },
+  {
+    name: 'Kurta & Nehru jacket',
+    required: { top: ['Ethnic'], jacket: ['Ethnic'], bottom: ['Bottoms', 'Ethnic'], footwear: ['Footwear'] },
+    optional: { accessory: ['Accessories'] },
   },
   {
     name: 'Saree look',
@@ -31,8 +41,18 @@ export const TEMPLATES: Template[] = [
     optional: { accessory: ['Accessories'] },
   },
   {
+    name: 'Anarkali look',
+    required: { top: ['Ethnic'], dupatta: ['Ethnic'], footwear: ['Footwear'] },
+    optional: { bottom: ['Ethnic', 'Bottoms'], accessory: ['Accessories'] },
+  },
+  {
     name: 'Indo-western',
     required: { top: ['Ethnic'], bottom: ['Bottoms'], footwear: ['Footwear'] },
     optional: { outerwear: ['Outerwear'], accessory: ['Accessories'] },
+  },
+  {
+    name: 'Indo-western tailored',
+    required: { outerwear: ['Outerwear'], top: ['Ethnic'], bottom: ['Bottoms'], footwear: ['Footwear'] },
+    optional: { accessory: ['Accessories'] },
   },
 ];

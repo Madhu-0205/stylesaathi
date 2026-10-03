@@ -21,6 +21,7 @@ export type Subcategory =
   | 'joggers'
   | 'kurta'
   | 'kurti'
+  | 'anarkali'
   | 'saree'
   | 'blouse'
   | 'lehenga'
@@ -28,6 +29,7 @@ export type Subcategory =
   | 'sherwani'
   | 'palazzo'
   | 'churidar'
+  | 'pajama'
   | 'dupatta'
   | 'nehru jacket'
   | 'western dress'
@@ -53,16 +55,21 @@ export type Season = 'summer' | 'monsoon' | 'winter';
 
 export type Occasion =
   | 'college'
+  | 'everyday'
   | 'office'
+  | 'interview'
   | 'casual outing'
   | 'date'
   | 'party'
   | 'family function'
+  | 'family gathering'
+  | 'puja'
+  | 'festive'
   | 'wedding guest'
+  | 'celebration'
   | 'Diwali'
   | 'Holi'
   | 'Eid'
-  | 'puja'
   | 'travel';
 
 export type Status = 'clean' | 'needs_washing' | 'in_laundry';
@@ -82,6 +89,7 @@ export interface WardrobeItem {
   favorite: boolean;
   note: string;
   timesWorn: number;
+  lastWorn?: number;
   createdAt?: number;
 }
 
