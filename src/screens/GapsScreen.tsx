@@ -26,12 +26,12 @@ export const GapsScreen: React.FC = () => {
       />
 
       {/* Intelligence Insight Banner */}
-      <div className="rounded-3xl border border-[var(--accent)]/30 bg-[var(--accent-light)]/40 p-4 sm:p-5">
-        <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--accent)]">
+      <div className="rounded-3xl border border-(--accent)/30 bg-(--accent-light)/40 p-4 sm:p-5">
+        <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-(--accent)">
           <Lightbulb className="h-4 w-4" />
           <span>Wardrobe Intelligence</span>
         </div>
-        <p className="mt-1.5 text-xs sm:text-sm font-medium text-[var(--text)] leading-relaxed">
+        <p className="mt-1.5 text-xs sm:text-sm font-medium text-(--text) leading-relaxed">
           {insight}
         </p>
       </div>
@@ -57,19 +57,19 @@ export const GapsScreen: React.FC = () => {
           {/* Smart Buys Section */}
           <div className="pt-2">
             <div className="mb-3 px-1">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--accent)]">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-(--accent)">
                 Smart Buy Recommendations
               </span>
-              <h3 className="mt-0.5 text-lg font-black text-[var(--text)] tracking-tight">
+              <h3 className="mt-0.5 text-lg font-black text-(--text) tracking-tight">
                 Buy smarter
               </h3>
-              <p className="text-xs text-[var(--muted)]">
+              <p className="text-xs text-(--muted)">
                 Ranked by the number of new outfit combinations each piece unlocks with what you already own.
               </p>
             </div>
 
             {smartBuys.length === 0 ? (
-              <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-6 text-center text-xs text-[var(--muted)]">
+              <div className="rounded-3xl border border-(--border) bg-(--card) p-6 text-center text-xs text-(--muted)">
                 Your wardrobe is already well-balanced for the current season.
               </div>
             ) : (

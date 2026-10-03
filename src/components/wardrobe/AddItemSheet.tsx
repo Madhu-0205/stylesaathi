@@ -139,7 +139,7 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
           />
 
           {photoData ? (
-            <div className="relative aspect-4/3 w-full overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--background)]">
+            <div className="relative aspect-4/3 w-full overflow-hidden rounded-3xl border border-(--border) bg-(--background)">
               <img
                 src={photoData}
                 alt="Upload preview"
@@ -148,24 +148,24 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full bg-[var(--card)]/90 px-3 py-1.5 text-xs font-bold text-[var(--text)] shadow-md backdrop-blur-xs transition-transform hover:scale-105 active:scale-95"
+                className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full bg-(--card)/90 px-3 py-1.5 text-xs font-bold text-(--text) shadow-md backdrop-blur-xs transition-transform hover:scale-105 active:scale-95"
               >
-                <RefreshCw className="h-3.5 w-3.5 text-[var(--accent)]" />
+                <RefreshCw className="h-3.5 w-3.5 text-(--accent)" />
                 Change Photo
               </button>
             </div>
           ) : (
             <div
               onClick={() => fileInputRef.current?.click()}
-              className="flex aspect-4/3 cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed border-[var(--border)] bg-[var(--background)]/60 p-6 text-center transition-all hover:border-[var(--accent)] hover:bg-[var(--background)] active:scale-[0.99]"
+              className="flex aspect-4/3 cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed border-(--border) bg-(--background)/60 p-6 text-center transition-all hover:border-(--accent) hover:bg-(--background) active:scale-[0.99]"
             >
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--card)] text-[var(--accent)] shadow-xs">
-                <Camera className="h-6 w-6 stroke-[2]" />
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-(--card) text-(--accent) shadow-xs">
+                <Camera className="h-6 w-6 stroke-2" />
               </div>
-              <h4 className="mt-3 text-sm font-bold text-[var(--text)]">
+              <h4 className="mt-3 text-sm font-bold text-(--text)">
                 {isProcessing ? 'Processing photo...' : 'Take photo or choose from gallery'}
               </h4>
-              <p className="mt-1 text-xs text-[var(--muted)]">
+              <p className="mt-1 text-xs text-(--muted)">
                 JPEG, PNG or WebP · Auto-compressed to under 200KB
               </p>
             </div>
@@ -181,7 +181,7 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
 
         {/* Name Input */}
         <div>
-          <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)]">
+          <label className="text-[11px] font-bold uppercase tracking-wider text-(--muted)">
             Item Name
           </label>
           <input
@@ -189,13 +189,13 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. White Cotton Kurta, Blue Jeans"
-            className="mt-1 w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm font-bold text-[var(--text)] outline-none focus:border-[var(--accent)]"
+            className="mt-1 w-full rounded-2xl border border-(--border) bg-(--background) px-4 py-3 text-sm font-bold text-(--text) outline-none focus:border-(--accent)"
           />
         </div>
 
         {/* Category Chips */}
         <div>
-          <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)]">
+          <label className="text-[11px] font-bold uppercase tracking-wider text-(--muted)">
             Category
           </label>
           <div className="mt-2 flex flex-wrap gap-2">
@@ -204,10 +204,10 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
                 key={cat}
                 type="button"
                 onClick={() => handleCategoryChange(cat)}
-                className={`min-h-[40px] rounded-full px-3.5 py-1 text-xs font-semibold transition-all ${
+                className={`min-h-10 rounded-full px-3.5 py-1 text-xs font-semibold transition-all ${
                   category === cat
-                    ? 'bg-[var(--accent)] text-white shadow-xs'
-                    : 'border border-[var(--border)] bg-[var(--card)] text-[var(--text)] hover:border-[var(--muted)]'
+                    ? 'bg-(--accent) text-white shadow-xs'
+                    : 'border border-(--border) bg-(--card) text-(--text) hover:border-(--muted)'
                 }`}
               >
                 {cat}
@@ -219,7 +219,7 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
         {/* Subcategory Chips */}
         {SUBCATEGORIES[category] && (
           <div>
-            <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)]">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-(--muted)">
               Garment Type
             </label>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -228,10 +228,10 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
                   key={sub}
                   type="button"
                   onClick={() => setSubcategory(sub)}
-                  className={`min-h-[36px] rounded-full px-3 py-1 text-[11px] font-semibold capitalize transition-all ${
+                  className={`min-h-9 rounded-full px-3 py-1 text-[11px] font-semibold capitalize transition-all ${
                     subcategory === sub
-                      ? 'bg-[var(--text)] text-[var(--background)] shadow-xs'
-                      : 'border border-[var(--border)] bg-[var(--card)] text-[var(--muted)] hover:text-[var(--text)]'
+                      ? 'bg-(--text) text-(--background) shadow-xs'
+                      : 'border border-(--border) bg-(--card) text-(--muted) hover:text-(--text)'
                   }`}
                 >
                   {sub}
@@ -243,7 +243,7 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
 
         {/* Colors Selection */}
         <div>
-          <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)]">
+          <label className="text-[11px] font-bold uppercase tracking-wider text-(--muted)">
             Primary Colors (Tap to pick)
           </label>
           <div className="mt-2 flex flex-wrap gap-1.5">
@@ -254,10 +254,10 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
                   key={c}
                   type="button"
                   onClick={() => toggleColor(c)}
-                  className={`flex min-h-[34px] items-center gap-1.5 rounded-full border px-3 text-xs font-medium capitalize transition-all ${
+                  className={`flex min-h-8.5 items-center gap-1.5 rounded-full border px-3 text-xs font-medium capitalize transition-all ${
                     isSelected
-                      ? 'border-[var(--accent)] bg-[var(--accent-light)] text-[var(--accent)] font-bold shadow-2xs'
-                      : 'border-[var(--border)] bg-[var(--card)] text-[var(--muted)]'
+                      ? 'border-(--accent) bg-(--accent-light) text-(--accent) font-bold shadow-2xs'
+                      : 'border-(--border) bg-(--card) text-(--muted)'
                   }`}
                 >
                   <span
@@ -265,7 +265,7 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
                     style={{ backgroundColor: c }}
                   />
                   <span>{c}</span>
-                  {isSelected && <Check className="h-3 w-3 stroke-[3]" />}
+                  {isSelected && <Check className="h-3 w-3 stroke-3" />}
                 </button>
               );
             })}
@@ -275,10 +275,10 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
         {/* Formality level */}
         <div>
           <div className="flex items-center justify-between">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)]">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-(--muted)">
               Formality Level
             </label>
-            <span className="text-xs font-bold text-[var(--text)]">
+            <span className="text-xs font-bold text-(--text)">
               {formality === 1
                 ? 'Casual / Loungewear'
                 : formality === 2
@@ -296,10 +296,10 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
                 key={lvl}
                 type="button"
                 onClick={() => setFormality(lvl)}
-                className={`min-h-[40px] rounded-xl text-xs font-bold transition-all ${
+                className={`min-h-10 rounded-xl text-xs font-bold transition-all ${
                   formality === lvl
-                    ? 'bg-[var(--accent)] text-white shadow-xs'
-                    : 'border border-[var(--border)] bg-[var(--card)] text-[var(--muted)]'
+                    ? 'bg-(--accent) text-white shadow-xs'
+                    : 'border border-(--border) bg-(--card) text-(--muted)'
                 }`}
               >
                 {lvl}
@@ -310,7 +310,7 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
 
         {/* Occasions */}
         <div>
-          <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)]">
+          <label className="text-[11px] font-bold uppercase tracking-wider text-(--muted)">
             Suitable Occasions
           </label>
           <div className="mt-2 flex flex-wrap gap-1.5">
@@ -321,10 +321,10 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
                   key={occ}
                   type="button"
                   onClick={() => toggleOccasion(occ)}
-                  className={`min-h-[32px] rounded-full px-3 text-[11px] font-semibold capitalize transition-all ${
+                  className={`min-h-8 rounded-full px-3 text-[11px] font-semibold capitalize transition-all ${
                     isSelected
-                      ? 'bg-[var(--accent)] text-white shadow-2xs'
-                      : 'border border-[var(--border)] bg-[var(--card)] text-[var(--muted)]'
+                      ? 'bg-(--accent) text-white shadow-2xs'
+                      : 'border border-(--border) bg-(--card) text-(--muted)'
                   }`}
                 >
                   {occ}
@@ -339,7 +339,7 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
           <button
             type="button"
             onClick={handleSave}
-            className="w-full min-h-[50px] rounded-2xl bg-[var(--accent)] px-4 py-3 text-sm font-bold text-white shadow-md transition-transform hover:opacity-95 active:scale-[0.98]"
+            className="w-full min-h-12.5 rounded-2xl bg-(--accent) px-4 py-3 text-sm font-bold text-white shadow-md transition-transform hover:opacity-95 active:scale-[0.98]"
           >
             Add to Wardrobe
           </button>

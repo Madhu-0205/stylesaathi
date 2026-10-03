@@ -55,38 +55,38 @@ export const ProfileScreen: React.FC = () => {
 
       {/* Stats Summary Grid */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-4 text-center">
-          <span className="text-2xl font-black text-[var(--text)] sm:text-3xl">
+        <div className="rounded-3xl border border-(--border) bg-(--card) p-4 text-center">
+          <span className="text-2xl font-black text-(--text) sm:text-3xl">
             {totalPieces}
           </span>
-          <span className="block mt-1 text-[11px] font-bold uppercase tracking-wider text-[var(--muted)]">
+          <span className="block mt-1 text-[11px] font-bold uppercase tracking-wider text-(--muted)">
             Total Pieces
           </span>
         </div>
 
-        <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-4 text-center">
-          <span className="text-2xl font-black text-[var(--accent)] sm:text-3xl">
+        <div className="rounded-3xl border border-(--border) bg-(--card) p-4 text-center">
+          <span className="text-2xl font-black text-(--accent) sm:text-3xl">
             {favoritesCount}
           </span>
-          <span className="block mt-1 text-[11px] font-bold uppercase tracking-wider text-[var(--muted)]">
+          <span className="block mt-1 text-[11px] font-bold uppercase tracking-wider text-(--muted)">
             Favorites
           </span>
         </div>
 
-        <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-4 text-center">
-          <span className="text-2xl font-black text-[var(--text)] sm:text-3xl">
+        <div className="rounded-3xl border border-(--border) bg-(--card) p-4 text-center">
+          <span className="text-2xl font-black text-(--text) sm:text-3xl">
             {savedOutfits.length}
           </span>
-          <span className="block mt-1 text-[11px] font-bold uppercase tracking-wider text-[var(--muted)]">
+          <span className="block mt-1 text-[11px] font-bold uppercase tracking-wider text-(--muted)">
             Saved Looks
           </span>
         </div>
 
-        <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-4 text-center">
-          <span className="text-2xl font-black text-[var(--text)] sm:text-3xl">
+        <div className="rounded-3xl border border-(--border) bg-(--card) p-4 text-center">
+          <span className="text-2xl font-black text-(--text) sm:text-3xl">
             {totalWears}
           </span>
-          <span className="block mt-1 text-[11px] font-bold uppercase tracking-wider text-[var(--muted)]">
+          <span className="block mt-1 text-[11px] font-bold uppercase tracking-wider text-(--muted)">
             Total Wears
           </span>
         </div>
@@ -94,30 +94,30 @@ export const ProfileScreen: React.FC = () => {
 
       {/* Most Worn Highlight */}
       {mostWorn && mostWorn.timesWorn > 0 && (
-        <div className="flex items-center justify-between rounded-3xl border border-[var(--border)] bg-[var(--card)] p-4">
+        <div className="flex items-center justify-between rounded-3xl border border-(--border) bg-(--card) p-4">
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--accent)]">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-(--accent)">
               Most Worn Piece
             </span>
-            <h4 className="mt-0.5 text-sm font-bold text-[var(--text)]">
+            <h4 className="mt-0.5 text-sm font-bold text-(--text)">
               {mostWorn.name}
             </h4>
-            <span className="text-xs text-[var(--muted)]">
+            <span className="text-xs text-(--muted)">
               Logged {mostWorn.timesWorn} times across your styled looks
             </span>
           </div>
-          <span className="rounded-full bg-[var(--accent-light)] px-3 py-1 text-xs font-bold text-[var(--accent)]">
+          <span className="rounded-full bg-(--accent-light) px-3 py-1 text-xs font-bold text-(--accent)">
             {mostWorn.timesWorn} wears
           </span>
         </div>
       )}
 
       {/* Style Vibe Preferences */}
-      <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--text)] mb-1">
+      <div className="rounded-3xl border border-(--border) bg-(--card) p-5">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-(--text) mb-1">
           Style Preferences
         </h3>
-        <p className="text-xs text-[var(--muted)] mb-3">
+        <p className="text-xs text-(--muted) mb-3">
           Tap to toggle your current aesthetic priorities.
         </p>
         <div className="flex flex-wrap gap-2">
@@ -128,10 +128,10 @@ export const ProfileScreen: React.FC = () => {
                 key={vibe}
                 type="button"
                 onClick={() => toggleVibe(vibe)}
-                className={`min-h-[38px] rounded-full px-4 text-xs font-bold transition-all ${
+                className={`min-h-9.5 rounded-full px-4 text-xs font-bold transition-all ${
                   isSelected
-                    ? 'bg-[var(--accent)] text-white shadow-xs'
-                    : 'border border-[var(--border)] bg-[var(--background)] text-[var(--muted)] hover:text-[var(--text)]'
+                    ? 'bg-(--accent) text-white shadow-xs'
+                    : 'border border-(--border) bg-(--background) text-(--muted) hover:text-(--text)'
                 }`}
               >
                 {vibe}
@@ -142,21 +142,21 @@ export const ProfileScreen: React.FC = () => {
       </div>
 
       {/* Appearance Section */}
-      <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--text)] mb-1">
+      <div className="rounded-3xl border border-(--border) bg-(--card) p-5">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-(--text) mb-1">
           Appearance
         </h3>
-        <p className="text-xs text-[var(--muted)] mb-3">
+        <p className="text-xs text-(--muted) mb-3">
           Switch between warm editorial cream and sleek dark mode.
         </p>
         <div className="grid grid-cols-2 gap-2.5">
           <button
             type="button"
             onClick={() => theme === 'dark' && toggleTheme()}
-            className={`flex min-h-[46px] items-center justify-center gap-2 rounded-2xl border text-xs font-bold transition-all ${
+            className={`flex min-h-11.5 items-center justify-center gap-2 rounded-2xl border text-xs font-bold transition-all ${
               theme === 'light'
-                ? 'border-[var(--accent)] bg-[var(--accent-light)]/60 text-[var(--accent)]'
-                : 'border-[var(--border)] bg-[var(--background)] text-[var(--muted)]'
+                ? 'border-(--accent) bg-(--accent-light)/60 text-(--accent)'
+                : 'border-(--border) bg-(--background) text-(--muted)'
             }`}
           >
             <Sun className="h-4 w-4" />
@@ -166,10 +166,10 @@ export const ProfileScreen: React.FC = () => {
           <button
             type="button"
             onClick={() => theme === 'light' && toggleTheme()}
-            className={`flex min-h-[46px] items-center justify-center gap-2 rounded-2xl border text-xs font-bold transition-all ${
+            className={`flex min-h-11.5 items-center justify-center gap-2 rounded-2xl border text-xs font-bold transition-all ${
               theme === 'dark'
-                ? 'border-[var(--accent)] bg-[var(--accent-light)]/60 text-[var(--accent)]'
-                : 'border-[var(--border)] bg-[var(--background)] text-[var(--muted)]'
+                ? 'border-(--accent) bg-(--accent-light)/60 text-(--accent)'
+                : 'border-(--border) bg-(--background) text-(--muted)'
             }`}
           >
             <Moon className="h-4 w-4" />
@@ -179,12 +179,12 @@ export const ProfileScreen: React.FC = () => {
       </div>
 
       {/* Privacy Notice */}
-      <div className="rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5">
-        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-1.5">
-          <Shield className="h-4 w-4 text-[var(--accent)]" />
+      <div className="rounded-3xl border border-(--border) bg-(--card) p-5">
+        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-(--muted) mb-1.5">
+          <Shield className="h-4 w-4 text-(--accent)" />
           <span>Local-First Privacy</span>
         </div>
-        <p className="text-xs text-[var(--muted)] leading-relaxed">
+        <p className="text-xs text-(--muted) leading-relaxed">
           Your wardrobe items and photos stay strictly on this device in the MVP.
           Photos are stored in your browser&apos;s IndexedDB and metadata in localStorage.
           No images or data are sent to external cloud servers.
@@ -196,16 +196,16 @@ export const ProfileScreen: React.FC = () => {
         <button
           type="button"
           onClick={loadSample}
-          className="w-full min-h-[48px] flex items-center justify-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-xs font-bold text-[var(--text)] transition-colors hover:border-[var(--accent)] active:scale-95"
+          className="w-full min-h-12 flex items-center justify-center gap-2 rounded-2xl border border-(--border) bg-(--card) px-4 py-3 text-xs font-bold text-(--text) transition-colors hover:border-(--accent) active:scale-95"
         >
-          <Sparkles className="h-4 w-4 text-[var(--accent)]" />
+          <Sparkles className="h-4 w-4 text-(--accent)" />
           <span>Load Sample Indian Wardrobe</span>
         </button>
 
         <button
           type="button"
           onClick={handleResetWardrobe}
-          className="w-full min-h-[46px] flex items-center justify-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-2.5 text-xs font-bold text-[var(--muted)] hover:text-amber-600 transition-colors active:scale-95"
+          className="w-full min-h-11.5 flex items-center justify-center gap-2 rounded-2xl border border-(--border) bg-(--background) px-4 py-2.5 text-xs font-bold text-(--muted) hover:text-amber-600 transition-colors active:scale-95"
         >
           <RotateCcw className="h-3.5 w-3.5" />
           <span>Reset Wardrobe Items</span>
@@ -214,7 +214,7 @@ export const ProfileScreen: React.FC = () => {
         <button
           type="button"
           onClick={handleResetAll}
-          className="w-full min-h-[46px] flex items-center justify-center gap-2 rounded-2xl border border-red-200/60 bg-transparent px-4 py-2.5 text-xs font-bold text-red-600 transition-colors hover:bg-red-50 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-950/20 active:scale-95"
+          className="w-full min-h-11.5 flex items-center justify-center gap-2 rounded-2xl border border-red-200/60 bg-transparent px-4 py-2.5 text-xs font-bold text-red-600 transition-colors hover:bg-red-50 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-950/20 active:scale-95"
         >
           <Trash2 className="h-3.5 w-3.5" />
           <span>Reset All Data</span>

@@ -43,30 +43,30 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe }) 
           <button
             type="button"
             onClick={shuffle}
-            className="flex min-h-[44px] items-center gap-1.5 rounded-2xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-2 text-xs font-bold text-[var(--text)] transition-transform hover:border-[var(--accent)] active:scale-95"
+            className="flex min-h-11 items-center gap-1.5 rounded-2xl border border-(--border) bg-(--card) px-3.5 py-2 text-xs font-bold text-(--text) transition-transform hover:border-(--accent) active:scale-95"
           >
-            <Shuffle className="h-3.5 w-3.5 text-[var(--accent)]" />
+            <Shuffle className="h-3.5 w-3.5 text-(--accent)" />
             <span>Shuffle</span>
           </button>
         }
       />
 
       {/* Hero Greeting */}
-      <div className="mb-5 rounded-3xl border border-[var(--border)] bg-[var(--card)] p-5">
-        <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--accent)]">
+      <div className="mb-5 rounded-3xl border border-(--border) bg-(--card) p-5">
+        <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-(--accent)">
           <Sparkles className="h-3.5 w-3.5" />
           <span>Styling Assistant</span>
         </div>
-        <h2 className="mt-1 text-2xl font-black text-[var(--text)] tracking-tight">
+        <h2 className="mt-1 text-2xl font-black text-(--text) tracking-tight">
           Aaj kya pehenna hai?
         </h2>
-        <p className="mt-1 text-xs text-[var(--muted)] font-medium">
+        <p className="mt-1 text-xs text-(--muted) font-medium">
           Choose an occasion and season to generate styled editorial looks.
         </p>
 
         {/* Occasion Chips (Horizontal Scroll) */}
         <div className="mt-4">
-          <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)]">
+          <label className="text-[11px] font-bold uppercase tracking-wider text-(--muted)">
             Occasion
           </label>
           <div className="no-scrollbar -mx-2 mt-2 flex gap-1.5 overflow-x-auto px-2 py-0.5">
@@ -82,8 +82,8 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe }) 
         </div>
 
         {/* Season Selector */}
-        <div className="mt-3.5 pt-3 border-t border-[var(--border)]/60 flex items-center justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)]">
+        <div className="mt-3.5 pt-3 border-t border-(--border)/60 flex items-center justify-between">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-(--muted)">
             Season
           </span>
           <div className="flex gap-1.5">
@@ -92,10 +92,10 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe }) 
                 key={s}
                 type="button"
                 onClick={() => setSeason(s as Season)}
-                className={`min-h-[36px] rounded-full px-3 text-xs font-semibold capitalize transition-all ${
+                className={`min-h-9 rounded-full px-3 text-xs font-semibold capitalize transition-all ${
                   season === s
-                    ? 'bg-[var(--accent)] text-white shadow-xs'
-                    : 'border border-[var(--border)] bg-[var(--background)] text-[var(--muted)] hover:text-[var(--text)]'
+                    ? 'bg-(--accent) text-white shadow-xs'
+                    : 'border border-(--border) bg-(--background) text-(--muted) hover:text-(--text)'
                 }`}
               >
                 {s}
@@ -119,10 +119,10 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe }) 
       ) : (
         <div className="space-y-4">
           <div className="flex items-center justify-between px-1">
-            <span className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
+            <span className="text-xs font-bold uppercase tracking-wider text-(--muted)">
               {outfits.length} Styled {outfits.length === 1 ? 'Look' : 'Looks'} Found
             </span>
-            <span className="text-xs text-[var(--muted)]">
+            <span className="text-xs text-(--muted)">
               Tap shuffle for alternatives
             </span>
           </div>

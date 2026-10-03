@@ -24,8 +24,8 @@ export const CombinationsModal: React.FC<CombinationsModalProps> = ({
     <BottomSheet isOpen={isOpen} onClose={onClose} title="Unlocked Combinations">
       <div className="space-y-5">
         {/* Candidate Card Header */}
-        <div className="flex items-center gap-3.5 rounded-3xl border border-[var(--accent)]/40 bg-[var(--accent-light)]/40 p-4">
-          <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--background)]">
+        <div className="flex items-center gap-3.5 rounded-3xl border border-(--accent)/40 bg-(--accent-light)/40 p-4">
+          <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-(--border) bg-(--background)">
             <LazyImage
               src={candidate.photo}
               alt={candidate.name}
@@ -35,24 +35,24 @@ export const CombinationsModal: React.FC<CombinationsModalProps> = ({
             />
           </div>
           <div className="min-w-0 flex-1">
-            <span className="rounded-full bg-[var(--accent)] px-2 py-0.5 text-[10px] font-bold text-white shadow-2xs">
+            <span className="rounded-full bg-(--accent) px-2 py-0.5 text-[10px] font-bold text-white shadow-2xs">
               +{newOutfitsUnlocked} New Outfits
             </span>
-            <h4 className="mt-1 truncate text-sm font-black text-[var(--text)]">
+            <h4 className="mt-1 truncate text-sm font-black text-(--text)">
               {candidate.name}
             </h4>
-            <p className="text-xs font-semibold text-[var(--muted)]">
+            <p className="text-xs font-semibold text-(--muted)">
               Estimated: {candidate.priceRange || '₹1,200–₹2,400'}
             </p>
           </div>
         </div>
 
         {/* Why this piece matters */}
-        <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3.5">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--accent)]">
+        <div className="rounded-2xl border border-(--border) bg-(--background) p-3.5">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-(--accent)">
             Why this piece
           </span>
-          <p className="mt-1 text-xs text-[var(--text)] font-medium leading-relaxed">
+          <p className="mt-1 text-xs text-(--text) font-medium leading-relaxed">
             {reason}
           </p>
         </div>
@@ -60,16 +60,16 @@ export const CombinationsModal: React.FC<CombinationsModalProps> = ({
         {/* Pairs with your existing pieces */}
         {compatibleExistingItems.length > 0 && (
           <div>
-            <h5 className="text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-2">
+            <h5 className="text-xs font-bold uppercase tracking-wider text-(--muted) mb-2">
               Pairs with clothes you already own
             </h5>
             <div className="grid grid-cols-4 gap-2">
               {compatibleExistingItems.map((item) => (
                 <div
                   key={item.id}
-                  className="flex flex-col items-center rounded-xl border border-[var(--border)] bg-[var(--card)] p-1.5"
+                  className="flex flex-col items-center rounded-xl border border-(--border) bg-(--card) p-1.5"
                 >
-                  <div className="aspect-square w-full overflow-hidden rounded-lg bg-[var(--background)]">
+                  <div className="aspect-square w-full overflow-hidden rounded-lg bg-(--background)">
                     <LazyImage
                       src={item.photo}
                       alt={item.name}
@@ -78,7 +78,7 @@ export const CombinationsModal: React.FC<CombinationsModalProps> = ({
                       colors={item.colors}
                     />
                   </div>
-                  <span className="mt-1 truncate w-full text-center text-[9px] font-semibold text-[var(--text)]">
+                  <span className="mt-1 truncate w-full text-center text-[9px] font-semibold text-(--text)">
                     {item.name}
                   </span>
                 </div>
@@ -89,12 +89,12 @@ export const CombinationsModal: React.FC<CombinationsModalProps> = ({
 
         {/* Preview Outfits Gallery */}
         <div>
-          <h5 className="text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-2.5">
+          <h5 className="text-xs font-bold uppercase tracking-wider text-(--muted) mb-2.5">
             Preview of Unlocked Looks
           </h5>
           <div className="space-y-3">
             {previewOutfits.length === 0 ? (
-              <p className="text-xs text-[var(--muted)]">
+              <p className="text-xs text-(--muted)">
                 Adds {newOutfitsUnlocked} combination variations across Indian occasions.
               </p>
             ) : (
@@ -103,11 +103,11 @@ export const CombinationsModal: React.FC<CombinationsModalProps> = ({
                 return (
                   <div
                     key={idx}
-                    className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3"
+                    className="rounded-2xl border border-(--border) bg-(--background) p-3"
                   >
-                    <div className="flex items-center justify-between text-[11px] font-bold text-[var(--accent)] mb-2">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-(--accent) mb-2">
                       <span>{outfit.template}</span>
-                      <span className="text-[var(--muted)] font-normal">&ldquo;{outfit.why}&rdquo;</span>
+                      <span className="text-(--muted) font-normal">&ldquo;{outfit.why}&rdquo;</span>
                     </div>
                     <div className="grid grid-cols-3 gap-2">
                       {pieces.map((p) => {
@@ -117,11 +117,11 @@ export const CombinationsModal: React.FC<CombinationsModalProps> = ({
                             key={p.id}
                             className={`flex flex-col items-center rounded-xl p-1.5 border ${
                               isCandidatePiece
-                                ? 'border-[var(--accent)] bg-[var(--accent-light)]/50'
-                                : 'border-[var(--border)] bg-[var(--card)]'
+                                ? 'border-(--accent) bg-(--accent-light)/50'
+                                : 'border-(--border) bg-(--card)'
                             }`}
                           >
-                            <div className="aspect-square w-full overflow-hidden rounded-lg bg-[var(--background)]">
+                            <div className="aspect-square w-full overflow-hidden rounded-lg bg-(--background)">
                               <LazyImage
                                 src={p.photo}
                                 alt={p.name}
@@ -132,7 +132,7 @@ export const CombinationsModal: React.FC<CombinationsModalProps> = ({
                             </div>
                             <span
                               className={`mt-1 truncate w-full text-center text-[9px] font-bold ${
-                                isCandidatePiece ? 'text-[var(--accent)]' : 'text-[var(--text)]'
+                                isCandidatePiece ? 'text-(--accent)' : 'text-(--text)'
                               }`}
                             >
                               {p.name} {isCandidatePiece && '★'}
@@ -151,7 +151,7 @@ export const CombinationsModal: React.FC<CombinationsModalProps> = ({
         <button
           type="button"
           onClick={onClose}
-          className="w-full min-h-[48px] rounded-2xl bg-[var(--text)] px-4 py-3 text-xs font-bold text-[var(--background)] shadow-xs hover:opacity-90 active:scale-95"
+          className="w-full min-h-12 rounded-2xl bg-(--text) px-4 py-3 text-xs font-bold text-(--background) shadow-xs hover:opacity-90 active:scale-95"
         >
           Got It
         </button>

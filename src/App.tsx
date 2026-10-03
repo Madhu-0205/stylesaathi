@@ -19,7 +19,7 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--background)]">
+    <div className="min-h-screen bg-(--background)">
       {/* Centered mobile-first shell (max-w-[440px] on desktop) */}
       <div className="mobile-shell safe-bottom px-4 pt-4 sm:px-6">
         <main>

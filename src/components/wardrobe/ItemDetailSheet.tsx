@@ -58,7 +58,7 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
     <BottomSheet isOpen={isOpen} onClose={onClose} title="Item Details">
       <div className="space-y-5">
         {/* Large photo container */}
-        <div className="relative aspect-4/3 w-full overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--background)]">
+        <div className="relative aspect-4/3 w-full overflow-hidden rounded-3xl border border-(--border) bg-(--background)">
           <LazyImage
             src={item.photo}
             alt={name}
@@ -71,13 +71,13 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
           <button
             type="button"
             onClick={() => setFavorite(!favorite)}
-            className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 backdrop-blur-xs text-[var(--muted)] shadow-md transition-transform hover:scale-105 active:scale-95 dark:bg-black/70"
+            className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 backdrop-blur-xs text-(--muted) shadow-md transition-transform hover:scale-105 active:scale-95 dark:bg-black/70"
           >
             <Heart
               className={`h-5 w-5 transition-colors ${
                 favorite
-                  ? 'fill-[var(--accent)] stroke-[var(--accent)]'
-                  : 'stroke-[var(--text)]'
+                  ? 'fill-(--accent) stroke-(--accent)'
+                  : 'stroke-(--text)'
               }`}
             />
           </button>
@@ -85,26 +85,26 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
 
         {/* Name input */}
         <div>
-          <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)]">
+          <label className="text-[11px] font-bold uppercase tracking-wider text-(--muted)">
             Item Name
           </label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="mt-1 w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-sm font-bold text-[var(--text)] outline-none focus:border-[var(--accent)]"
+            className="mt-1 w-full rounded-2xl border border-(--border) bg-(--background) px-4 py-3 text-sm font-bold text-(--text) outline-none focus:border-(--accent)"
           />
         </div>
 
         {/* Categories and colors badges */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full bg-[var(--background)] px-3 py-1 text-xs font-semibold text-[var(--text)] border border-[var(--border)]">
+          <span className="rounded-full bg-(--background) px-3 py-1 text-xs font-semibold text-(--text) border border-(--border)">
             {item.category} · {item.subcategory || 'piece'}
           </span>
           {item.colors.map((c, i) => (
             <span
               key={i}
-              className="inline-flex items-center gap-1.5 rounded-full bg-[var(--background)] px-3 py-1 text-xs font-semibold capitalize text-[var(--muted)] border border-[var(--border)]"
+              className="inline-flex items-center gap-1.5 rounded-full bg-(--background) px-3 py-1 text-xs font-semibold capitalize text-(--muted) border border-(--border)"
             >
               <span
                 className="h-2 w-2 rounded-full border border-black/20"
@@ -113,15 +113,15 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
               {c}
             </span>
           ))}
-          <span className="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-[var(--muted)]">
+          <span className="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-(--muted)">
             Formality:
-            <span className="font-bold text-[var(--text)]">{item.formality}/5</span>
+            <span className="font-bold text-(--text)">{item.formality}/5</span>
           </span>
         </div>
 
         {/* Status switcher */}
         <div>
-          <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)]">
+          <label className="text-[11px] font-bold uppercase tracking-wider text-(--muted)">
             Laundry & Cleanliness
           </label>
           <div className="mt-2 grid grid-cols-3 gap-2">
@@ -136,14 +136,14 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
                 key={s.id}
                 type="button"
                 onClick={() => setStatus(s.id)}
-                className={`min-h-[44px] rounded-2xl px-2 py-2 text-xs font-bold transition-all ${
+                className={`min-h-11 rounded-2xl px-2 py-2 text-xs font-bold transition-all ${
                   status === s.id
                     ? s.id === 'clean'
                       ? 'bg-emerald-600 text-white shadow-xs'
                       : s.id === 'needs_washing'
                       ? 'bg-amber-500 text-white shadow-xs'
                       : 'bg-stone-600 text-white shadow-xs'
-                    : 'border border-[var(--border)] bg-[var(--card)] text-[var(--muted)] hover:border-[var(--muted)]'
+                    : 'border border-(--border) bg-(--card) text-(--muted) hover:border-(--muted)'
                 }`}
               >
                 {s.label}
@@ -153,26 +153,26 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
         </div>
 
         {/* Times worn tracker */}
-        <div className="flex items-center justify-between rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3">
+        <div className="flex items-center justify-between rounded-2xl border border-(--border) bg-(--background) p-3">
           <div>
-            <span className="text-xs font-bold text-[var(--text)]">Wear History</span>
-            <p className="text-[11px] text-[var(--muted)]">
-              Worn <strong className="text-[var(--text)]">{timesWorn}</strong> times so far
+            <span className="text-xs font-bold text-(--text)">Wear History</span>
+            <p className="text-[11px] text-(--muted)">
+              Worn <strong className="text-(--text)">{timesWorn}</strong> times so far
             </p>
           </div>
           <button
             type="button"
             onClick={handleWearIncrement}
-            className="flex min-h-[44px] items-center gap-1.5 rounded-xl bg-[var(--card)] px-3 py-2 text-xs font-bold text-[var(--text)] border border-[var(--border)] shadow-2xs hover:border-[var(--accent)] active:scale-95"
+            className="flex min-h-11 items-center gap-1.5 rounded-xl bg-(--card) px-3 py-2 text-xs font-bold text-(--text) border border-(--border) shadow-2xs hover:border-(--accent) active:scale-95"
           >
-            <Plus className="h-4 w-4 text-[var(--accent)]" />
+            <Plus className="h-4 w-4 text-(--accent)" />
             Log Wear
           </button>
         </div>
 
         {/* Note input */}
         <div>
-          <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)]">
+          <label className="text-[11px] font-bold uppercase tracking-wider text-(--muted)">
             Styling or Care Note
           </label>
           <textarea
@@ -180,7 +180,7 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="e.g. Dry clean only, shrinks slightly, great with sneakers"
-            className="mt-1 w-full rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3 text-xs text-[var(--text)] outline-none focus:border-[var(--accent)]"
+            className="mt-1 w-full rounded-2xl border border-(--border) bg-(--background) p-3 text-xs text-(--text) outline-none focus:border-(--accent)"
           />
         </div>
 
@@ -191,14 +191,14 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
             onClick={handleDelete}
             disabled={isDeleting}
             aria-label="Delete item"
-            className="flex min-h-[48px] w-12 items-center justify-center rounded-2xl border border-red-200 text-red-600 transition-colors hover:bg-red-50 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-950/40 active:scale-95"
+            className="flex min-h-12 w-12 items-center justify-center rounded-2xl border border-red-200 text-red-600 transition-colors hover:bg-red-50 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-950/40 active:scale-95"
           >
             <Trash2 className="h-5 w-5" />
           </button>
           <button
             type="button"
             onClick={handleSave}
-            className="flex-1 min-h-[48px] rounded-2xl bg-[var(--accent)] px-4 py-3 text-xs font-bold text-white shadow-xs transition-transform hover:opacity-95 active:scale-95"
+            className="flex-1 min-h-12 rounded-2xl bg-(--accent) px-4 py-3 text-xs font-bold text-white shadow-xs transition-transform hover:opacity-95 active:scale-95"
           >
             Save Changes
           </button>

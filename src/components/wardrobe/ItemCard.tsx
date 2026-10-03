@@ -20,12 +20,12 @@ export const ItemCard: React.FC<ItemCardProps> = ({
   return (
     <div
       onClick={() => onSelect(item)}
-      className={`group relative flex flex-col overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--card)] p-2.5 transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer select-none ${
-        isLaundry ? 'opacity-60 grayscale-[40%]' : ''
+      className={`group relative flex flex-col overflow-hidden rounded-3xl border border-(--border) bg-(--card) p-2.5 transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer select-none ${
+        isLaundry ? 'opacity-60 grayscale-40' : ''
       }`}
     >
       {/* Photo tile container */}
-      <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-[var(--background)]">
+      <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-(--background)">
         <LazyImage
           src={item.photo}
           alt={item.name}
@@ -55,13 +55,13 @@ export const ItemCard: React.FC<ItemCardProps> = ({
           type="button"
           aria-label={item.favorite ? 'Remove from favorites' : 'Add to favorites'}
           onClick={(e) => onToggleFavorite(e, item)}
-          className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 backdrop-blur-xs text-[var(--muted)] transition-transform hover:scale-110 active:scale-90 dark:bg-black/60"
+          className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 backdrop-blur-xs text-(--muted) transition-transform hover:scale-110 active:scale-90 dark:bg-black/60"
         >
           <Heart
             className={`h-4 w-4 transition-colors ${
               item.favorite
-                ? 'fill-[var(--accent)] stroke-[var(--accent)]'
-                : 'stroke-[var(--text)]/70 hover:stroke-[var(--accent)]'
+                ? 'fill-(--accent) stroke-(--accent)'
+                : 'stroke-(--text)/70 hover:stroke-(--accent)'
             }`}
           />
         </button>
@@ -69,13 +69,13 @@ export const ItemCard: React.FC<ItemCardProps> = ({
 
       {/* Item info */}
       <div className="mt-2.5 px-1 pb-1">
-        <h4 className="truncate text-xs font-bold text-[var(--text)] tracking-tight sm:text-sm">
+        <h4 className="truncate text-xs font-bold text-(--text) tracking-tight sm:text-sm">
           {item.name}
         </h4>
-        <div className="mt-0.5 flex items-center justify-between text-[11px] text-[var(--muted)]">
+        <div className="mt-0.5 flex items-center justify-between text-[11px] text-(--muted)">
           <span className="capitalize">{item.subcategory || item.category}</span>
           {item.timesWorn > 0 && (
-            <span className="text-[10px] font-medium text-[var(--muted)]/80">
+            <span className="text-[10px] font-medium text-(--muted)/80">
               {item.timesWorn}w
             </span>
           )}

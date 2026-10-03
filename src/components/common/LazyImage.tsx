@@ -37,9 +37,9 @@ export const LazyImage: React.FC<LazyImageProps> = ({
   }
 
   return (
-    <div className={`relative h-full w-full overflow-hidden bg-[var(--background)]/40 ${className}`}>
+    <div className={`relative h-full w-full overflow-hidden bg-(--background)/40 ${className}`}>
       {!loaded && (
-        <div className="absolute inset-0 animate-pulse bg-[var(--border)]/30" />
+        <div className="absolute inset-0 animate-pulse bg-(--border)/30" />
       )}
       <img
         src={src}

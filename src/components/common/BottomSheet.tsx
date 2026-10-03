@@ -38,22 +38,22 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
 
       {/* Sheet panel */}
       <div
-        className={`relative z-10 w-full max-w-lg overflow-hidden rounded-t-[32px] border-t border-[var(--border)] bg-[var(--card)] shadow-2xl animate-slide-up ${maxHeight} flex flex-col`}
+        className={`relative z-10 w-full max-w-lg overflow-hidden rounded-t-4xl border-t border-(--border) bg-(--card) shadow-2xl animate-slide-up ${maxHeight} flex flex-col`}
       >
         {/* Drag handle */}
         <div className="flex justify-center pt-3 pb-1 cursor-grab" onClick={onClose}>
-          <div className="h-1.5 w-12 rounded-full bg-[var(--border)]" />
+          <div className="h-1.5 w-12 rounded-full bg-(--border)" />
         </div>
 
         {/* Sheet header */}
-        <div className="flex items-center justify-between px-6 py-3 border-b border-[var(--border)]/50">
-          <h2 className="text-lg font-bold tracking-tight text-[var(--text)]">
+        <div className="flex items-center justify-between px-6 py-3 border-b border-(--border)/50">
+          <h2 className="text-lg font-bold tracking-tight text-(--text)">
             {title || ''}
           </h2>
           <button
             onClick={onClose}
             aria-label="Close dialog"
-            className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--muted)] hover:bg-[var(--background)] hover:text-[var(--text)] transition-colors active:scale-95"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-(--muted) hover:bg-(--background) hover:text-(--text) transition-colors active:scale-95"
           >
             <X className="h-5 w-5" />
           </button>
