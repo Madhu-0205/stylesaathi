@@ -20,65 +20,65 @@ export const ItemCard: React.FC<ItemCardProps> = ({
   return (
     <div
       onClick={() => onSelect(item)}
-      className={`group relative flex flex-col overflow-hidden rounded-3xl border border-(--border) bg-(--card) p-2.5 transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer select-none ${
-        isLaundry ? 'opacity-60 grayscale-40' : ''
+      className={`group relative flex flex-col cursor-pointer select-none transition-all active:scale-[0.98] ${
+        isLaundry ? 'opacity-65 grayscale-30' : ''
       }`}
     >
-      {/* Photo tile container */}
-      <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-(--background)">
+      {/* Editorial Photo Frame */}
+      <div className="relative aspect-4/5 w-full overflow-hidden rounded-2xl border border-(--border) bg-(--card) transition-all duration-300 group-hover:border-(--muted)/60">
         <LazyImage
           src={item.photo}
           alt={item.name}
           category={item.category}
           subcategory={item.subcategory}
           colors={item.colors}
-          className="h-full w-full"
+          className="h-full w-full object-contain p-2"
         />
 
-        {/* Status indicator badge */}
-        <div className="absolute left-2 top-2 z-10">
+        {/* Quiet status tag */}
+        <div className="absolute left-2.5 top-2.5 z-10">
           <span
-            className={`rounded-full px-2 py-0.5 text-[10px] font-bold tracking-tight shadow-2xs ${
+            className={`rounded-full px-2 py-0.5 text-[9.5px] font-bold tracking-wider uppercase backdrop-blur-md ${
               item.status === 'clean'
-                ? 'bg-white/90 text-emerald-800 dark:bg-black/70 dark:text-emerald-300'
+                ? 'bg-(--card)/90 text-(--muted) border border-(--border)/50'
                 : isWash
-                ? 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300'
-                : 'bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300'
+                ? 'bg-amber-50/90 text-amber-900 border border-amber-200 dark:bg-amber-950/80 dark:text-amber-300'
+                : 'bg-stone-200/90 text-stone-700 border border-stone-300 dark:bg-stone-800/80 dark:text-stone-300'
             }`}
           >
-            {item.status === 'clean' ? 'Ready' : isWash ? 'Wash' : 'Laundry'}
+            {item.status === 'clean' ? 'Ready' : isWash ? 'Wash' : 'In Laundry'}
           </span>
         </div>
 
-        {/* Favorite heart button - 44px touch target with sleek visual badge */}
+        {/* Favorite heart button */}
         <button
           type="button"
           aria-label={item.favorite ? 'Remove from favorites' : 'Add to favorites'}
           onClick={(e) => onToggleFavorite(e, item)}
           className="absolute right-1 top-1 z-10 flex h-11 w-11 items-center justify-center rounded-full text-(--muted) transition-transform hover:scale-105 active:scale-90"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/85 backdrop-blur-xs shadow-2xs dark:bg-black/65">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-(--card)/85 backdrop-blur-md border border-(--border)/60 text-(--muted)">
             <Heart
-              className={`h-4 w-4 transition-colors ${
+              className={`h-3.5 w-3.5 transition-colors ${
                 item.favorite
                   ? 'fill-(--accent) stroke-(--accent)'
-                  : 'stroke-(--text)/70 hover:stroke-(--accent)'
+                  : 'stroke-(--text)/70 group-hover:stroke-(--accent)'
               }`}
             />
           </div>
         </button>
       </div>
 
-      {/* Item info */}
-      <div className="mt-2.5 px-1 pb-1">
-        <h4 className="truncate text-xs font-bold text-(--text) tracking-tight sm:text-sm">
+      {/* Garment Caption & Editorial Metadata */}
+      <div className="pt-2 px-0.5">
+        <h4 className="truncate text-xs font-bold text-(--text) tracking-tight">
           {item.name}
         </h4>
-        <div className="mt-0.5 flex items-center justify-between text-[11px] text-(--muted)">
+        <div className="mt-0.5 flex items-center justify-between text-[11px] text-(--muted) tracking-wide">
           <span className="capitalize">{item.subcategory || item.category}</span>
           {item.timesWorn > 0 && (
             <span className="text-[10px] font-medium text-(--muted)/80">
-              {item.timesWorn}w
+              Worn {item.timesWorn}×
             </span>
           )}
         </div>

@@ -15,7 +15,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
   onClose,
   title,
   children,
-  maxHeight = 'max-h-[85vh]',
+  maxHeight = 'max-h-[88vh]',
 }) => {
   const [mounted, setMounted] = useState(false);
 
@@ -44,31 +44,31 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-xs transition-opacity"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-xs transition-opacity duration-300 animate-fade-in"
     >
       {/* Backdrop tap to close */}
       <div className="absolute inset-0" onClick={onClose} aria-hidden="true" />
 
       {/* Sheet panel */}
       <div
-        className={`relative z-10 w-full max-w-[440px] mx-auto overflow-hidden rounded-t-4xl border-t border-(--border) bg-(--card) shadow-2xl animate-slide-up ${maxHeight} flex flex-col`}
+        className={`relative z-10 w-full max-w-[440px] mx-auto overflow-hidden rounded-t-3xl border-t border-(--border) bg-(--card) shadow-2xl animate-slide-up ${maxHeight} flex flex-col`}
       >
         {/* Drag handle */}
-        <div className="flex justify-center pt-3 pb-1 cursor-grab" onClick={onClose}>
-          <div className="h-1.5 w-12 rounded-full bg-(--border)" />
+        <div className="flex justify-center pt-3 pb-1 cursor-grab" onClick={onClose} aria-hidden="true">
+          <div className="h-1 w-10 rounded-full bg-(--border)" />
         </div>
 
         {/* Sheet header */}
-        <div className="flex items-center justify-between px-6 py-3 border-b border-(--border)/50">
-          <h2 className="text-lg font-bold tracking-tight text-(--text)">
+        <div className="flex items-center justify-between px-6 py-3 border-b border-(--border)">
+          <h2 className="font-serif text-lg font-normal tracking-wide uppercase text-(--ink)">
             {title || ''}
           </h2>
           <button
             onClick={onClose}
-            aria-label="Close dialog"
-            className="flex h-11 w-11 items-center justify-center rounded-full text-(--muted) hover:bg-(--background) hover:text-(--text) transition-colors active:scale-95"
+            aria-label="Close sheet"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-(--muted) hover:text-(--ink) transition-colors active:scale-95"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
@@ -82,3 +82,4 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
 
   return typeof document !== 'undefined' ? createPortal(content, document.body) : null;
 };
+

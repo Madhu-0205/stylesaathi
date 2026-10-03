@@ -1,5 +1,4 @@
 import React from 'react';
-import { Sparkles, ArrowRight } from 'lucide-react';
 import { SmartBuyRecommendation } from '../../types';
 import { BottomSheet } from '../common/BottomSheet';
 import { LazyImage } from '../common/LazyImage';
@@ -21,64 +20,69 @@ export const CombinationsModal: React.FC<CombinationsModalProps> = ({
     recommendation;
 
   return (
-    <BottomSheet isOpen={isOpen} onClose={onClose} title="Unlocked Combinations">
-      <div className="space-y-5">
-        {/* Candidate Card Header */}
-        <div className="flex items-center gap-3.5 rounded-3xl border border-(--accent)/40 bg-(--accent-light)/40 p-4">
-          <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-(--border) bg-(--background)">
-            <LazyImage
-              src={candidate.photo}
-              alt={candidate.name}
-              category={candidate.category}
-              subcategory={candidate.subcategory}
-              colors={candidate.colors}
-            />
+    <BottomSheet isOpen={isOpen} onClose={onClose} title="NEW LOOKS UNLOCKED">
+      <div className="space-y-6 pb-4">
+        {/* Candidate Stylist Spotlight */}
+        <div className="rounded-2xl border border-(--burnished-gold)/50 bg-(--ivory) p-4">
+          <div className="flex items-center gap-4">
+            <div className="h-20 w-16 shrink-0 overflow-hidden rounded-xl border border-(--border) bg-(--paper)">
+              <LazyImage
+                src={candidate.photo}
+                alt={candidate.name}
+                category={candidate.category}
+                subcategory={candidate.subcategory}
+                colors={candidate.colors}
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
+                THE STAPLE PIECE
+              </span>
+              <h4 className="font-serif text-lg font-normal text-(--ink)">
+                {candidate.name}
+              </h4>
+              <p className="text-xs text-(--muted) font-medium">
+                {candidate.priceRange || '₹1,299–₹1,999'} · Unlocks {newOutfitsUnlocked} combinations
+              </p>
+            </div>
           </div>
-          <div className="min-w-0 flex-1">
-            <span className="rounded-full bg-(--accent) px-2 py-0.5 text-[10px] font-bold text-white shadow-2xs">
-              +{newOutfitsUnlocked} New Outfits
-            </span>
-            <h4 className="mt-1 truncate text-sm font-black text-(--text)">
-              {candidate.name}
-            </h4>
-            <p className="text-xs font-semibold text-(--muted)">
-              Estimated: {candidate.priceRange || '₹1,200–₹2,400'}
+
+          <div className="mt-3 pt-3 border-t border-(--border)/70">
+            <p className="font-serif text-xs italic text-(--ink) leading-relaxed">
+              &ldquo;{reason}&rdquo;
             </p>
           </div>
-        </div>
-
-        {/* Why this piece matters */}
-        <div className="rounded-2xl border border-(--border) bg-(--background) p-3.5">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-(--accent)">
-            Why this piece
-          </span>
-          <p className="mt-1 text-xs text-(--text) font-medium leading-relaxed">
-            {reason}
-          </p>
         </div>
 
         {/* Pairs with your existing pieces */}
         {compatibleExistingItems.length > 0 && (
           <div>
-            <h5 className="text-xs font-bold uppercase tracking-wider text-(--muted) mb-2">
-              Pairs with clothes you already own
-            </h5>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="flex items-baseline justify-between mb-2.5">
+              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-(--muted)">
+                PAIRS WITH YOUR CLOSET
+              </span>
+              <span className="text-[11px] text-(--muted)">
+                {compatibleExistingItems.length} matching pieces
+              </span>
+            </div>
+            <div className="no-scrollbar -mx-4 flex gap-2.5 overflow-x-auto px-4 py-1">
               {compatibleExistingItems.map((item) => (
                 <div
                   key={item.id}
-                  className="flex flex-col items-center rounded-xl border border-(--border) bg-(--card) p-1.5"
+                  className="w-20 shrink-0 flex flex-col items-center rounded-xl border border-(--border) bg-(--card) p-1.5"
                 >
-                  <div className="aspect-square w-full overflow-hidden rounded-lg bg-(--background)">
+                  <div className="aspect-square w-full overflow-hidden rounded-lg bg-(--ivory)">
                     <LazyImage
                       src={item.photo}
                       alt={item.name}
                       category={item.category}
                       subcategory={item.subcategory}
                       colors={item.colors}
+                      className="h-full w-full object-cover"
                     />
                   </div>
-                  <span className="mt-1 truncate w-full text-center text-[9px] font-semibold text-(--text)">
+                  <span className="mt-1.5 truncate w-full text-center text-[10px] font-medium text-(--ink)">
                     {item.name}
                   </span>
                 </div>
@@ -87,75 +91,100 @@ export const CombinationsModal: React.FC<CombinationsModalProps> = ({
           </div>
         )}
 
-        {/* Preview Outfits Gallery */}
-        <div>
-          <h5 className="text-xs font-bold uppercase tracking-wider text-(--muted) mb-2.5">
-            Preview of Unlocked Looks
-          </h5>
-          <div className="space-y-3">
-            {previewOutfits.length === 0 ? (
-              <p className="text-xs text-(--muted)">
-                Adds {newOutfitsUnlocked} combination variations across Indian occasions.
-              </p>
-            ) : (
-              previewOutfits.map((outfit, idx) => {
+        {/* Editorial Gallery of Unlocked Outfits */}
+        <div className="space-y-3">
+          <div className="flex items-baseline justify-between border-b border-(--border) pb-2">
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
+              SIMULATED LOOKBOOK
+            </span>
+            <span className="text-[11px] text-(--muted)">
+              {previewOutfits.length} featured {previewOutfits.length === 1 ? 'look' : 'looks'}
+            </span>
+          </div>
+
+          {previewOutfits.length === 0 ? (
+            <p className="text-xs text-(--muted) py-4 text-center italic">
+              Adds {newOutfitsUnlocked} valid styling variations across your occasion calendar.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {previewOutfits.map((outfit, idx) => {
                 const pieces = Object.values(outfit.slots).flat();
                 return (
-                  <div
+                  <article
                     key={idx}
-                    className="rounded-2xl border border-(--border) bg-(--background) p-3"
+                    className="rounded-2xl border border-(--border) bg-(--card) p-4 space-y-3 shadow-2xs"
                   >
-                    <div className="flex items-center justify-between text-[11px] font-bold text-(--accent) mb-2">
-                      <span>{outfit.template}</span>
-                      <span className="text-(--muted) font-normal">&ldquo;{outfit.why}&rdquo;</span>
+                    <div className="flex items-baseline justify-between">
+                      <span className="font-serif text-sm font-semibold tracking-tight text-(--ink)">
+                        LOOK 0{idx + 1}
+                      </span>
+                      <span className="text-[10px] uppercase tracking-wider text-(--muted)">
+                        {outfit.template}
+                      </span>
                     </div>
+
+                    {/* Pieces Grid */}
                     <div className="grid grid-cols-3 gap-2">
                       {pieces.map((p) => {
                         const isCandidatePiece = p.id === candidate.id;
                         return (
                           <div
                             key={p.id}
-                            className={`flex flex-col items-center rounded-xl p-1.5 border ${
+                            className={`relative flex flex-col overflow-hidden rounded-xl border p-1.5 transition-all ${
                               isCandidatePiece
-                                ? 'border-(--accent) bg-(--accent-light)/50'
-                                : 'border-(--border) bg-(--card)'
+                                ? 'border-(--burnished-gold) bg-(--ivory)'
+                                : 'border-(--border) bg-(--paper)'
                             }`}
                           >
-                            <div className="aspect-square w-full overflow-hidden rounded-lg bg-(--background)">
+                            <div className="aspect-square w-full overflow-hidden rounded-lg bg-(--ivory)">
                               <LazyImage
                                 src={p.photo}
                                 alt={p.name}
                                 category={p.category}
                                 subcategory={p.subcategory}
                                 colors={p.colors}
+                                className="h-full w-full object-cover"
                               />
                             </div>
                             <span
-                              className={`mt-1 truncate w-full text-center text-[9px] font-bold ${
-                                isCandidatePiece ? 'text-(--accent)' : 'text-(--text)'
+                              className={`mt-1.5 truncate text-center text-[10px] ${
+                                isCandidatePiece
+                                  ? 'font-bold text-(--kumkum)'
+                                  : 'font-medium text-(--ink)'
                               }`}
                             >
-                              {p.name} {isCandidatePiece && '★'}
+                              {p.name}
                             </span>
+                            {isCandidatePiece && (
+                              <div className="absolute top-2 right-2 rounded bg-(--burnished-gold) px-1 py-0.2 text-[8px] font-bold uppercase tracking-wider text-(--paper)">
+                                New
+                              </div>
+                            )}
                           </div>
                         );
                       })}
                     </div>
-                  </div>
+
+                    <p className="font-serif text-xs italic text-(--muted) border-t border-(--border)/60 pt-2">
+                      &ldquo;{outfit.why}&rdquo;
+                    </p>
+                  </article>
                 );
-              })
-            )}
-          </div>
+              })}
+            </div>
+          )}
         </div>
 
         <button
           type="button"
           onClick={onClose}
-          className="w-full min-h-12 rounded-2xl bg-(--text) px-4 py-3 text-xs font-bold text-(--background) shadow-xs hover:opacity-90 active:scale-95"
+          className="w-full min-h-12 rounded-xl border border-(--ink) bg-(--ink) px-4 py-3 text-xs font-semibold uppercase tracking-wider text-(--paper) shadow-sm transition-all hover:bg-(--ink)/90 active:scale-98"
         >
-          Got It
+          Close Lookbook
         </button>
       </div>
     </BottomSheet>
   );
 };
+

@@ -13,19 +13,24 @@ interface CategoryBalanceBarProps {
 
 export const CategoryBalanceBar: React.FC<CategoryBalanceBarProps> = ({ balance }) => {
   return (
-    <div className="rounded-3xl border border-(--border) bg-(--card) p-4 sm:p-5">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-(--text)">
-          Category Balance
-        </h3>
-        <span className="text-[11px] text-(--muted)">Actual pieces owned</span>
+    <div className="rounded-2xl border border-(--border) bg-(--card) p-5">
+      <div className="flex items-baseline justify-between border-b border-(--border) pb-3 mb-4">
+        <div>
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
+            INVENTORY ANALYSIS
+          </span>
+          <h3 className="mt-0.5 font-serif text-xl font-normal text-(--ink)">
+            Category Proportions
+          </h3>
+        </div>
+        <span className="text-[11px] text-(--muted) font-medium">Physical pieces</span>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-3.5">
         {balance.map((b) => (
           <div key={b.category} className="flex items-center gap-3">
-            {/* Thumbnail / Fallback Icon */}
-            <div className="h-9 w-9 shrink-0 overflow-hidden rounded-xl border border-(--border) bg-(--background)">
+            {/* Small Thumbnail */}
+            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-(--border) bg-(--ivory)">
               {b.sampleItem ? (
                 <LazyImage
                   src={b.sampleItem.photo}
@@ -33,24 +38,25 @@ export const CategoryBalanceBar: React.FC<CategoryBalanceBarProps> = ({ balance 
                   category={b.category}
                   subcategory={b.sampleItem.subcategory}
                   colors={b.sampleItem.colors}
+                  className="h-full w-full object-cover"
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-[10px] font-bold text-(--muted)">
-                  0
+                <div className="flex h-full w-full items-center justify-center text-[10px] font-medium text-(--muted)">
+                  —
                 </div>
               )}
             </div>
 
-            {/* Progress bar and labels */}
+            {/* Subtle proportion line and count */}
             <div className="flex-1 min-w-0">
-              <div className="flex justify-between text-xs font-semibold text-(--text) mb-1">
-                <span>{b.category}</span>
-                <span className="text-(--muted) font-bold">{b.count}</span>
+              <div className="flex justify-between text-xs font-semibold text-(--ink) mb-1.5">
+                <span className="tracking-wide uppercase text-[11px]">{b.category}</span>
+                <span className="text-(--muted) text-[11px]">{b.count} {b.count === 1 ? 'piece' : 'pieces'}</span>
               </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-(--background) border border-(--border)/40">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-(--border)/60">
                 <div
-                  className="h-full rounded-full bg-(--accent) transition-all duration-500"
-                  style={{ width: `${Math.min(100, Math.max(b.count > 0 ? 8 : 0, b.percentage))}%` }}
+                  className="h-full rounded-full bg-(--ink) transition-all duration-700"
+                  style={{ width: `${Math.min(100, Math.max(b.count > 0 ? 6 : 0, b.percentage))}%` }}
                 />
               </div>
             </div>
@@ -60,3 +66,4 @@ export const CategoryBalanceBar: React.FC<CategoryBalanceBarProps> = ({ balance 
     </div>
   );
 };
+

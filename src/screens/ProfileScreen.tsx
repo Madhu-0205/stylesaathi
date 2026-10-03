@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sun, Moon, Shield, Sparkles, RotateCcw, Trash2 } from 'lucide-react';
+import { Sun, Moon, Shield, RotateCcw, Trash2, Sparkles } from 'lucide-react';
 import { useWardrobeContext } from '../context/WardrobeContext';
 import { Header } from '../components/common/Header';
 import { STYLE_VIBES } from '../data/taxonomy';
@@ -21,7 +21,6 @@ export const ProfileScreen: React.FC = () => {
   const totalPieces = items.length;
   const favoritesCount = items.filter((i) => i.favorite).length;
   const totalWears = items.reduce((acc, i) => acc + (i.timesWorn || 0), 0);
-  const mostWorn = [...items].sort((a, b) => b.timesWorn - a.timesWorn)[0];
 
   const toggleVibe = (vibe: string) => {
     if (styleVibes.includes(vibe)) {
@@ -44,81 +43,52 @@ export const ProfileScreen: React.FC = () => {
   };
 
   return (
-    <div className="pb-8 animate-fade-in space-y-5">
+    <div className="pb-12 animate-fade-in space-y-7">
       {/* Top Header */}
       <Header
-        title="Your Profile"
-        subtitle="Wardrobe statistics and personal preferences."
+        title="YOU"
+        subtitle="Your personal wardrobe story & preferences"
         theme={theme}
         onToggleTheme={toggleTheme}
       />
 
-      {/* Stats Summary Grid */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-3xl border border-(--border) bg-(--card) p-4 text-center">
-          <span className="text-2xl font-black text-(--text) sm:text-3xl">
-            {totalPieces}
+      {/* Wardrobe Story Typography Line */}
+      <section className="border-b border-(--border) pb-5">
+        <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-(--kumkum)">
+          WARDROBE STORY
+        </span>
+        <h2 className="mt-1 font-serif text-3xl font-normal text-(--ink) tracking-tight">
+          Your Wardrobe Archive
+        </h2>
+        <div className="mt-3 flex flex-wrap items-baseline gap-x-3 text-xs text-(--muted)">
+          <span className="font-serif text-base italic text-(--ink)">
+            {totalPieces} pieces
           </span>
-          <span className="block mt-1 text-[11px] font-bold uppercase tracking-wider text-(--muted)">
-            Total Pieces
+          <span className="text-(--border)">·</span>
+          <span className="font-serif text-base italic text-(--ink)">
+            {favoritesCount} favorites
           </span>
-        </div>
-
-        <div className="rounded-3xl border border-(--border) bg-(--card) p-4 text-center">
-          <span className="text-2xl font-black text-(--accent) sm:text-3xl">
-            {favoritesCount}
+          <span className="text-(--border)">·</span>
+          <span className="font-serif text-base italic text-(--ink)">
+            {savedOutfits.length} saved looks
           </span>
-          <span className="block mt-1 text-[11px] font-bold uppercase tracking-wider text-(--muted)">
-            Favorites
-          </span>
-        </div>
-
-        <div className="rounded-3xl border border-(--border) bg-(--card) p-4 text-center">
-          <span className="text-2xl font-black text-(--text) sm:text-3xl">
-            {savedOutfits.length}
-          </span>
-          <span className="block mt-1 text-[11px] font-bold uppercase tracking-wider text-(--muted)">
-            Saved Looks
+          <span className="text-(--border)">·</span>
+          <span className="font-serif text-base italic text-(--ink)">
+            {totalWears} times worn
           </span>
         </div>
+      </section>
 
-        <div className="rounded-3xl border border-(--border) bg-(--card) p-4 text-center">
-          <span className="text-2xl font-black text-(--text) sm:text-3xl">
-            {totalWears}
+      {/* Style Preferences Section */}
+      <section className="rounded-2xl border border-(--border) bg-(--card) p-5 sm:p-6 shadow-2xs">
+        <div className="flex items-baseline justify-between border-b border-(--border) pb-3 mb-3.5">
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
+            STYLE PREFERENCES
           </span>
-          <span className="block mt-1 text-[11px] font-bold uppercase tracking-wider text-(--muted)">
-            Total Wears
-          </span>
+          <span className="text-[11px] text-(--muted)">Aesthetic direction</span>
         </div>
-      </div>
-
-      {/* Most Worn Highlight */}
-      {mostWorn && mostWorn.timesWorn > 0 && (
-        <div className="flex items-center justify-between rounded-3xl border border-(--border) bg-(--card) p-4">
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-(--accent)">
-              Most Worn Piece
-            </span>
-            <h4 className="mt-0.5 text-sm font-bold text-(--text)">
-              {mostWorn.name}
-            </h4>
-            <span className="text-xs text-(--muted)">
-              Logged {mostWorn.timesWorn} times across your styled looks
-            </span>
-          </div>
-          <span className="rounded-full bg-(--accent-light) px-3 py-1 text-xs font-bold text-(--accent)">
-            {mostWorn.timesWorn} wears
-          </span>
-        </div>
-      )}
-
-      {/* Style Vibe Preferences */}
-      <div className="rounded-3xl border border-(--border) bg-(--card) p-5">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-(--text) mb-1">
-          Style Preferences
-        </h3>
         <p className="text-xs text-(--muted) mb-3">
-          Tap to toggle your current aesthetic priorities.
+          Select the aesthetics that guide your everyday outfit curation.
         </p>
         <div className="flex flex-wrap gap-2">
           {STYLE_VIBES.map((vibe) => {
@@ -128,10 +98,10 @@ export const ProfileScreen: React.FC = () => {
                 key={vibe}
                 type="button"
                 onClick={() => toggleVibe(vibe)}
-                className={`min-h-9.5 rounded-full px-4 text-xs font-bold transition-all ${
+                className={`min-h-10 rounded-lg px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all active:scale-95 ${
                   isSelected
-                    ? 'bg-(--accent) text-white shadow-xs'
-                    : 'border border-(--border) bg-(--background) text-(--muted) hover:text-(--text)'
+                    ? 'border border-(--ink) bg-(--ink) text-(--paper) shadow-2xs'
+                    : 'border border-(--border) bg-(--card) text-(--muted) hover:border-(--ink)'
                 }`}
               >
                 {vibe}
@@ -139,87 +109,90 @@ export const ProfileScreen: React.FC = () => {
             );
           })}
         </div>
-      </div>
+      </section>
 
       {/* Appearance Section */}
-      <div className="rounded-3xl border border-(--border) bg-(--card) p-5">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-(--text) mb-1">
-          Appearance
-        </h3>
-        <p className="text-xs text-(--muted) mb-3">
-          Switch between warm editorial cream and sleek dark mode.
-        </p>
-        <div className="grid grid-cols-2 gap-2.5">
+      <section className="rounded-2xl border border-(--border) bg-(--card) p-5 sm:p-6 shadow-2xs">
+        <div className="flex items-baseline justify-between border-b border-(--border) pb-3 mb-3.5">
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
+            APPEARANCE
+          </span>
+          <span className="text-[11px] text-(--muted)">Theme palette</span>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
             onClick={() => theme === 'dark' && toggleTheme()}
-            className={`flex min-h-11.5 items-center justify-center gap-2 rounded-2xl border text-xs font-bold transition-all ${
+            className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border text-xs font-semibold uppercase tracking-wider transition-all ${
               theme === 'light'
-                ? 'border-(--accent) bg-(--accent-light)/60 text-(--accent)'
-                : 'border-(--border) bg-(--background) text-(--muted)'
+                ? 'border-(--ink) bg-(--ink) text-(--paper)'
+                : 'border-(--border) bg-(--card) text-(--muted) hover:border-(--ink)'
             }`}
           >
-            <Sun className="h-4 w-4" />
-            <span>Light (Cream)</span>
+            <Sun className="h-4 w-4 text-(--burnished-gold)" />
+            <span>Light (Ivory)</span>
           </button>
 
           <button
             type="button"
             onClick={() => theme === 'light' && toggleTheme()}
-            className={`flex min-h-11.5 items-center justify-center gap-2 rounded-2xl border text-xs font-bold transition-all ${
+            className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border text-xs font-semibold uppercase tracking-wider transition-all ${
               theme === 'dark'
-                ? 'border-(--accent) bg-(--accent-light)/60 text-(--accent)'
-                : 'border-(--border) bg-(--background) text-(--muted)'
+                ? 'border-(--kumkum) bg-(--kumkum) text-white'
+                : 'border-(--border) bg-(--card) text-(--muted) hover:border-(--ink)'
             }`}
           >
             <Moon className="h-4 w-4" />
             <span>Dark (Charcoal)</span>
           </button>
         </div>
-      </div>
+      </section>
 
       {/* Privacy Notice */}
-      <div className="rounded-3xl border border-(--border) bg-(--card) p-5">
-        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-(--muted) mb-1.5">
-          <Shield className="h-4 w-4 text-(--accent)" />
-          <span>Local-First Privacy</span>
+      <section className="rounded-2xl border border-(--border) bg-(--ivory)/60 p-5">
+        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-(--ink) mb-1.5">
+          <Shield className="h-4 w-4 text-(--kumkum)" />
+          <span>Local Wardrobe Privacy</span>
         </div>
         <p className="text-xs text-(--muted) leading-relaxed">
-          Your wardrobe items and photos stay strictly on this device in the MVP.
-          Photos are stored in your browser&apos;s IndexedDB and metadata in localStorage.
-          No images or data are sent to external cloud servers.
+          Your wardrobe photos and styling history stay strictly on this device.
+          Photos are stored in your browser&apos;s IndexedDB and metadata in local storage.
+          No images are ever sent to external cloud servers.
         </p>
-      </div>
+      </section>
 
-      {/* Actions */}
-      <div className="space-y-2.5 pt-2">
+      {/* Wardrobe Management Actions */}
+      <section className="space-y-2.5 pt-1">
         <button
           type="button"
           onClick={loadSample}
-          className="w-full min-h-12 flex items-center justify-center gap-2 rounded-2xl border border-(--border) bg-(--card) px-4 py-3 text-xs font-bold text-(--text) transition-colors hover:border-(--accent) active:scale-95"
+          className="w-full min-h-12 flex items-center justify-center gap-2 rounded-xl border border-(--ink) bg-(--paper) px-4 py-3 text-xs font-semibold uppercase tracking-wider text-(--ink) transition-colors hover:bg-(--ink) hover:text-(--paper) active:scale-98"
         >
-          <Sparkles className="h-4 w-4 text-(--accent)" />
-          <span>Load Sample Indian Wardrobe</span>
+          <Sparkles className="h-3.5 w-3.5 text-(--burnished-gold)" />
+          <span>Reload Sample Indian Wardrobe</span>
         </button>
 
-        <button
-          type="button"
-          onClick={handleResetWardrobe}
-          className="w-full min-h-11.5 flex items-center justify-center gap-2 rounded-2xl border border-(--border) bg-(--background) px-4 py-2.5 text-xs font-bold text-(--muted) hover:text-amber-600 transition-colors active:scale-95"
-        >
-          <RotateCcw className="h-3.5 w-3.5" />
-          <span>Reset Wardrobe Items</span>
-        </button>
+        <div className="grid grid-cols-2 gap-2.5 pt-1">
+          <button
+            type="button"
+            onClick={handleResetWardrobe}
+            className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-(--border) bg-(--card) px-3 py-2 text-xs font-medium text-(--muted) hover:border-amber-600 hover:text-amber-700 transition-colors active:scale-95"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span>Clear Wardrobe</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={handleResetAll}
-          className="w-full min-h-11.5 flex items-center justify-center gap-2 rounded-2xl border border-red-200/60 bg-transparent px-4 py-2.5 text-xs font-bold text-red-600 transition-colors hover:bg-red-50 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-950/20 active:scale-95"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-          <span>Reset All Data</span>
-        </button>
-      </div>
+          <button
+            type="button"
+            onClick={handleResetAll}
+            className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-(--border) bg-(--card) px-3 py-2 text-xs font-medium text-(--muted) hover:border-(--kumkum) hover:text-(--kumkum) transition-colors active:scale-95"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            <span>Reset All</span>
+          </button>
+        </div>
+      </section>
     </div>
   );
 };
+

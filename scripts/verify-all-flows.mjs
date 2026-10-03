@@ -27,6 +27,16 @@ class CDPClient {
     this.ws = new WebSocket(wsUrl);
     this.id = 1;
     this.callbacks = new Map();
+
+    this.ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      if (msg.id && this.callbacks.has(msg.id)) {
+        const { resolve, reject } = this.callbacks.get(msg.id);
+        this.callbacks.delete(msg.id);
+        if (msg.error) reject(msg.error);
+        else resolve(msg.result);
+      }
+    };
   }
 
   waitOpen() {
@@ -178,7 +188,7 @@ async function run() {
 
     // Close Item Detail Sheet
     await cdp.eval(`(() => {
-      const closeBtn = document.querySelector('button[aria-label="Close dialog"]');
+      const closeBtn = document.querySelector('button[aria-label="Close sheet"]') || document.querySelector('button[aria-label="Close dialog"]');
       if (closeBtn) closeBtn.click();
     })()`);
     await new Promise(r => setTimeout(r, 400));
@@ -186,7 +196,7 @@ async function run() {
     // 5. Open Add Item Sheet
     console.log('Opening AddItemSheet...');
     await cdp.eval(`(() => {
-      const addBtn = document.querySelector('button[aria-label="Add clothing item"]') || Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Add'));
+      const addBtn = document.querySelector('button[aria-label="Add clothing item"]') || Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Add Piece') || b.textContent.includes('Add'));
       if (addBtn) addBtn.click();
     })()`);
     await new Promise(r => setTimeout(r, 500));
@@ -194,24 +204,25 @@ async function run() {
 
     // Close Add Item Sheet
     await cdp.eval(`(() => {
-      const closeBtn = document.querySelector('button[aria-label="Close dialog"]');
+      const closeBtn = document.querySelector('button[aria-label="Close sheet"]') || document.querySelector('button[aria-label="Close dialog"]');
       if (closeBtn) closeBtn.click();
     })()`);
     await new Promise(r => setTimeout(r, 400));
 
+
     // 6. Dress Me Screen
-    console.log('Navigating to Dress Me Screen...');
+    console.log('Navigating to Dress Screen...');
     await cdp.eval(`(() => {
-      const btn = Array.from(document.querySelectorAll('nav button')).find(b => b.textContent.includes('Dress Me'));
+      const btn = Array.from(document.querySelectorAll('nav button')).find(b => b.textContent.includes('DRESS') || b.textContent.includes('Dress'));
       if (btn) btn.click();
     })()`);
     await new Promise(r => setTimeout(r, 600));
     await cdp.captureScreenshot(path.join(ARTIFACTS_DIR, 'flow_08_dress_me_screen.png'));
 
     // Open Accessory Drawer in Dress Me
-    console.log('Opening Accessory Drawer in Dress Me...');
+    console.log('Opening Finish The Look Drawer in Dress...');
     await cdp.eval(`(() => {
-      const accBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Add Accessory') || b.querySelector('svg'));
+      const accBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Finish') || b.textContent.includes('Accessory'));
       if (accBtn) accBtn.click();
     })()`);
     await new Promise(r => setTimeout(r, 500));
@@ -219,15 +230,15 @@ async function run() {
 
     // Close Accessory Drawer
     await cdp.eval(`(() => {
-      const closeBtn = document.querySelector('button[aria-label="Close dialog"]');
+      const closeBtn = document.querySelector('button[aria-label="Close sheet"]') || document.querySelector('button[aria-label="Close dialog"]');
       if (closeBtn) closeBtn.click();
     })()`);
     await new Promise(r => setTimeout(r, 400));
 
-    // 7. Gaps Screen
-    console.log('Navigating to Gaps Screen...');
+    // 7. Insight Screen
+    console.log('Navigating to Insight Screen...');
     await cdp.eval(`(() => {
-      const btn = Array.from(document.querySelectorAll('nav button')).find(b => b.textContent.includes('Gaps'));
+      const btn = Array.from(document.querySelectorAll('nav button')).find(b => b.textContent.includes('INSIGHT') || b.textContent.includes('Insight') || b.textContent.includes('Gaps'));
       if (btn) btn.click();
     })()`);
     await new Promise(r => setTimeout(r, 600));
@@ -236,7 +247,7 @@ async function run() {
     // Open Combinations Modal
     console.log('Opening Combinations Modal on Smart Buy card...');
     await cdp.eval(`(() => {
-      const comboBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('See combinations') || b.textContent.includes('See Combinations'));
+      const comboBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('See') && b.textContent.includes('Look'));
       if (comboBtn) comboBtn.click();
     })()`);
     await new Promise(r => setTimeout(r, 500));
@@ -244,15 +255,15 @@ async function run() {
 
     // Close Combinations Modal
     await cdp.eval(`(() => {
-      const closeBtn = document.querySelector('button[aria-label="Close dialog"]');
+      const closeBtn = document.querySelector('button[aria-label="Close sheet"]') || document.querySelector('button[aria-label="Close dialog"]');
       if (closeBtn) closeBtn.click();
     })()`);
     await new Promise(r => setTimeout(r, 400));
 
-    // 8. Profile Screen & Dark Mode
-    console.log('Navigating to Profile Screen...');
+    // 8. You / Profile Screen & Dark Mode
+    console.log('Navigating to You Screen...');
     await cdp.eval(`(() => {
-      const btn = Array.from(document.querySelectorAll('nav button')).find(b => b.textContent.includes('Profile'));
+      const btn = Array.from(document.querySelectorAll('nav button')).find(b => b.textContent.includes('YOU') || b.textContent.includes('You') || b.textContent.includes('Profile'));
       if (btn) btn.click();
     })()`);
     await new Promise(r => setTimeout(r, 600));
@@ -261,7 +272,7 @@ async function run() {
     // Toggle Dark Mode
     console.log('Toggling Dark Mode...');
     await cdp.eval(`(() => {
-      const darkBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Dark (Charcoal)'));
+      const darkBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Dark'));
       if (darkBtn) darkBtn.click();
     })()`);
     await new Promise(r => setTimeout(r, 400));
@@ -270,11 +281,28 @@ async function run() {
     // Switch back to Wardrobe in Dark Mode
     console.log('Verifying Wardrobe Screen in Dark Mode...');
     await cdp.eval(`(() => {
-      const btn = Array.from(document.querySelectorAll('nav button')).find(b => b.textContent.includes('Wardrobe'));
+      const btn = Array.from(document.querySelectorAll('nav button')).find(b => b.textContent.includes('WARDROBE') || b.textContent.includes('Wardrobe'));
       if (btn) btn.click();
     })()`);
     await new Promise(r => setTimeout(r, 500));
     await cdp.captureScreenshot(path.join(ARTIFACTS_DIR, 'flow_14_wardrobe_dark.png'));
+
+    // Switch back to Light Mode for default clean state
+    await cdp.eval(`(() => {
+      const btn = Array.from(document.querySelectorAll('nav button')).find(b => b.textContent.includes('YOU') || b.textContent.includes('You'));
+      if (btn) btn.click();
+    })()`);
+    await new Promise(r => setTimeout(r, 400));
+    await cdp.eval(`(() => {
+      const lightBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Light'));
+      if (lightBtn) lightBtn.click();
+    })()`);
+    await new Promise(r => setTimeout(r, 300));
+    await cdp.eval(`(() => {
+      const btn = Array.from(document.querySelectorAll('nav button')).find(b => b.textContent.includes('WARDROBE') || b.textContent.includes('Wardrobe'));
+      if (btn) btn.click();
+    })()`);
+    await new Promise(r => setTimeout(r, 300));
 
     console.log('All QA flows executed and captured successfully!');
     cdp.close();
@@ -284,3 +312,4 @@ async function run() {
 }
 
 run().catch(console.error);
+

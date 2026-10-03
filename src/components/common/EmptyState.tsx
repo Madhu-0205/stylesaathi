@@ -17,23 +17,23 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   action,
 }) => {
   return (
-    <div className="flex flex-col items-center justify-center p-8 text-center rounded-3xl border border-(--border) bg-(--card)/60 my-4">
+    <div className="flex flex-col items-center justify-center p-8 sm:p-10 text-center rounded-2xl border border-(--border) bg-(--card) my-4 shadow-2xs">
       {icon && (
-        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-(--background) text-(--accent)">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-(--ivory) text-(--burnished-gold) border border-(--border)">
           {icon}
         </div>
       )}
-      <h3 className="text-base font-bold text-(--text) tracking-tight sm:text-lg">
+      <h3 className="font-serif text-2xl font-normal text-(--ink) tracking-tight">
         {title}
       </h3>
-      <p className="mt-1.5 max-w-xs text-xs font-medium text-(--muted) leading-relaxed sm:text-sm">
+      <p className="mt-2 max-w-sm text-xs font-normal text-(--muted) leading-relaxed">
         {description}
       </p>
       {action && (
         <button
           type="button"
           onClick={action.onClick}
-          className="mt-5 inline-flex min-h-11 items-center justify-center rounded-2xl bg-(--accent) px-5 py-2.5 text-xs font-bold text-white shadow-xs transition-transform hover:opacity-95 active:scale-95"
+          className="mt-6 inline-flex min-h-11 items-center justify-center rounded-lg border border-(--ink) bg-(--ink) px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-(--paper) shadow-sm transition-all hover:bg-(--ink)/90 active:scale-95"
         >
           {action.label}
         </button>
@@ -41,3 +41,4 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
     </div>
   );
 };
+

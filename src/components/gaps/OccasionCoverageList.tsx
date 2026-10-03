@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, AlertCircle } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { Occasion } from '../../types';
 
 interface OccasionCoverageListProps {
@@ -12,34 +12,39 @@ interface OccasionCoverageListProps {
 
 export const OccasionCoverageList: React.FC<OccasionCoverageListProps> = ({ coverage }) => {
   return (
-    <div className="rounded-3xl border border-(--border) bg-(--card) p-4 sm:p-5">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-(--text)">
-          Occasion Coverage
-        </h3>
-        <span className="text-[11px] text-(--muted)">Calculated from clean items</span>
+    <div className="rounded-2xl border border-(--border) bg-(--card) p-5">
+      <div className="flex items-baseline justify-between border-b border-(--border) pb-3 mb-4">
+        <div>
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
+            READINESS
+          </span>
+          <h3 className="mt-0.5 font-serif text-xl font-normal text-(--ink)">
+            Occasion Coverage
+          </h3>
+        </div>
+        <span className="text-[11px] text-(--muted) font-medium">Clean items</span>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
         {coverage.map((c) => (
           <div
             key={c.occasion}
-            className={`flex items-center justify-between rounded-2xl border p-2.5 transition-colors ${
+            className={`flex items-center justify-between rounded-xl border p-3 transition-colors ${
               c.isCovered
-                ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-950 dark:bg-emerald-950/20'
-                : 'border-amber-200 bg-amber-50/50 dark:border-amber-950 dark:bg-amber-950/20'
+                ? 'border-(--border) bg-(--ivory)/60'
+                : 'border-dashed border-(--border) bg-(--card)'
             }`}
           >
-            <span className="truncate text-xs font-semibold capitalize text-(--text)">
+            <span className="truncate text-xs font-semibold capitalize text-(--ink)">
               {c.occasion}
             </span>
             {c.isCovered ? (
-              <span className="flex items-center gap-0.5 rounded-full bg-emerald-600 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-2xs">
-                <Check className="h-2.5 w-2.5 stroke-3" />
+              <span className="flex items-center gap-1 rounded bg-(--ink) px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-(--paper)">
+                <Check className="h-2.5 w-2.5 stroke-3 text-(--burnished-gold)" />
                 Ready
               </span>
             ) : (
-              <span className="flex items-center gap-0.5 rounded-full bg-amber-500 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-2xs">
+              <span className="rounded border border-(--border) px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-(--muted)">
                 Gap
               </span>
             )}
@@ -49,3 +54,4 @@ export const OccasionCoverageList: React.FC<OccasionCoverageListProps> = ({ cove
     </div>
   );
 };
+

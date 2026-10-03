@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Heart, Trash2, Plus, Sparkles } from 'lucide-react';
+import { Heart, Trash2, Plus } from 'lucide-react';
 import { WardrobeItem, Status } from '../../types';
 import { BottomSheet } from '../common/BottomSheet';
 import { LazyImage } from '../common/LazyImage';
@@ -55,80 +55,76 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
   };
 
   return (
-    <BottomSheet isOpen={isOpen} onClose={onClose} title="Item Details">
+    <BottomSheet isOpen={isOpen} onClose={onClose} title="GARMENT PROFILE">
       <div className="space-y-5">
-        {/* Large photo container */}
-        <div className="relative aspect-4/3 w-full overflow-hidden rounded-3xl border border-(--border) bg-(--background)">
+        {/* Large Garment Photograph */}
+        <div className="relative aspect-4/3 w-full overflow-hidden rounded-2xl border border-(--border) bg-(--ivory)">
           <LazyImage
             src={item.photo}
             alt={name}
             category={item.category}
             subcategory={item.subcategory}
             colors={item.colors}
-            className="h-full w-full"
+            className="h-full w-full object-cover"
             isHero
           />
           <button
             type="button"
             onClick={() => setFavorite(!favorite)}
             aria-label={favorite ? 'Remove from favorites' : 'Add to favorites'}
-            className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 backdrop-blur-xs text-(--muted) shadow-md transition-transform hover:scale-105 active:scale-95 dark:bg-black/70"
+            className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full bg-(--paper)/90 backdrop-blur-xs text-(--muted) shadow-sm transition-transform hover:scale-105 active:scale-95"
           >
             <Heart
               className={`h-5 w-5 transition-colors ${
                 favorite
-                  ? 'fill-(--accent) stroke-(--accent)'
-                  : 'stroke-(--text)'
+                  ? 'fill-(--kumkum) stroke-(--kumkum)'
+                  : 'stroke-(--ink)'
               }`}
             />
           </button>
         </div>
 
-        {/* Name input */}
+        {/* Garment Title & Metadata */}
         <div>
-          <label className="text-[11px] font-bold uppercase tracking-wider text-(--muted)">
-            Item Name
-          </label>
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
+            {item.category} · {item.subcategory || 'staple'}
+          </span>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="mt-1 w-full rounded-2xl border border-(--border) bg-(--background) px-4 py-3 text-sm font-bold text-(--text) outline-none focus:border-(--accent)"
+            className="mt-1 w-full rounded-xl border border-(--border) bg-(--paper) px-3.5 py-2.5 font-serif text-xl font-normal text-(--ink) outline-none focus:border-(--ink)"
           />
         </div>
 
-        {/* Categories and colors badges */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-full bg-(--background) px-3 py-1 text-xs font-semibold text-(--text) border border-(--border)">
-            {item.category} · {item.subcategory || 'piece'}
-          </span>
+        {/* Colors & Formality row */}
+        <div className="flex flex-wrap items-center gap-2 border-b border-(--border) pb-3.5">
           {item.colors.map((c, i) => (
             <span
               key={i}
-              className="inline-flex items-center gap-1.5 rounded-full bg-(--background) px-3 py-1 text-xs font-semibold capitalize text-(--muted) border border-(--border)"
+              className="inline-flex items-center gap-1.5 rounded-md bg-(--ivory) px-2.5 py-1 text-xs font-medium capitalize text-(--ink) border border-(--border)"
             >
               <span
-                className="h-2 w-2 rounded-full border border-black/20"
+                className="h-2 w-2 rounded-full border border-black/10"
                 style={{ backgroundColor: c }}
               />
               {c}
             </span>
           ))}
-          <span className="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-(--muted)">
-            Formality:
-            <span className="font-bold text-(--text)">{item.formality}/5</span>
+          <span className="ml-auto text-xs text-(--muted) font-medium">
+            Formality: <strong className="text-(--ink)">{item.formality}/5</strong>
           </span>
         </div>
 
-        {/* Status switcher */}
+        {/* Physical Wardrobe State (Laundry) */}
         <div>
-          <label className="text-[11px] font-bold uppercase tracking-wider text-(--muted)">
-            Laundry & Cleanliness
+          <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-(--muted)">
+            WARDROBE STATE
           </label>
           <div className="mt-2 grid grid-cols-3 gap-2">
             {(
               [
-                { id: 'clean', label: 'Ready (Clean)' },
+                { id: 'clean', label: 'Clean & Ready' },
                 { id: 'needs_washing', label: 'Needs Wash' },
                 { id: 'in_laundry', label: 'In Laundry' },
               ] as { id: Status; label: string }[]
@@ -137,14 +133,14 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
                 key={s.id}
                 type="button"
                 onClick={() => setStatus(s.id)}
-                className={`min-h-11 rounded-2xl px-2 py-2 text-xs font-bold transition-all ${
+                className={`min-h-11 rounded-xl px-2 py-2 text-xs font-semibold transition-all ${
                   status === s.id
                     ? s.id === 'clean'
-                      ? 'bg-emerald-600 text-white shadow-xs'
+                      ? 'border border-(--ink) bg-(--ink) text-(--paper) shadow-2xs'
                       : s.id === 'needs_washing'
-                      ? 'bg-amber-500 text-white shadow-xs'
-                      : 'bg-stone-600 text-white shadow-xs'
-                    : 'border border-(--border) bg-(--card) text-(--muted) hover:border-(--muted)'
+                      ? 'border border-amber-600 bg-amber-600 text-white shadow-2xs'
+                      : 'border border-stone-600 bg-stone-700 text-white shadow-2xs'
+                    : 'border border-(--border) bg-(--card) text-(--muted) hover:border-(--ink)'
                 }`}
               >
                 {s.label}
@@ -153,35 +149,37 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
           </div>
         </div>
 
-        {/* Times worn tracker */}
-        <div className="flex items-center justify-between rounded-2xl border border-(--border) bg-(--background) p-3">
+        {/* Wear History */}
+        <div className="flex items-center justify-between rounded-xl border border-(--border) bg-(--ivory) p-3.5">
           <div>
-            <span className="text-xs font-bold text-(--text)">Wear History</span>
-            <p className="text-[11px] text-(--muted)">
-              Worn <strong className="text-(--text)">{timesWorn}</strong> times so far
+            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-(--muted)">
+              WEAR HISTORY
+            </span>
+            <p className="font-serif text-sm italic text-(--ink)">
+              Worn {timesWorn} {timesWorn === 1 ? 'time' : 'times'} so far
             </p>
           </div>
           <button
             type="button"
             onClick={handleWearIncrement}
-            className="flex min-h-11 items-center gap-1.5 rounded-xl bg-(--card) px-3 py-2 text-xs font-bold text-(--text) border border-(--border) shadow-2xs hover:border-(--accent) active:scale-95"
+            className="flex min-h-11 items-center gap-1.5 rounded-lg border border-(--ink) bg-(--paper) px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider text-(--ink) transition-colors hover:bg-(--ink) hover:text-(--paper) active:scale-95"
           >
-            <Plus className="h-4 w-4 text-(--accent)" />
-            Log Wear
+            <Plus className="h-3.5 w-3.5 text-(--burnished-gold)" />
+            <span>Log Wear</span>
           </button>
         </div>
 
-        {/* Note input */}
+        {/* Styling or Care Note */}
         <div>
-          <label className="text-[11px] font-bold uppercase tracking-wider text-(--muted)">
-            Styling or Care Note
+          <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-(--muted)">
+            STYLING OR FABRIC CARE NOTE
           </label>
           <textarea
             rows={2}
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="e.g. Dry clean only, shrinks slightly, great with sneakers"
-            className="mt-1 w-full rounded-2xl border border-(--border) bg-(--background) p-3 text-xs text-(--text) outline-none focus:border-(--accent)"
+            placeholder="e.g. Dry clean recommended, pairs elegantly with tan Kolhapuris"
+            className="mt-1.5 w-full rounded-xl border border-(--border) bg-(--paper) p-3 text-xs text-(--ink) outline-none focus:border-(--ink)"
           />
         </div>
 
@@ -191,15 +189,15 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
             type="button"
             onClick={handleDelete}
             disabled={isDeleting}
-            aria-label="Delete item"
-            className="flex min-h-12 w-12 items-center justify-center rounded-2xl border border-red-200 text-red-600 transition-colors hover:bg-red-50 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-950/40 active:scale-95"
+            aria-label="Remove item from wardrobe"
+            className="flex min-h-12 w-12 items-center justify-center rounded-xl border border-red-200 text-red-600 transition-colors hover:bg-red-50 dark:border-red-900/60 dark:text-red-400 active:scale-95"
           >
-            <Trash2 className="h-5 w-5" />
+            <Trash2 className="h-4.5 w-4.5" />
           </button>
           <button
             type="button"
             onClick={handleSave}
-            className="flex-1 min-h-12 rounded-2xl bg-(--accent) px-4 py-3 text-xs font-bold text-white shadow-xs transition-transform hover:opacity-95 active:scale-95"
+            className="flex-1 min-h-12 rounded-xl border border-(--ink) bg-(--ink) px-4 py-3 text-xs font-semibold uppercase tracking-wider text-(--paper) shadow-sm transition-all hover:bg-(--ink)/90 active:scale-98"
           >
             Save Changes
           </button>
@@ -208,3 +206,4 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
     </BottomSheet>
   );
 };
+

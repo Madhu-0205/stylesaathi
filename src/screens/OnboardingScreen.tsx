@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, ArrowRight, Check } from 'lucide-react';
+import { ArrowRight, Check, Sparkles } from 'lucide-react';
 import { useWardrobeContext } from '../context/WardrobeContext';
 import { STYLE_VIBES } from '../data/taxonomy';
 
@@ -9,25 +9,22 @@ export const OnboardingScreen: React.FC = () => {
 
   const slides = [
     {
-      badge: 'Personal Wardrobe',
+      kicker: 'PERSONAL WARDROBE',
       title: 'Your wardrobe. Your style.',
       subtitle:
         'Turn the clothes you already own into styled, complete outfits you will actually want to wear.',
-      accentLetter: 'Saathi',
     },
     {
-      badge: 'Indian-First Styling',
+      kicker: 'INDIAN OCCASION STYLING',
       title: 'Dress for the moment.',
       subtitle:
-        'From college fits to weddings, kurtas to sneakers, office meetings to Diwali pujas.',
-      accentLetter: 'Occasions',
+        'From college fits to weddings, cotton kurtas to straight denim, workday meetings to festive evenings.',
     },
     {
-      badge: 'Fashion Intelligence',
+      kicker: 'WARDROBE INTELLIGENCE',
       title: 'Buy smarter. Style more.',
       subtitle:
-        'Find the single missing piece that unlocks your next 10–15 complete outfits.',
-      accentLetter: 'Gaps',
+        'Discover the single missing staple that unlocks your next 10–15 complete outfits without overbuying.',
     },
   ];
 
@@ -51,46 +48,45 @@ export const OnboardingScreen: React.FC = () => {
   };
 
   return (
-    <div className="mobile-shell flex min-h-screen flex-col justify-between p-6 sm:p-8 animate-fade-in">
-      {/* Brand Header */}
-      <div className="flex items-center justify-between pt-2">
-        <div className="flex items-center gap-1.5">
-          <span className="text-xl font-black tracking-tight text-(--text)">
-            Style<span className="text-(--accent)">Saathi</span>
+    <div className="mobile-shell flex min-h-screen flex-col justify-between p-6 sm:p-8 animate-fade-in bg-(--background)">
+      {/* Refined Brand Header */}
+      <div className="flex items-center justify-between pt-2 border-b border-(--border) pb-3">
+        <div>
+          <span className="font-serif text-lg tracking-[0.25em] font-semibold text-(--ink)">
+            STYLESAATHI
+          </span>
+          <span className="block text-[8px] tracking-[0.2em] uppercase text-(--burnished-gold) font-bold">
+            YOUR WARDROBE, THOUGHTFULLY STYLED
           </span>
         </div>
-        <span className="rounded-full bg-(--background) px-3 py-1 text-[11px] font-bold text-(--muted) border border-(--border)">
-          Step {step + 1} of 3
+        <span className="text-[11px] font-serif italic text-(--muted)">
+          0{step + 1} / 03
         </span>
       </div>
 
       {/* Main Slide Card */}
       <div className="my-auto py-6">
-        <div className="relative overflow-hidden rounded-3xl border border-(--border) bg-(--card) p-6 sm:p-8 shadow-sm">
-          {/* Subtle background glow */}
-          <div className="absolute -top-12 -right-12 h-36 w-36 rounded-full bg-(--accent)/10 blur-2xl pointer-events-none" />
-
-          {/* Badge */}
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-(--accent-light) px-3 py-1 text-[11px] font-black uppercase tracking-wider text-(--accent) mb-4">
-            <Sparkles className="h-3 w-3 stroke-[2.5]" />
-            <span>{currentSlide.badge}</span>
-          </div>
+        <div className="rounded-2xl border border-(--border) bg-(--card) p-6 sm:p-8 shadow-xs">
+          {/* Kicker */}
+          <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-(--kumkum)">
+            {currentSlide.kicker}
+          </span>
 
           {/* Title */}
-          <h1 className="text-3xl sm:text-4xl font-black text-(--text) tracking-tight leading-tight">
+          <h1 className="mt-2 font-serif text-3xl sm:text-4xl font-normal text-(--ink) tracking-tight leading-tight">
             {currentSlide.title}
           </h1>
 
           {/* Subtitle */}
-          <p className="mt-3 text-sm text-(--muted) leading-relaxed font-medium">
+          <p className="mt-3 text-xs sm:text-sm text-(--muted) leading-relaxed font-normal">
             {currentSlide.subtitle}
           </p>
 
           {/* Step 2 Vibe selection interactive chips */}
           {step === 1 && (
-            <div className="mt-6 pt-5 border-t border-(--border)/60">
-              <label className="text-xs font-bold uppercase tracking-wider text-(--muted) block mb-2.5">
-                Pick your aesthetic vibes:
+            <div className="mt-6 pt-5 border-t border-(--border)">
+              <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-(--muted) block mb-2.5">
+                CURATE YOUR AESTHETIC VIBES:
               </label>
               <div className="flex flex-wrap gap-2">
                 {STYLE_VIBES.map((vibe) => {
@@ -100,13 +96,13 @@ export const OnboardingScreen: React.FC = () => {
                       key={vibe}
                       type="button"
                       onClick={() => toggleVibe(vibe)}
-                      className={`inline-flex min-h-10 items-center gap-1.5 rounded-full px-4 text-xs font-bold transition-all ${
+                      className={`inline-flex min-h-10 items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all active:scale-95 ${
                         isSelected
-                          ? 'bg-(--accent) text-white shadow-xs'
-                          : 'border border-(--border) bg-(--background) text-(--text) hover:border-(--muted)'
+                          ? 'border border-(--ink) bg-(--ink) text-(--paper) shadow-2xs'
+                          : 'border border-(--border) bg-(--card) text-(--muted) hover:border-(--ink)'
                       }`}
                     >
-                      {isSelected && <Check className="h-3.5 w-3.5 stroke-3" />}
+                      {isSelected && <Check className="h-3 w-3 stroke-3 text-(--burnished-gold)" />}
                       <span>{vibe}</span>
                     </button>
                   );
@@ -123,25 +119,25 @@ export const OnboardingScreen: React.FC = () => {
           <button
             type="button"
             onClick={() => setStep(step + 1)}
-            className="w-full min-h-13 inline-flex items-center justify-center gap-2 rounded-2xl bg-(--accent) px-5 py-3.5 text-sm font-bold text-white shadow-md transition-transform hover:opacity-95 active:scale-[0.98]"
+            className="w-full min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-(--ink) bg-(--ink) px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-(--paper) shadow-sm transition-all hover:bg-(--ink)/90 active:scale-98"
           >
             <span>Continue</span>
-            <ArrowRight className="h-4 w-4" />
+            <ArrowRight className="h-3.5 w-3.5 text-(--burnished-gold)" />
           </button>
         ) : (
           <div className="space-y-2.5">
             <button
               type="button"
               onClick={handleFinishWithSample}
-              className="w-full min-h-13 inline-flex items-center justify-center gap-2 rounded-2xl bg-(--accent) px-5 py-3.5 text-sm font-bold text-white shadow-md transition-transform hover:opacity-95 active:scale-[0.98]"
+              className="w-full min-h-12.5 inline-flex items-center justify-center gap-2 rounded-xl border border-(--ink) bg-(--ink) px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-(--paper) shadow-sm transition-all hover:bg-(--ink)/90 active:scale-98"
             >
-              <Sparkles className="h-4 w-4" />
+              <Sparkles className="h-3.5 w-3.5 text-(--burnished-gold)" />
               <span>Load Sample Indian Wardrobe</span>
             </button>
             <button
               type="button"
               onClick={handleFinishEmpty}
-              className="w-full min-h-12 rounded-2xl border border-(--border) bg-(--card) px-5 py-3 text-xs font-bold text-(--text) transition-colors hover:border-(--accent) active:scale-95"
+              className="w-full min-h-11 rounded-xl border border-(--border) bg-(--card) px-5 py-3 text-xs font-semibold uppercase tracking-wider text-(--muted) hover:border-(--ink) hover:text-(--ink) transition-colors active:scale-98"
             >
               Start Empty With My Clothes
             </button>
@@ -149,7 +145,7 @@ export const OnboardingScreen: React.FC = () => {
         )}
 
         {/* Step dots - 44px touch target with sleek indicator */}
-        <div className="flex justify-center gap-1 pt-1">
+        <div className="flex justify-center gap-1 pt-2">
           {slides.map((_, i) => (
             <button
               key={i}
@@ -159,8 +155,8 @@ export const OnboardingScreen: React.FC = () => {
               className="flex h-11 w-8 items-center justify-center rounded-full transition-transform active:scale-90"
             >
               <span
-                className={`h-2 rounded-full transition-all ${
-                  i === step ? 'w-6 bg-(--accent)' : 'w-2 bg-(--border)'
+                className={`h-1.5 rounded-full transition-all ${
+                  i === step ? 'w-6 bg-(--ink)' : 'w-1.5 bg-(--border)'
                 }`}
               />
             </button>
@@ -170,3 +166,4 @@ export const OnboardingScreen: React.FC = () => {
     </div>
   );
 };
+

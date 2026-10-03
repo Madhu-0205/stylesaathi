@@ -26,11 +26,11 @@ export const App: React.FC = () => {
           {currentTab === 'Wardrobe' && (
             <WardrobeScreen onOpenAddItem={() => setIsAddOpen(true)} />
           )}
-          {currentTab === 'Dress Me' && (
+          {currentTab === 'Dress' && (
             <DressMeScreen onGoToWardrobe={() => setCurrentTab('Wardrobe')} />
           )}
-          {currentTab === 'Gaps' && <GapsScreen />}
-          {currentTab === 'Profile' && <ProfileScreen />}
+          {currentTab === 'Insight' && <GapsScreen />}
+          {currentTab === 'You' && <ProfileScreen />}
         </main>
 
         {/* Global sticky 4-tab bottom navigation */}

@@ -1,33 +1,62 @@
 @import "tailwindcss";
 
+@theme {
+  --font-serif: 'Cormorant Garamond', Garamond, 'Times New Roman', Georgia, serif;
+  --font-sans: 'Manrope', Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
 :root {
-  --background: #F8F5F0;
-  --cream: #FFFDFC;
-  --card: #FFFFFF;
-  --text: #181515;
-  --muted: #77716D;
-  --border: #E8E1DB;
-  --accent: #B32663;
-  --accent-light: #FDF0F5;
-  --accent-foreground: #FFFFFF;
-  --success: #2E7D32;
-  --warning: #ED6C02;
-  --danger: #D32F2F;
+  /* Surfaces & Ink (Warm Ivory & Pure Paper) */
+  --ivory: #F7F2E9;
+  --paper: #FFFDF8;
+  --background: #F7F2E9;
+  --card: #FFFDF8;
+  --text: #171514;
+  --ink: #171514;
+  --muted: #756F69;
+  --muted-light: #9E968E;
+  --border: #E5DDD2;
+  --border-light: #EFE8DE;
+
+  /* Restrained Indian Fashion Accents */
+  --kumkum: #9D173F;
+  --marigold: #D49A27;
+  --mehndi: #586044;
+  --indigo: #243A56;
+  --burnished-gold: #A88445;
+  --gold-rule: #C6A664;
+
+  /* Primary Accent Token */
+  --accent: #9D173F;
+  --accent-light: #FBF0F3;
+  --accent-hover: #831032;
+
+  --success: #2E6B3E;
+  --warning: #B37418;
+  --danger: #9D173F;
 }
 
 .dark {
-  --background: #151313;
-  --cream: #1C1919;
-  --card: #211D1D;
-  --text: #F7F2EE;
-  --muted: #A39D98;
-  --border: #332B2B;
-  --accent: #E0357F;
-  --accent-light: #3D1426;
-  --accent-foreground: #FFFFFF;
-  --success: #4CAF50;
-  --warning: #FFA726;
-  --danger: #EF5350;
+  /* Deep Charcoal, Warm Black, Muted Ivory & Burnished Gold */
+  --background: #141312;
+  --card: #1D1A19;
+  --paper: #1D1A19;
+  --text: #F4EFEB;
+  --ink: #F4EFEB;
+  --muted: #9E968E;
+  --muted-light: #7A736C;
+  --border: #2D2825;
+  --border-light: #24201E;
+
+  --accent: #D4436A;
+  --accent-light: #2D141C;
+  --accent-hover: #E3597F;
+  --burnished-gold: #C49F5A;
+  --gold-rule: #A88445;
+
+  --success: #4D8F5F;
+  --warning: #CCA03B;
+  --danger: #D4436A;
 }
 
 * {
@@ -38,9 +67,64 @@ body {
   margin: 0;
   background-color: var(--background);
   color: var(--text);
-  font-family: 'Plus Jakarta Sans', Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
+  text-rendering: optimizeLegibility;
+}
+
+/* Editorial Typography Utilities */
+.font-serif {
+  font-family: var(--font-serif);
+}
+
+.font-sans {
+  font-family: var(--font-sans);
+}
+
+.editorial-title {
+  font-family: var(--font-serif);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.editorial-sub {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  letter-spacing: 0.01em;
+  line-height: 1.6;
+}
+
+.caps-label {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Indian Textile-inspired Rule */
+.textile-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--border) 20%,
+    var(--border) 80%,
+    transparent 100%
+  );
+}
+
+.gold-accent-rule {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--gold-rule) 50%,
+    transparent 100%
+  );
+  opacity: 0.6;
 }
 
 button, input, textarea, select {
@@ -52,7 +136,7 @@ button {
 }
 
 button:focus-visible, input:focus-visible, textarea:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 1.5px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -74,11 +158,11 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   scrollbar-width: none;
 }
 
-/* Animations */
+/* Restrained Luxury Motion Animations */
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
@@ -95,12 +179,27 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   }
 }
 
+@keyframes garmentReveal {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 .animate-fade-in {
-  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-slide-up {
-  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-reveal {
+  animation: garmentReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -122,3 +221,18 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   position: relative;
   background-color: var(--background);
 }
+
+@media (min-width: 640px) {
+  body {
+    background-color: #EDE7DC;
+  }
+  .dark body {
+    background-color: #0c0b0a;
+  }
+  .mobile-shell {
+    box-shadow: 0 0 50px -10px rgba(23, 21, 20, 0.09);
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+  }
+}
+
