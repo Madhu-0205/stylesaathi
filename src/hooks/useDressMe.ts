@@ -4,16 +4,16 @@ import { Occasion, Season, GeneratedOutfit, WardrobeItem } from '../types';
 import { generateOutfits } from '../engine';
 
 export function useDressMe() {
-  const { items, updateItem, saveOutfit } = useWardrobeContext();
+  const { items, preferences, updateItem, saveOutfit } = useWardrobeContext();
   const [occasion, setOccasion] = useState<Occasion>('college');
   const [season, setSeason] = useState<Season>('summer');
   const [seed, setSeed] = useState<number>(() => Math.random());
   const [activeAccessories, setActiveAccessories] = useState<Record<number, WardrobeItem | null>>({});
 
-  // Generate 2-4 outfits for chosen occasion & season
+  // Generate 2-4 outfits for chosen occasion & season with personal style preferences
   const outfits = useMemo(() => {
-    return generateOutfits(items, occasion, season, 4, seed);
-  }, [items, occasion, season, seed]);
+    return generateOutfits(items, occasion, season, 4, seed, preferences);
+  }, [items, occasion, season, seed, preferences]);
 
   // Clean accessories available in wardrobe
   const availableAccessories = useMemo(() => {

@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
-import { WardrobeItem, SavedOutfit, GeneratedOutfit } from '../types';
+import { WardrobeItem, SavedOutfit, GeneratedOutfit, StylePreferences, OutfitPlan, PlanStatus } from '../types';
 import { wardrobeRepository } from '../repositories/LocalStorageWardrobeRepository';
+import { preferencesRepository, DEFAULT_STYLE_PREFERENCES } from '../repositories/LocalStoragePreferencesRepository';
+import { calendarRepository } from '../repositories/LocalStorageCalendarRepository';
 import { sampleWardrobe } from '../data/sampleWardrobe';
 import { clearImages, deleteImage } from '../services/imageStore';
 import { migrateLegacyPhotos } from '../services/migration';
@@ -11,6 +13,7 @@ interface SettingsData {
   theme: 'light' | 'dark';
   onboarded: boolean;
   styleVibes: string[];
+  setupCompleted?: boolean;
 }
 
 interface WardrobeContextValue {
@@ -19,7 +22,10 @@ interface WardrobeContextValue {
   theme: 'light' | 'dark';
   onboarded: boolean;
   styleVibes: string[];
+  setupCompleted: boolean;
   savedOutfits: SavedOutfit[];
+  preferences: StylePreferences;
+  plans: OutfitPlan[];
   toast: string | null;
   showToast: (msg: string) => void;
   clearToast: () => void;
@@ -32,6 +38,12 @@ interface WardrobeContextValue {
   toggleTheme: () => void;
   setOnboarded: (val: boolean) => void;
   setStyleVibes: (vibes: string[]) => void;
+  setSetupCompleted: (val: boolean) => void;
+  updatePreferences: (patch: Partial<StylePreferences>) => Promise<void>;
+  savePlan: (plan: Omit<OutfitPlan, 'id' | 'createdAt' | 'updatedAt'> | OutfitPlan) => Promise<OutfitPlan>;
+  deletePlan: (id: string) => Promise<void>;
+  updatePlanStatus: (id: string, status: PlanStatus) => Promise<void>;
+  markOutfitWornOnDate: (outfit: GeneratedOutfit, dateStr: string, accessory?: WardrobeItem | null) => Promise<void>;
   saveOutfit: (outfit: GeneratedOutfit, name?: string) => Promise<SavedOutfit>;
   deleteSavedOutfit: (id: string) => Promise<void>;
 }
@@ -41,6 +53,8 @@ const WardrobeContext = createContext<WardrobeContextValue | null>(null);
 export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<WardrobeItem[]>([]);
   const [savedOutfits, setSavedOutfits] = useState<SavedOutfit[]>([]);
+  const [preferences, setPreferences] = useState<StylePreferences>(DEFAULT_STYLE_PREFERENCES);
+  const [plans, setPlans] = useState<OutfitPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -52,13 +66,13 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setToast(null);
   }, []);
 
-  // Settings state (theme, onboarded, styleVibes)
+  // Settings state (theme, onboarded, styleVibes, setupCompleted)
   const [settings, setSettings] = useState<SettingsData>(() => {
     try {
       const raw = localStorage.getItem(SETTINGS_KEY);
       if (raw) return JSON.parse(raw);
     } catch {}
-    return { theme: 'light', onboarded: false, styleVibes: ['Casual'] };
+    return { theme: 'light', onboarded: false, styleVibes: ['Casual'], setupCompleted: false };
   });
 
   // Sync settings to localStorage
@@ -75,13 +89,15 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [settings.theme]);
 
-  // Load items and saved outfits on mount + execute safe migration
+  // Load items, saved outfits, preferences, and plans on mount + execute safe migration
   const refreshData = useCallback(async () => {
     try {
       setLoading(true);
-      const [loadedItems, loadedOutfits] = await Promise.all([
+      const [loadedItems, loadedOutfits, loadedPrefs, loadedPlans] = await Promise.all([
         wardrobeRepository.getItems(),
         wardrobeRepository.getSavedOutfits(),
+        preferencesRepository.getPreferences(),
+        calendarRepository.getPlans(),
       ]);
 
       // Run safe idempotent migration from base64 photos to IndexedDB
@@ -96,6 +112,8 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
 
       setSavedOutfits(loadedOutfits);
+      if (loadedPrefs) setPreferences(loadedPrefs);
+      if (loadedPlans) setPlans(loadedPlans);
     } catch (err) {
       console.warn('Error refreshing wardrobe data:', err);
     } finally {
@@ -168,9 +186,13 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       console.warn('Failed to clear images during resetAll:', err);
     }
     await wardrobeRepository.clear();
+    await preferencesRepository.clear();
+    await calendarRepository.clear();
     setItems([]);
     setSavedOutfits([]);
-    setSettings({ theme: 'light', onboarded: false, styleVibes: [] });
+    setPreferences(DEFAULT_STYLE_PREFERENCES);
+    setPlans([]);
+    setSettings({ theme: 'light', onboarded: false, styleVibes: [], setupCompleted: false });
   }, []);
 
   const toggleTheme = useCallback(() => {
@@ -184,6 +206,93 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const setStyleVibes = useCallback((vibes: string[]) => {
     setSettings((s) => ({ ...s, styleVibes: vibes }));
   }, []);
+
+  const setSetupCompleted = useCallback((val: boolean) => {
+    setSettings((s) => ({ ...s, setupCompleted: val }));
+  }, []);
+
+  const updatePreferences = useCallback(
+    async (patch: Partial<StylePreferences>) => {
+      const updated: StylePreferences = {
+        ...preferences,
+        ...patch,
+        updatedAt: Date.now(),
+      };
+      await preferencesRepository.savePreferences(updated);
+      setPreferences(updated);
+    },
+    [preferences]
+  );
+
+  const savePlan = useCallback(
+    async (planData: Omit<OutfitPlan, 'id' | 'createdAt' | 'updatedAt'> | OutfitPlan) => {
+      const id =
+        'id' in planData && planData.id
+          ? planData.id
+          : `plan_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      const fullPlan: OutfitPlan = {
+        ...planData,
+        id,
+        createdAt: 'createdAt' in planData ? planData.createdAt : Date.now(),
+        updatedAt: Date.now(),
+      };
+      await calendarRepository.savePlan(fullPlan);
+      setPlans((prev) => {
+        const idx = prev.findIndex((p) => p.date === fullPlan.date || p.id === fullPlan.id);
+        if (idx >= 0) {
+          const copy = [...prev];
+          copy[idx] = fullPlan;
+          return copy;
+        }
+        return [...prev, fullPlan];
+      });
+      return fullPlan;
+    },
+    []
+  );
+
+  const deletePlan = useCallback(async (id: string) => {
+    await calendarRepository.deletePlan(id);
+    setPlans((prev) => prev.filter((p) => p.id !== id));
+  }, []);
+
+  const updatePlanStatus = useCallback(async (id: string, status: PlanStatus) => {
+    await calendarRepository.updatePlanStatus(id, status);
+    setPlans((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, status, updatedAt: Date.now() } : p))
+    );
+  }, []);
+
+  const markOutfitWornOnDate = useCallback(
+    async (outfit: GeneratedOutfit, dateStr: string, accessory?: WardrobeItem | null) => {
+      const allPieces = Object.values(outfit.slots).flat();
+      if (accessory) {
+        allPieces.push(accessory);
+      }
+      const now = Date.now();
+      for (const piece of allPieces) {
+        await updateItem(piece.id, {
+          timesWorn: (piece.timesWorn || 0) + 1,
+          lastWorn: now,
+        });
+      }
+      // If a plan exists for this date, update its status to 'worn'
+      const existingPlan = plans.find((p) => p.date === dateStr);
+      if (existingPlan) {
+        await updatePlanStatus(existingPlan.id, 'worn');
+      } else {
+        // Create a worn plan record for this date in Style Calendar
+        await savePlan({
+          date: dateStr,
+          outfit,
+          accessory,
+          occasion: 'everyday',
+          status: 'worn',
+        });
+      }
+    },
+    [plans, savePlan, updateItem, updatePlanStatus]
+  );
 
   const saveOutfit = useCallback(async (outfit: GeneratedOutfit, name?: string) => {
     const saved = await wardrobeRepository.saveOutfit(outfit, name);
@@ -203,7 +312,10 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       theme: settings.theme,
       onboarded: settings.onboarded,
       styleVibes: settings.styleVibes,
+      setupCompleted: Boolean(settings.setupCompleted),
       savedOutfits,
+      preferences,
+      plans,
       toast,
       showToast,
       clearToast,
@@ -216,6 +328,12 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       toggleTheme,
       setOnboarded,
       setStyleVibes,
+      setSetupCompleted,
+      updatePreferences,
+      savePlan,
+      deletePlan,
+      updatePlanStatus,
+      markOutfitWornOnDate,
       saveOutfit,
       deleteSavedOutfit,
     }),
@@ -224,6 +342,8 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       loading,
       settings,
       savedOutfits,
+      preferences,
+      plans,
       toast,
       showToast,
       clearToast,
@@ -236,6 +356,12 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       toggleTheme,
       setOnboarded,
       setStyleVibes,
+      setSetupCompleted,
+      updatePreferences,
+      savePlan,
+      deletePlan,
+      updatePlanStatus,
+      markOutfitWornOnDate,
       saveOutfit,
       deleteSavedOutfit,
     ]

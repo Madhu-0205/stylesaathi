@@ -1,20 +1,22 @@
 import React, { useState } from 'react';
-import { RefreshCw, AlertCircle } from 'lucide-react';
+import { RefreshCw, AlertCircle, Calendar } from 'lucide-react';
 import { useDressMe } from '../hooks/useDressMe';
 import { useWardrobeContext } from '../context/WardrobeContext';
 import { Chip } from '../components/common/Chip';
 import { OutfitCard } from '../components/dressme/OutfitCard';
 import { AccessoryDrawer } from '../components/dressme/AccessoryDrawer';
 import { EmptyState } from '../components/common/EmptyState';
+import { PlanLookModal } from '../components/calendar/PlanLookModal';
 import { OCCASIONS, SEASONS } from '../data/taxonomy';
-import { Occasion, Season } from '../types';
+import { Occasion, Season, GeneratedOutfit } from '../types';
 
 interface DressMeScreenProps {
   onGoToWardrobe: () => void;
+  onGoToCalendar?: () => void;
 }
 
-export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe }) => {
-  const { theme, toggleTheme } = useWardrobeContext();
+export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, onGoToCalendar }) => {
+  const { theme, toggleTheme, plans } = useWardrobeContext();
   const {
     occasion,
     setOccasion,
@@ -32,6 +34,13 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe }) 
 
   const [activeDrawerOutfitIndex, setActiveDrawerOutfitIndex] = useState<number | null>(null);
   const [isShuffling, setIsShuffling] = useState(false);
+  const [planningOutfit, setPlanningOutfit] = useState<GeneratedOutfit | null>(null);
+
+  // Tomorrow calculation
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+  const tomorrowPlan = plans.find((p) => p.date === tomorrowStr);
 
   const handleShuffle = () => {
     setIsShuffling(true);
@@ -75,6 +84,55 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe }) 
           </button>
         </div>
       </header>
+
+      {/* Tomorrow Shortcut Bar */}
+      {tomorrowPlan ? (
+        <div className="mb-3 rounded-xl border border-(--burnished-gold)/40 bg-(--ivory) p-3 flex items-center justify-between shadow-2xs">
+          <div className="flex items-center gap-2.5">
+            <Calendar className="h-4 w-4 text-(--burnished-gold)" />
+            <div className="text-left">
+              <span className="text-[9px] font-bold uppercase tracking-wider text-(--kumkum) block">
+                TOMORROW · LOOK READY
+              </span>
+              <span className="text-xs font-serif font-medium text-(--ink)">
+                {tomorrowPlan.outfit.template} ({tomorrowPlan.occasion})
+              </span>
+            </div>
+          </div>
+          {onGoToCalendar && (
+            <button
+              type="button"
+              onClick={onGoToCalendar}
+              className="rounded-lg border border-(--border) bg-(--card) px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-(--ink) hover:bg-(--ivory)"
+            >
+              View in Calendar
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="mb-3 rounded-xl border border-(--border)/80 bg-(--card) p-3 flex items-center justify-between shadow-2xs">
+          <div className="flex items-center gap-2.5">
+            <Calendar className="h-4 w-4 text-(--muted)" />
+            <div className="text-left">
+              <span className="text-[9px] font-bold uppercase tracking-wider text-(--muted) block">
+                TOMORROW · {tomorrow.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+              </span>
+              <span className="text-xs text-(--muted)">
+                Already know what you're wearing?
+              </span>
+            </div>
+          </div>
+          {outfits.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setPlanningOutfit(outfits[0])}
+              className="rounded-lg border border-(--ink) bg-(--ink) px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-(--paper) hover:opacity-90 active:scale-95 shadow-2xs"
+            >
+              Plan Tomorrow
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Ultra-Compact Context Controls: Occasions + Seasons in one unified bar */}
       <div className="mb-4 space-y-2.5 border-b border-(--border)/70 pb-3">
@@ -147,6 +205,7 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe }) 
               onMarkWorn={markWoreOutfit}
               onSaveOutfit={saveOutfit}
               onChangeLook={handleShuffle}
+              onPlanLook={(o) => setPlanningOutfit(o)}
             />
           ))}
         </div>
@@ -166,6 +225,19 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe }) 
           }
         }}
       />
+
+      {/* Plan This Look Modal */}
+      {planningOutfit && (
+        <PlanLookModal
+          isOpen={planningOutfit !== null}
+          onClose={() => setPlanningOutfit(null)}
+          outfit={planningOutfit}
+          accessory={
+            activeDrawerOutfitIndex !== null ? activeAccessories[activeDrawerOutfitIndex] || null : null
+          }
+          occasion={occasion}
+        />
+      )}
     </div>
   );
 };

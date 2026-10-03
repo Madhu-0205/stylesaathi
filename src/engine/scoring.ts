@@ -1,4 +1,4 @@
-import { WardrobeItem, Occasion } from '../types';
+import { WardrobeItem, Occasion, StylePreferences } from '../types';
 
 export const harmony = (a: string[], b: string[]): number => {
   const neutral = [
@@ -76,7 +76,8 @@ const OCCASION_FORMALITY_TARGETS: Record<string, number> = {
 export const calculateOutfitScore = (
   pieces: WardrobeItem[],
   occasion: Occasion,
-  seed = 0.5
+  seed = 0.5,
+  preferences?: StylePreferences
 ): number => {
   let score = 0;
 
@@ -218,6 +219,60 @@ export const calculateOutfitScore = (
     return a + penalty;
   }, 0);
 
+  // Personal Style Preferences adjustment (Phase 4)
+  if (preferences) {
+    const { preferredAesthetics = [], preferredContexts = [], stylingMode = 'variety' } = preferences;
+
+    // Aesthetic preference bonus (without breaking baseline compatibility)
+    if (preferredAesthetics.includes('Traditional') && hasEthnic) {
+      score += 0.8;
+    }
+    if (
+      preferredAesthetics.includes('Indo-Western') &&
+      hasEthnic &&
+      pieces.some((p) => p.category === 'Tops' || p.category === 'Bottoms')
+    ) {
+      score += 0.8;
+    }
+    if (
+      preferredAesthetics.includes('Classic') &&
+      pieces.some((p) => ['shirt', 'trousers', 'blazer', 'kurta', 'saree'].includes(p.subcategory || ''))
+    ) {
+      score += 0.6;
+    }
+    if (preferredAesthetics.includes('Minimal') && pieces.length <= 3) {
+      score += 0.5;
+    }
+    if (
+      preferredAesthetics.includes('Relaxed') &&
+      pieces.some((p) => ['t-shirt', 'kurti', 'palazzo', 'sandals', 'flats', 'loafers'].includes(p.subcategory || ''))
+    ) {
+      score += 0.5;
+    }
+    if (
+      preferredAesthetics.includes('Statement') &&
+      pieceColors.some((c) => ['red', 'gold', 'mustard', 'teal', 'rust'].includes(c))
+    ) {
+      score += 0.5;
+    }
+
+    // Preferred contexts bonus
+    if (preferredContexts.some((c) => c.toLowerCase() === occasion.toLowerCase())) {
+      score += 0.5;
+    }
+
+    // Styling mode adjustment
+    if (stylingMode === 'simple') {
+      score += pieces.length <= 3 ? 0.6 : -0.3;
+    } else if (stylingMode === 'variety') {
+      const maxWorn = Math.max(...pieces.map((p) => p.timesWorn || 0), 0);
+      if (maxWorn === 0) score += 0.5;
+    } else if (stylingMode === 'experiment') {
+      const hasContrast = pieces.length >= 2 && harmony(pieces[0].colors, pieces[1].colors) > 0;
+      if (hasContrast) score += 0.6;
+    }
+  }
+
   // Controlled seed randomness
   score += (seed - 0.5) * 0.5;
 
@@ -227,7 +282,8 @@ export const calculateOutfitScore = (
 export const getOutfitWhyReasons = (
   pieces: WardrobeItem[],
   occasion: Occasion,
-  _score = 3
+  _score = 3,
+  preferences?: StylePreferences
 ): string[] => {
   const reasons: string[] = [];
 
@@ -293,12 +349,13 @@ export const getOutfitWhyReasons = (
 export const generateOutfitWhy = (
   scoreOrPieces: number | WardrobeItem[],
   occasionOrScore?: Occasion | number,
-  scoreMaybe?: number
+  scoreMaybe?: number,
+  preferences?: StylePreferences
 ): string => {
   if (Array.isArray(scoreOrPieces)) {
     const occ = (typeof occasionOrScore === 'string' ? occasionOrScore : 'casual outing') as Occasion;
     const score = typeof scoreMaybe === 'number' ? scoreMaybe : 3;
-    const reasons = getOutfitWhyReasons(scoreOrPieces, occ, score);
+    const reasons = getOutfitWhyReasons(scoreOrPieces, occ, score, preferences);
     return reasons.join(' · ');
   }
   const score = typeof scoreOrPieces === 'number' ? scoreOrPieces : 3;

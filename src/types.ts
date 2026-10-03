@@ -152,3 +152,61 @@ export interface WardrobePhotoStore {
   getPhoto(id: string): Promise<string | null>;
   deletePhoto(id: string): Promise<void>;
 }
+
+export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated' | 'guest';
+
+export interface User {
+  id: string;
+  email?: string;
+  name?: string;
+  isGuest: boolean;
+  createdAt: number;
+}
+
+export type StylingMode = 'simple' | 'variety' | 'experiment';
+
+export interface StylePreferences {
+  preferredContexts: string[];
+  preferredAesthetics: string[];
+  stylingMode: StylingMode;
+  updatedAt: number;
+}
+
+export type PlanStatus = 'planned' | 'worn';
+
+export interface OutfitPlan {
+  id: string;
+  userId?: string;
+  date: string; // YYYY-MM-DD
+  outfit: GeneratedOutfit;
+  accessory?: WardrobeItem | null;
+  occasion: Occasion;
+  status: PlanStatus;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface CalendarRepository {
+  getPlans(): Promise<OutfitPlan[]>;
+  getPlanByDate(date: string): Promise<OutfitPlan | null>;
+  savePlan(plan: OutfitPlan): Promise<void>;
+  deletePlan(id: string): Promise<void>;
+  updatePlanStatus(id: string, status: PlanStatus): Promise<void>;
+  clear(): Promise<void>;
+}
+
+export interface PreferencesRepository {
+  getPreferences(): Promise<StylePreferences | null>;
+  savePreferences(prefs: StylePreferences): Promise<void>;
+  clear(): Promise<void>;
+}
+
+export interface AuthRepository {
+  getUser(): Promise<User | null>;
+  signInWithGoogle(): Promise<User>;
+  signInWithEmail(email: string, name?: string): Promise<User>;
+  continueAsGuest(): Promise<User>;
+  signOut(): Promise<void>;
+  clear(): Promise<void>;
+}
+

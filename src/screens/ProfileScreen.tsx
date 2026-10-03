@@ -1,7 +1,46 @@
-import React from 'react';
-import { Sun, Moon, Shield, RotateCcw, Trash2, Sparkles } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  Sun,
+  Moon,
+  Shield,
+  RotateCcw,
+  Trash2,
+  Sparkles,
+  User as UserIcon,
+  LogOut,
+  Sliders,
+  Check,
+} from 'lucide-react';
 import { useWardrobeContext } from '../context/WardrobeContext';
-import { STYLE_VIBES } from '../data/taxonomy';
+import { useAuth } from '../context/AuthContext';
+import { AuthView } from '../components/auth/AuthView';
+import { StylingMode } from '../types';
+
+const CONTEXT_OPTIONS = [
+  'College',
+  'Work',
+  'Everyday',
+  'Family gatherings',
+  'Festive occasions',
+  'Weddings',
+  'Mixed',
+];
+
+const AESTHETIC_OPTIONS = [
+  { id: 'Minimal', label: 'Minimal', desc: 'Clean silhouettes & understated palette' },
+  { id: 'Classic', label: 'Classic', desc: 'Timeless tailored pieces & structured polish' },
+  { id: 'Contemporary', label: 'Contemporary', desc: 'Modern cuts, crisp shapes & modern ease' },
+  { id: 'Traditional', label: 'Traditional', desc: 'Heritage Indian weaves, rich crafts & ethnic grace' },
+  { id: 'Indo-Western', label: 'Indo-Western', desc: 'Effortless fusion of kurtis, denim & overlays' },
+  { id: 'Relaxed', label: 'Relaxed', desc: 'Breathable comfort, soft drapes & fluid fits' },
+  { id: 'Statement', label: 'Statement', desc: 'Vibrant hues, bold accents & artistic drama' },
+];
+
+const STYLING_MODES: { id: StylingMode; title: string; desc: string }[] = [
+  { id: 'simple', title: 'Keep it simple', desc: 'Reliable, low-effort pairings you can trust daily' },
+  { id: 'variety', title: 'Give me variety', desc: 'Balanced rotation to maximize everything you own' },
+  { id: 'experiment', title: 'Help me experiment', desc: 'Creative, fresh combinations outside your usual picks' },
+];
 
 export const ProfileScreen: React.FC = () => {
   const {
@@ -9,34 +48,50 @@ export const ProfileScreen: React.FC = () => {
     savedOutfits,
     theme,
     toggleTheme,
-    styleVibes,
-    setStyleVibes,
+    preferences,
+    updatePreferences,
     loadSample,
     resetWardrobe,
     resetAll,
+    showToast,
   } = useWardrobeContext();
+
+  const { user, isGuest, isAuthenticated, signOut } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Metrics
   const totalPieces = items.length;
   const favoritesCount = items.filter((i) => i.favorite).length;
   const totalWears = items.reduce((acc, i) => acc + (i.timesWorn || 0), 0);
 
-  const toggleVibe = (vibe: string) => {
-    if (styleVibes.includes(vibe)) {
-      setStyleVibes(styleVibes.filter((v) => v !== vibe));
-    } else {
-      setStyleVibes([...styleVibes, vibe]);
-    }
+  const handleToggleContext = async (ctx: string) => {
+    const prev = preferences.preferredContexts || [];
+    const next = prev.includes(ctx) ? prev.filter((c) => c !== ctx) : [...prev, ctx];
+    await updatePreferences({ preferredContexts: next.length > 0 ? next : ['Everyday'] });
+    showToast('Context preferences updated');
+  };
+
+  const handleToggleAesthetic = async (aes: string) => {
+    const prev = preferences.preferredAesthetics || [];
+    const next = prev.includes(aes) ? prev.filter((a) => a !== aes) : [...prev, aes];
+    await updatePreferences({ preferredAesthetics: next.length > 0 ? next : ['Contemporary'] });
+    showToast('Aesthetic preferences updated');
+  };
+
+  const handleChangeMode = async (mode: StylingMode) => {
+    await updatePreferences({ stylingMode: mode });
+    showToast(`Styling mode: ${mode}`);
   };
 
   const handleResetWardrobe = async () => {
     if (confirm('Clear all clothing items in your wardrobe?')) {
       await resetWardrobe();
+      showToast('Wardrobe cleared');
     }
   };
 
   const handleResetAll = async () => {
-    if (confirm('Reset all data including style preferences and return to onboarding?')) {
+    if (confirm('Reset all data including style preferences, calendar plans, and return to onboarding?')) {
       await resetAll();
     }
   };
@@ -52,7 +107,7 @@ export const ProfileScreen: React.FC = () => {
             </span>
           </div>
           <h1 className="mt-0.5 font-serif text-2xl sm:text-3xl font-normal text-(--ink) tracking-tight">
-            Style & Archive
+            Style &amp; Archive
           </h1>
           <p className="text-[11px] text-(--muted) font-medium">
             {totalPieces} pieces · {favoritesCount} favorites · {savedOutfits.length} saved · {totalWears} wears
@@ -69,45 +124,167 @@ export const ProfileScreen: React.FC = () => {
         </button>
       </header>
 
-      {/* Responsive Profile Sections Layout:
-          - Phone: Compact vertical stack
-          - Tablet / Desktop: Balanced 2-column editorial split (Style & Appearance on Left, Data Management & Privacy on Right)
-      */}
+      {/* Account Profile Status Banner */}
+      <section className="rounded-2xl border border-(--border) bg-(--card) p-4 sm:p-5 shadow-2xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-(--ivory) border border-(--border) text-(--ink) font-serif font-bold text-base">
+              {user?.name ? user.name[0].toUpperCase() : user?.email ? user.email[0].toUpperCase() : <UserIcon className="h-5 w-5 text-(--burnished-gold)" />}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
+                  {isAuthenticated ? 'STYLESAATHI MEMBER' : 'GUEST SESSION'}
+                </span>
+                <span className="h-1.5 w-1.5 rounded-full bg-(--burnished-gold)" />
+                <span className="text-[10px] text-(--muted)">Local-first</span>
+              </div>
+              <h2 className="text-sm font-semibold text-(--ink)">
+                {user?.name || user?.email || 'Guest Stylist'}
+              </h2>
+              {user?.email && user?.name && (
+                <p className="text-xs text-(--muted)">{user.email}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            {isGuest && (
+              <button
+                type="button"
+                onClick={() => setShowAuthModal(true)}
+                className="flex min-h-10 items-center gap-1.5 rounded-xl border border-(--ink) bg-(--ink) px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider text-(--paper) hover:opacity-90 active:scale-95 shadow-2xs"
+              >
+                <span>Create Profile</span>
+              </button>
+            )}
+            {isAuthenticated && (
+              <button
+                type="button"
+                onClick={signOut}
+                className="flex min-h-10 items-center gap-1.5 rounded-xl border border-(--border) bg-(--card) px-3 py-1.5 text-xs font-medium text-(--muted) hover:text-(--ink) hover:border-(--ink) transition-colors"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                <span>Sign Out</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* Main Profile Grid: Style DNA & Archive Controls */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 items-start">
-        {/* Left Column: Style DNA & Appearance */}
+        {/* Left Column: Style DNA & Styling Mode */}
         <div className="space-y-4">
-          {/* Style Preferences Section */}
-          <section className="rounded-2xl border border-(--border) bg-(--card) p-5 sm:p-6 shadow-2xs">
-            <div className="flex items-baseline justify-between border-b border-(--border) pb-3 mb-3.5">
+          {/* Aesthetic & Context Preferences */}
+          <section className="rounded-2xl border border-(--border) bg-(--card) p-5 sm:p-6 shadow-2xs space-y-4">
+            <div className="flex items-baseline justify-between border-b border-(--border) pb-3">
               <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
                 STYLE PREFERENCES
               </span>
-              <span className="text-[11px] text-(--muted)">Aesthetic direction</span>
+              <span className="text-[11px] text-(--muted)">Personalized DNA</span>
             </div>
-            <p className="text-xs text-(--muted) mb-3">
-              Select the aesthetics that guide your everyday outfit curation.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {STYLE_VIBES.map((vibe) => {
-                const isSelected = styleVibes.includes(vibe);
-                return (
-                  <button
-                    key={vibe}
-                    type="button"
-                    onClick={() => toggleVibe(vibe)}
-                    className={`min-h-10 rounded-lg px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all active:scale-95 ${
-                      isSelected
-                        ? 'border border-(--ink) bg-(--ink) text-(--paper) shadow-2xs'
-                        : 'border border-(--border) bg-(--card) text-(--muted) hover:border-(--ink)'
-                    }`}
-                  >
-                    {vibe}
-                  </button>
-                );
-              })}
+
+            {/* Contexts */}
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-(--muted) mb-2">
+                I Usually Dress For
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {CONTEXT_OPTIONS.map((ctx) => {
+                  const isSelected = preferences.preferredContexts?.includes(ctx);
+                  return (
+                    <button
+                      key={ctx}
+                      type="button"
+                      onClick={() => handleToggleContext(ctx)}
+                      className={`min-h-9 rounded-lg px-3 py-1 text-xs font-semibold uppercase tracking-wider transition-all active:scale-95 ${
+                        isSelected
+                          ? 'border border-(--ink) bg-(--ink) text-(--paper) shadow-2xs'
+                          : 'border border-(--border) bg-(--card) text-(--muted) hover:border-(--ink)'
+                      }`}
+                    >
+                      {ctx}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Aesthetics */}
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-(--muted) mb-2">
+                Aesthetics That Feel Most Like You
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {AESTHETIC_OPTIONS.map((aes) => {
+                  const isSelected = preferences.preferredAesthetics?.includes(aes.id);
+                  return (
+                    <button
+                      key={aes.id}
+                      type="button"
+                      onClick={() => handleToggleAesthetic(aes.id)}
+                      className={`flex flex-col text-left p-2.5 rounded-xl border transition-all active:scale-98 ${
+                        isSelected
+                          ? 'border-(--kumkum) bg-(--ivory) shadow-2xs'
+                          : 'border-(--border) bg-(--card) hover:border-(--ink)'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-serif font-semibold text-(--ink)">
+                          {aes.label}
+                        </span>
+                        {isSelected && <Check className="h-3.5 w-3.5 text-(--kumkum)" />}
+                      </div>
+                      <span className="text-[10px] text-(--muted) line-clamp-1 mt-0.5">
+                        {aes.desc}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Styling Mode */}
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-(--muted) mb-2">
+                How Should StyleSaathi Style You?
+              </label>
+              <div className="grid grid-cols-1 gap-2">
+                {STYLING_MODES.map((mode) => {
+                  const isSelected = preferences.stylingMode === mode.id;
+                  return (
+                    <button
+                      key={mode.id}
+                      type="button"
+                      onClick={() => handleChangeMode(mode.id)}
+                      className={`flex items-start justify-between p-3 rounded-xl border text-left transition-all ${
+                        isSelected
+                          ? 'border-(--burnished-gold) bg-(--ivory) shadow-2xs'
+                          : 'border-(--border) bg-(--card) hover:border-(--ink)'
+                      }`}
+                    >
+                      <div>
+                        <div className="text-xs font-semibold text-(--ink)">
+                          {mode.title}
+                        </div>
+                        <div className="text-[11px] text-(--muted) mt-0.5">
+                          {mode.desc}
+                        </div>
+                      </div>
+                      {isSelected && (
+                        <span className="h-2 w-2 rounded-full bg-(--burnished-gold) shrink-0 mt-1" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </section>
+        </div>
 
+        {/* Right Column: Appearance & Archive Management */}
+        <div className="space-y-4">
           {/* Appearance Section */}
           <section className="rounded-2xl border border-(--border) bg-(--card) p-5 sm:p-6 shadow-2xs">
             <div className="flex items-baseline justify-between border-b border-(--border) pb-3 mb-3.5">
@@ -144,10 +321,7 @@ export const ProfileScreen: React.FC = () => {
               </button>
             </div>
           </section>
-        </div>
 
-        {/* Right Column: Wardrobe Management & Privacy */}
-        <div className="space-y-4">
           {/* Wardrobe Management Actions */}
           <section className="rounded-2xl border border-(--border) bg-(--card) p-5 sm:p-6 shadow-2xs space-y-3">
             <div className="flex items-baseline justify-between border-b border-(--border) pb-3 mb-1">
@@ -194,14 +368,27 @@ export const ProfileScreen: React.FC = () => {
               <span>Local Wardrobe Privacy</span>
             </div>
             <p className="text-xs text-(--muted) leading-relaxed">
-              Your wardrobe photos and styling history stay strictly on this device.
-              Photos are stored in your browser&apos;s IndexedDB and metadata in local storage.
+              Your wardrobe photos, calendar outfit plans, and style preferences stay strictly on this device.
+              Clothing images are stored in your browser&apos;s IndexedDB and metadata in local storage.
               No images are ever sent to external cloud servers.
             </p>
           </section>
         </div>
       </div>
+
+      {/* Auth Modal for Guest Users upgrading to an account */}
+      {showAuthModal && (
+        <AuthView
+          isModal={true}
+          onClose={() => setShowAuthModal(false)}
+          onSuccess={() => {
+            setShowAuthModal(false);
+            showToast('Welcome to your StyleSaathi profile!');
+          }}
+        />
+      )}
     </div>
   );
 };
+
 

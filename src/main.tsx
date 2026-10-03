@@ -1,6 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
+import { AuthProvider } from './context/AuthContext';
 import { WardrobeProvider } from './context/WardrobeContext';
 import { App } from './App';
 
@@ -9,9 +10,11 @@ if (container) {
   const root = createRoot(container);
   root.render(
     <React.StrictMode>
-      <WardrobeProvider>
-        <App />
-      </WardrobeProvider>
+      <AuthProvider>
+        <WardrobeProvider>
+          <App />
+        </WardrobeProvider>
+      </AuthProvider>
     </React.StrictMode>
   );
 }

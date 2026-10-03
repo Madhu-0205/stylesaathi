@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bookmark, Check, RefreshCw, Plus } from 'lucide-react';
+import { Bookmark, Check, RefreshCw, Plus, Calendar } from 'lucide-react';
 import { GeneratedOutfit, WardrobeItem, Occasion } from '../../types';
 import { ItemImage } from '../common/ItemImage';
 import { getOutfitWhyReasons } from '../../engine/scoring';
@@ -13,6 +13,7 @@ interface OutfitCardProps {
   onMarkWorn: (outfit: GeneratedOutfit, accessory: WardrobeItem | null) => Promise<void>;
   onSaveOutfit: (outfit: GeneratedOutfit) => Promise<any>;
   onChangeLook?: () => void;
+  onPlanLook?: (outfit: GeneratedOutfit) => void;
 }
 
 export const OutfitCard: React.FC<OutfitCardProps> = ({
@@ -24,6 +25,7 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
   onMarkWorn,
   onSaveOutfit,
   onChangeLook,
+  onPlanLook,
 }) => {
   const [wornToday, setWornToday] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -255,6 +257,18 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
                 <span>Wear Today</span>
               )}
             </button>
+
+            {onPlanLook && (
+              <button
+                type="button"
+                onClick={() => onPlanLook(outfit)}
+                className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-(--border) bg-(--card) px-3 text-xs font-semibold text-(--muted) transition-all hover:border-(--burnished-gold) hover:text-(--ink) active:scale-95"
+                title="Plan this look on Style Calendar"
+              >
+                <Calendar className="h-3.5 w-3.5 text-(--burnished-gold)" />
+                <span className="hidden sm:inline">Plan</span>
+              </button>
+            )}
 
             <button
               type="button"

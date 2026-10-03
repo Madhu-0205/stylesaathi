@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shirt, Sparkles, Compass, User, Plus, Sun, Moon } from 'lucide-react';
+import { Shirt, Sparkles, Calendar, Compass, User, Plus, Sun, Moon } from 'lucide-react';
 import { NavTab } from './BottomNav';
 import { StyleSaathiLogo } from '../brand/StyleSaathiLogo';
 
@@ -14,6 +14,7 @@ interface TopNavProps {
 const TABS: { id: NavTab; label: string; icon: React.FC<{ className?: string }> }[] = [
   { id: 'Wardrobe', label: 'WARDROBE', icon: Shirt },
   { id: 'Dress', label: 'DRESS', icon: Sparkles },
+  { id: 'Calendar', label: 'CALENDAR', icon: Calendar },
   { id: 'Insight', label: 'INSIGHT', icon: Compass },
   { id: 'You', label: 'YOU', icon: User },
 ];
