@@ -1,3 +1,33 @@
-import React,{createContext,useContext,useEffect,useMemo,useState} from 'react'; import {Item} from '../types'; import {sampleWardrobe} from '../data/sample';
-const KEY='stylesaathi-v1'; type Ctx={items:Item[];setItems:React.Dispatch<React.SetStateAction<Item[]>>;addItem:(i:Item)=>void;updateItem:(i:Item)=>void;reset:()=>void;loadSample:()=>void;theme:'light'|'dark';toggleTheme:()=>void;onboarded:boolean;setOnboarded:(v:boolean)=>void;styles:string[];setStyles:React.Dispatch<React.SetStateAction<string[]>>};
-const AppCtx=createContext<Ctx|null>(null); export function AppProvider({children}:{children:React.ReactNode}){const saved=localStorage.getItem(KEY);const parsed=saved?JSON.parse(saved):null;const [items,setItems]=useState<Item[]>(parsed?.items??[]);const [theme,setTheme]=useState<'light'|'dark'>(parsed?.theme??'light');const [onboarded,setOnboarded]=useState(parsed?.onboarded??false);const [styles,setStyles]=useState<string[]>(parsed?.styles??[]);useEffect(()=>{localStorage.setItem(KEY,JSON.stringify({items,theme,onboarded,styles}))},[items,theme,onboarded,styles]);useEffect(()=>{document.documentElement.classList.toggle('dark',theme==='dark');},[theme]);const v=useMemo(()=>({items,setItems,addItem:(i:Item)=>setItems(x=>[i,...x]),updateItem:(i:Item)=>setItems(x=>x.map(a=>a.id===i.id?i:a)),reset:()=>{localStorage.removeItem(KEY);setItems([]);setOnboarded(false);setStyles([])},loadSample:()=>{setItems(sampleWardrobe);setOnboarded(true)},theme,toggleTheme:()=>setTheme(x=>x==='light'?'dark':'light'),onboarded,setOnboarded,styles,setStyles}),[items,theme,onboarded,styles]);return <AppCtx.Provider value={v}>{children}</AppCtx.Provider>}; export const useApp=()=>useContext(AppCtx)!;
+import React from 'react';
+import { WardrobeProvider, useWardrobeContext } from './WardrobeContext';
+import { WardrobeItem } from '../types';
+
+export { WardrobeProvider, useWardrobeContext };
+
+// Backward-compatible AppProvider and useApp aliases
+export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return <WardrobeProvider>{children}</WardrobeProvider>;
+};
+
+export const useApp = () => {
+  const ctx = useWardrobeContext();
+  return {
+    ...ctx,
+    reset: ctx.resetAll,
+    styles: ctx.styleVibes,
+    setStyles: (action: any) => {
+      if (typeof action === 'function') {
+        ctx.setStyleVibes(action(ctx.styleVibes));
+      } else {
+        ctx.setStyleVibes(action);
+      }
+    },
+    updateItem: (idOrItem: string | WardrobeItem, patch?: Partial<WardrobeItem>) => {
+      if (typeof idOrItem === 'string') {
+        return ctx.updateItem(idOrItem, patch || {});
+      } else {
+        return ctx.updateItem(idOrItem.id, idOrItem);
+      }
+    },
+  };
+};
