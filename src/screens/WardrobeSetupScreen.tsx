@@ -99,7 +99,7 @@ export const WardrobeSetupScreen: React.FC<WardrobeSetupScreenProps> = ({ onComp
   // =========================================================================
   if (subStep === 'rail') {
     return (
-      <div className="w-full max-w-xl mx-auto flex min-h-[100dvh] flex-col justify-between p-5 sm:p-8 animate-fade-in bg-(--background)">
+      <div className="w-full max-w-xl mx-auto flex min-h-dvh flex-col justify-between p-5 sm:p-8 animate-fade-in bg-(--background)">
         {/* Header */}
         <div className="flex items-center justify-between pt-2 border-b border-(--border) pb-3">
           <StyleSaathiLogo variant="full" size="sm" showTagline={true} />
@@ -129,7 +129,7 @@ export const WardrobeSetupScreen: React.FC<WardrobeSetupScreenProps> = ({ onComp
           <div className="relative mx-auto max-w-md rounded-2xl border border-(--border) bg-(--card) p-5 sm:p-6 shadow-xs">
             {/* Top Brass Rail */}
             <div className="relative mb-6">
-              <div className="h-1 w-full rounded-full bg-gradient-to-r from-(--burnished-gold)/60 via-(--ink) to-(--burnished-gold)/60" />
+              <div className="h-1 w-full rounded-full bg-linear-to-r from-(--burnished-gold)/60 via-(--ink) to-(--burnished-gold)/60" />
               <div className="absolute -left-1 -top-1 h-3 w-3 rounded-full bg-(--burnished-gold) shadow-2xs" />
               <div className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-(--burnished-gold) shadow-2xs" />
             </div>
@@ -244,7 +244,7 @@ export const WardrobeSetupScreen: React.FC<WardrobeSetupScreenProps> = ({ onComp
   // =========================================================================
   if (subStep === 'preferences') {
     return (
-      <div className="w-full max-w-xl mx-auto flex min-h-[100dvh] flex-col justify-between p-5 sm:p-8 animate-fade-in bg-(--background)">
+      <div className="w-full max-w-xl mx-auto flex min-h-dvh flex-col justify-between p-5 sm:p-8 animate-fade-in bg-(--background)">
         {/* Header */}
         <div className="flex items-center justify-between pt-2 border-b border-(--border) pb-3">
           <StyleSaathiLogo variant="full" size="sm" showTagline={true} />
@@ -388,7 +388,7 @@ export const WardrobeSetupScreen: React.FC<WardrobeSetupScreenProps> = ({ onComp
   // SUB-STEP 3: STYLESPACE READY MOMENT
   // =========================================================================
   return (
-    <div className="w-full max-w-xl mx-auto flex min-h-[100dvh] flex-col justify-between p-5 sm:p-8 animate-fade-in bg-(--background)">
+    <div className="w-full max-w-xl mx-auto flex min-h-dvh flex-col justify-between p-5 sm:p-8 animate-fade-in bg-(--background)">
       {/* Header */}
       <div className="flex items-center justify-between pt-2 border-b border-(--border) pb-3">
         <StyleSaathiLogo variant="full" size="sm" showTagline={true} />

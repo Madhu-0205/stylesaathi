@@ -72,7 +72,7 @@ export const App: React.FC = () => {
         <WardrobeSetupScreen onComplete={() => setSetupCompleted(true)} />
       ) : (
         /* 4. Complete V4 Companion Workspace */
-        <div className="min-h-[100dvh] bg-(--background) text-(--text) transition-colors">
+        <div className="min-h-dvh bg-(--background) text-(--text) transition-colors">
           {/* Desktop & Tablet Top Navigation (hidden on mobile) */}
           <div className="hidden md:block">
             <TopNav
