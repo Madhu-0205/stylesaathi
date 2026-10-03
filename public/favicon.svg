@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Background Badge (Warm Ivory with subtle border) -->
+  <rect width="64" height="64" rx="14" fill="#F7F2E9"/>
+  <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="13.25" stroke="#E5DDD2" stroke-width="1.5"/>
+
+  <!-- Wardrobe Rack Rail in Deep Ink -->
+  <path d="M12 18 H52" stroke="#171514" stroke-width="2.75" stroke-linecap="round"/>
+  <circle cx="12" cy="18" r="1.75" fill="#A88445"/>
+  <circle cx="52" cy="18" r="1.75" fill="#A88445"/>
+
+  <!-- Uprights & Feet -->
+  <line x1="16" y1="18" x2="16" y2="52" stroke="#171514" stroke-width="2" stroke-linecap="round"/>
+  <line x1="48" y1="18" x2="48" y2="52" stroke="#171514" stroke-width="2" stroke-linecap="round"/>
+  <line x1="11" y1="52" x2="21" y2="52" stroke="#171514" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="43" y1="52" x2="53" y2="52" stroke="#171514" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Lower Shelf Stretcher -->
+  <line x1="16" y1="46" x2="48" y2="46" stroke="#D1C7BA" stroke-width="1.25"/>
+
+  <!-- Garment 1: Soft Blush Tunic (Left) -->
+  <path d="M22 24 L27 21 L32 24 L31 38 C31 40 23 40 23 38 Z" fill="#BA7584" stroke="#94535F" stroke-width="0.75"/>
+
+  <!-- Garment 2: Flowing Hero Drape in Kumkum Wine (Center) -->
+  <path d="M29 23 L35 19.5 L41 23 L40 45 C40 47 30 47 30 45 Z" fill="#9D173F" stroke="#7A102E" stroke-width="0.75"/>
+  <path d="M33 26 Q37 32 34 40" stroke="#FFFDF8" stroke-width="0.8" stroke-linecap="round" fill="none" opacity="0.7"/>
+
+  <!-- Garment 3: Burnished Gold Drape (Right) -->
+  <path d="M39 24 L44 21 L49 24 L48 40 C48 42 40 42 40 40 Z" fill="#B38947" stroke="#8A662C" stroke-width="0.75"/>
+</svg>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useWardrobeContext } from './context/WardrobeContext';
 import { BottomNav, NavTab } from './components/navigation/BottomNav';
 import { TopNav } from './components/navigation/TopNav';
@@ -9,18 +9,44 @@ import { ProfileScreen } from './screens/ProfileScreen';
 import { OnboardingScreen } from './screens/OnboardingScreen';
 import { AddItemSheet } from './components/wardrobe/AddItemSheet';
 import { Toast } from './components/common/Toast';
+import { StyleSaathiLoadingOverlay } from './components/loading/StyleSaathiLoadingOverlay';
 
 export const App: React.FC = () => {
-  const { onboarded, addItem, toast, clearToast, theme, toggleTheme } = useWardrobeContext();
+  const { onboarded, loading, addItem, toast, clearToast, theme, toggleTheme } = useWardrobeContext();
   const [currentTab, setCurrentTab] = useState<NavTab>('Wardrobe');
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isBooting, setIsBooting] = useState(true);
+  const [isFadingOut, setIsFadingOut] = useState(false);
 
-  // First-time users see the 3-step editorial onboarding
-  if (!onboarded) {
-    return <OnboardingScreen />;
-  }
+  useEffect(() => {
+    // When initial context repository hydration finishes, transition smoothly into the application
+    if (!loading) {
+      const timer = setTimeout(() => {
+        setIsFadingOut(true);
+        const exitTimer = setTimeout(() => {
+          setIsBooting(false);
+        }, 400);
+        return () => clearTimeout(exitTimer);
+      }, 750); // Graceful 750ms entrance ensures garments settle naturally without delaying the user
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
 
   return (
+    <>
+      {/* Editorial Wardrobe Boot Animation */}
+      {isBooting && (
+        <StyleSaathiLoadingOverlay
+          isVisible={isBooting}
+          isFadingOut={isFadingOut}
+          statusText="Opening wardrobe archive…"
+        />
+      )}
+
+      {/* First-time users see the 3-step editorial onboarding */}
+      {!onboarded ? (
+        <OnboardingScreen />
+      ) : (
     <div className="min-h-[100dvh] bg-(--background) text-(--text) transition-colors">
       {/* Desktop & Tablet Top Navigation (hidden on mobile) */}
       <div className="hidden md:block">
@@ -60,5 +86,7 @@ export const App: React.FC = () => {
         <Toast message={toast} onClose={clearToast} />
       </div>
     </div>
+      )}
+    </>
   );
 };

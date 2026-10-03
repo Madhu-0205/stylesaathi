@@ -1,6 +1,7 @@
 import React from 'react';
 import { Shirt, Sparkles, Compass, User, Plus, Sun, Moon } from 'lucide-react';
 import { NavTab } from './BottomNav';
+import { StyleSaathiLogo } from '../brand/StyleSaathiLogo';
 
 interface TopNavProps {
   currentTab: NavTab;
@@ -27,14 +28,13 @@ export const TopNav: React.FC<TopNavProps> = ({
   return (
     <header className="sticky top-0 z-40 w-full border-b border-(--border) bg-(--card)/95 backdrop-blur-md transition-colors">
       <div className="mx-auto flex h-15 max-w-6xl xl:max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* Brand identity */}
-        <div className="flex items-center gap-2.5 cursor-pointer select-none" onClick={() => onChangeTab('Wardrobe')}>
-          <span className="font-serif text-xl sm:text-2xl font-normal tracking-tight text-(--ink)">
-            StyleSaathi
-          </span>
-          <span className="hidden sm:inline-block rounded-md bg-(--ivory) px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-[0.2em] text-(--burnished-gold) border border-(--border)/60">
-            Wardrobe
-          </span>
+        {/* Official Brand Identity */}
+        <div
+          className="flex items-center cursor-pointer select-none py-1 hover:opacity-95 transition-opacity"
+          onClick={() => onChangeTab('Wardrobe')}
+          aria-label="StyleSaathi Home"
+        >
+          <StyleSaathiLogo variant="full" size="sm" showTagline={true} />
         </div>
 
         {/* Desktop / Tablet Navigation Tabs */}

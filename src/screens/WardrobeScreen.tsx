@@ -7,6 +7,7 @@ import { ItemDetailSheet } from '../components/wardrobe/ItemDetailSheet';
 import { EmptyState } from '../components/common/EmptyState';
 import { CATEGORIES } from '../data/taxonomy';
 import { WardrobeItem, Category, Status } from '../types';
+import { StyleSaathiLogo } from '../components/brand/StyleSaathiLogo';
 
 interface WardrobeScreenProps {
   onOpenAddItem: () => void;
@@ -46,6 +47,9 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
       <header className="mb-3 flex items-center justify-between border-b border-(--border) pb-2.5">
         <div>
           <div className="flex items-center gap-2">
+            <span className="md:hidden">
+              <StyleSaathiLogo variant="mark" size="xs" />
+            </span>
             <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
               WARDROBE
             </span>

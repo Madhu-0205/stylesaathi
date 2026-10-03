@@ -202,12 +202,164 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   animation: garmentReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* StyleSaathi Official Wardrobe Animation Keyframes */
+@keyframes railDraw {
+  0% {
+    stroke-dasharray: 130;
+    stroke-dashoffset: 130;
+    opacity: 0.3;
+  }
+  100% {
+    stroke-dasharray: 130;
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+@keyframes garmentDrop1 {
+  0% {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.95);
+  }
+  65% {
+    opacity: 1;
+    transform: translateY(1.5px) scale(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes garmentDrop2 {
+  0% {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.95);
+  }
+  65% {
+    opacity: 1;
+    transform: translateY(1.5px) scale(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes garmentDrop3 {
+  0% {
+    opacity: 0;
+    transform: translateY(-18px) scale(0.94);
+  }
+  65% {
+    opacity: 1;
+    transform: translateY(2px) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes garmentDrop4 {
+  0% {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.95);
+  }
+  65% {
+    opacity: 1;
+    transform: translateY(1.5px) scale(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes gentleSwayA {
+  0%, 100% {
+    transform: rotate(-1.8deg);
+  }
+  50% {
+    transform: rotate(1.5deg);
+  }
+}
+
+@keyframes gentleSwayB {
+  0%, 100% {
+    transform: rotate(1.6deg);
+  }
+  50% {
+    transform: rotate(-1.4deg);
+  }
+}
+
+@keyframes heroPieceCurate {
+  0%, 100% {
+    transform: rotate(0deg) translateY(0) scale(1);
+  }
+  50% {
+    transform: rotate(0.8deg) translateY(-3px) scale(1.025);
+  }
+}
+
+@keyframes sparklePulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+}
+
+.animate-rail-draw {
+  stroke-dasharray: 130;
+  stroke-dashoffset: 0;
+  animation: railDraw 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-garment-1 {
+  animation: garmentDrop1 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both,
+             gentleSwayA 3.4s ease-in-out 0.8s infinite;
+}
+
+.animate-garment-2 {
+  animation: garmentDrop2 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.45s both,
+             gentleSwayB 3.8s ease-in-out 0.95s infinite;
+}
+
+.animate-garment-3-hero {
+  animation: garmentDrop3 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.6s both,
+             heroPieceCurate 3.2s ease-in-out 1.15s infinite;
+}
+
+.animate-garment-4 {
+  animation: garmentDrop4 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.75s both,
+             gentleSwayA 3.6s ease-in-out 1.25s infinite;
+}
+
+.animate-sparkle-pulse {
+  animation: sparklePulse 2s ease-in-out 1.2s infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+  .animate-rail-draw {
+    stroke-dashoffset: 0 !important;
+  }
+  .animate-garment-1,
+  .animate-garment-2,
+  .animate-garment-3-hero,
+  .animate-garment-4 {
+    opacity: 1 !important;
+    transform: none !important;
   }
 }
 

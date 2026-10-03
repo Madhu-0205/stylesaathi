@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" fill="none">
+  <!-- Rounded Apple Touch Squircle -->
+  <rect width="180" height="180" rx="40" fill="#F7F2E9"/>
+  <rect x="2" y="2" width="176" height="176" rx="38" stroke="#E5DDD2" stroke-width="4"/>
+
+  <!-- Wardrobe Rack Architectural Structure -->
+  <g stroke="#171514" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="32" y1="48" x2="148" y2="48" />
+    <circle cx="32" cy="48" r="4.5" fill="#A88445" stroke="none" />
+    <circle cx="148" cy="48" r="4.5" fill="#A88445" stroke="none" />
+
+    <line x1="42" y1="48" x2="42" y2="146" stroke-width="5" />
+    <line x1="138" y1="48" x2="138" y2="146" stroke-width="5" />
+
+    <line x1="28" y1="146" x2="56" y2="146" stroke-width="6" />
+    <line x1="124" y1="146" x2="152" y2="146" stroke-width="6" />
+
+    <line x1="42" y1="132" x2="138" y2="132" stroke="#D1C7BA" stroke-width="3" />
+  </g>
+
+  <!-- Garment 1: Left Blush Kurti -->
+  <g>
+    <path d="M58 58 L68 50 L78 58 L76 102 C76 106 60 106 60 102 Z" fill="#BA7584" stroke="#94535F" stroke-width="2.5" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Garment 2: Hero Drape in Kumkum Wine (Center) -->
+  <g>
+    <path d="M78 56 L90 47 L102 56 L99 122 C99 126 81 126 81 122 Z" fill="#9D173F" stroke="#7A102E" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M84 62 Q94 78 88 106" stroke="#FFFDF8" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.7"/>
+  </g>
+
+  <!-- Garment 3: Right Burnished Gold Drape -->
+  <g>
+    <path d="M102 58 L112 50 L122 58 L120 108 C120 112 104 112 104 108 Z" fill="#B38947" stroke="#8A662C" stroke-width="2.5" stroke-linejoin="round"/>
+  </g>
+</svg>

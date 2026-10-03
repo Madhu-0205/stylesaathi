@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowRight, Check, Sparkles } from 'lucide-react';
 import { useWardrobeContext } from '../context/WardrobeContext';
 import { STYLE_VIBES } from '../data/taxonomy';
+import { StyleSaathiLogo } from '../components/brand/StyleSaathiLogo';
 
 export const OnboardingScreen: React.FC = () => {
   const { loadSample, setOnboarded, styleVibes, setStyleVibes } = useWardrobeContext();
@@ -51,14 +52,7 @@ export const OnboardingScreen: React.FC = () => {
     <div className="w-full max-w-lg md:max-w-xl mx-auto flex min-h-[100dvh] flex-col justify-between p-5 sm:p-8 animate-fade-in bg-(--background)">
       {/* Refined Brand Header */}
       <div className="flex items-center justify-between pt-2 border-b border-(--border) pb-3">
-        <div>
-          <span className="font-serif text-lg tracking-[0.25em] font-semibold text-(--ink)">
-            STYLESAATHI
-          </span>
-          <span className="block text-[8px] tracking-[0.2em] uppercase text-(--burnished-gold) font-bold">
-            YOUR WARDROBE, THOUGHTFULLY STYLED
-          </span>
-        </div>
+        <StyleSaathiLogo variant="full" size="sm" showTagline={true} />
         <span className="text-[11px] font-serif italic text-(--muted)">
           0{step + 1} / 03
         </span>
@@ -67,6 +61,13 @@ export const OnboardingScreen: React.FC = () => {
       {/* Main Slide Card */}
       <div className="my-auto py-6">
         <div className="rounded-2xl border border-(--border) bg-(--card) p-6 sm:p-8 shadow-xs">
+          {/* Canonical Wardrobe Brand Presentation on First Slide */}
+          {step === 0 && (
+            <div className="mb-5 flex justify-center py-2 border-b border-(--border)/60 pb-5">
+              <StyleSaathiLogo variant="full" layout="stacked" size="lg" showTagline={true} showSince={true} />
+            </div>
+          )}
+
           {/* Kicker */}
           <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-(--kumkum)">
             {currentSlide.kicker}
