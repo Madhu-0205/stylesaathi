@@ -51,7 +51,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
 
       {/* Sheet panel */}
       <div
-        className={`relative z-10 w-full max-w-[440px] mx-auto overflow-hidden rounded-t-3xl border-t border-(--border) bg-(--card) shadow-2xl animate-slide-up ${maxHeight} flex flex-col`}
+        className={`relative z-10 w-full max-w-110 mx-auto overflow-hidden rounded-t-3xl border-t border-(--border) bg-(--card) shadow-2xl animate-slide-up ${maxHeight} flex flex-col`}
       >
         {/* Drag handle */}
         <div className="flex justify-center pt-3 pb-1 cursor-grab" onClick={onClose} aria-hidden="true">

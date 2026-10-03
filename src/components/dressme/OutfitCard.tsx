@@ -119,7 +119,7 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
               return (
                 <div
                   key={slotName}
-                  className="relative flex-1 min-h-[96px] overflow-hidden rounded-xl border border-(--border)/80 bg-(--ivory)"
+                  className="relative flex-1 min-h-24 overflow-hidden rounded-xl border border-(--border)/80 bg-(--ivory)"
                 >
                   <LazyImage
                     src={piece.photo}
@@ -139,7 +139,7 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
             <>
               {/* First secondary piece (e.g. Kurta / Top) */}
               {secondarySlots[0] && secondarySlots[0][1][0] && (
-                <div className="relative flex-1 min-h-[96px] overflow-hidden rounded-xl border border-(--border)/80 bg-(--ivory)">
+                <div className="relative flex-1 min-h-24 overflow-hidden rounded-xl border border-(--border)/80 bg-(--ivory)">
                   <LazyImage
                     src={secondarySlots[0][1][0].photo}
                     alt={secondarySlots[0][1][0].name}
@@ -197,7 +197,7 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
             title="Change accessory"
           >
             <span className="text-[8.5px] uppercase font-bold text-(--burnished-gold)">ACCENT:</span>
-            <span className="truncate max-w-[80px]">{accessory.name}</span>
+            <span className="truncate max-w-20">{accessory.name}</span>
             <RefreshCw className="h-2.5 w-2.5 text-(--burnished-gold)" />
           </button>
         ) : (
