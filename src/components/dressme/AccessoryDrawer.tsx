@@ -2,7 +2,7 @@ import React from 'react';
 import { Check, X } from 'lucide-react';
 import { WardrobeItem } from '../../types';
 import { BottomSheet } from '../common/BottomSheet';
-import { LazyImage } from '../common/LazyImage';
+import { ItemImage } from '../common/ItemImage';
 
 interface AccessoryDrawerProps {
   isOpen: boolean;
@@ -30,12 +30,8 @@ export const AccessoryDrawer: React.FC<AccessoryDrawerProps> = ({
           <div className="flex items-center justify-between rounded-xl border border-(--burnished-gold) bg-(--ivory) p-3">
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 overflow-hidden rounded-lg bg-(--paper) border border-(--border)">
-                <LazyImage
-                  src={currentAccessory.photo}
-                  alt={currentAccessory.name}
-                  category={currentAccessory.category}
-                  subcategory={currentAccessory.subcategory}
-                  colors={currentAccessory.colors}
+                <ItemImage
+                  item={currentAccessory}
                   className="h-full w-full object-cover"
                 />
               </div>
@@ -85,12 +81,8 @@ export const AccessoryDrawer: React.FC<AccessoryDrawerProps> = ({
                   }`}
                 >
                   <div className="aspect-square w-full overflow-hidden rounded-lg bg-(--ivory)">
-                    <LazyImage
-                      src={acc.photo}
-                      alt={acc.name}
-                      category={acc.category}
-                      subcategory={acc.subcategory}
-                      colors={acc.colors}
+                    <ItemImage
+                      item={acc}
                       className="h-full w-full object-cover"
                     />
                   </div>

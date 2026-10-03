@@ -78,6 +78,7 @@ export interface WardrobeItem {
   id: string;
   name: string;
   photo?: string | null;
+  photoId?: string;
   category: Category;
   subcategory: Subcategory;
   colors: string[];

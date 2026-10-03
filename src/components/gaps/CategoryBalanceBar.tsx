@@ -1,6 +1,6 @@
 import React from 'react';
 import { Category, WardrobeItem } from '../../types';
-import { LazyImage } from '../common/LazyImage';
+import { ItemImage } from '../common/ItemImage';
 
 interface CategoryBalanceBarProps {
   balance: {
@@ -32,12 +32,8 @@ export const CategoryBalanceBar: React.FC<CategoryBalanceBarProps> = ({ balance 
             {/* Small Thumbnail */}
             <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-(--border) bg-(--ivory)">
               {b.sampleItem ? (
-                <LazyImage
-                  src={b.sampleItem.photo}
-                  alt={b.category}
-                  category={b.category}
-                  subcategory={b.sampleItem.subcategory}
-                  colors={b.sampleItem.colors}
+                <ItemImage
+                  item={b.sampleItem}
                   className="h-full w-full object-cover"
                 />
               ) : (

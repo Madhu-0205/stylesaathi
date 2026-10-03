@@ -7,9 +7,10 @@ import { GapsScreen } from './screens/GapsScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
 import { OnboardingScreen } from './screens/OnboardingScreen';
 import { AddItemSheet } from './components/wardrobe/AddItemSheet';
+import { Toast } from './components/common/Toast';
 
 export const App: React.FC = () => {
-  const { onboarded, addItem } = useWardrobeContext();
+  const { onboarded, addItem, toast, clearToast } = useWardrobeContext();
   const [currentTab, setCurrentTab] = useState<NavTab>('Wardrobe');
   const [isAddOpen, setIsAddOpen] = useState(false);
 
@@ -42,6 +43,9 @@ export const App: React.FC = () => {
           onClose={() => setIsAddOpen(false)}
           onAddItem={addItem}
         />
+
+        {/* Global Toast Notifications */}
+        <Toast message={toast} onClose={clearToast} />
       </div>
     </div>
   );

@@ -3,8 +3,10 @@ import { Camera, Check, AlertCircle, RefreshCw } from 'lucide-react';
 import { BottomSheet } from '../common/BottomSheet';
 import { Category, Subcategory, Occasion, WardrobeItem } from '../../types';
 import { CATEGORIES, SUBCATEGORIES, OCCASIONS, COLOR_PALETTE } from '../../data/taxonomy';
-import { compressImage } from '../../utils/imageCompressor';
+import { compressImageToBlob } from '../../utils/imageCompressor';
 import { autoTagImage } from '../../services/autoTag';
+import { saveImage } from '../../services/imageStore';
+import { useWardrobeContext } from '../../context/WardrobeContext';
 
 interface AddItemSheetProps {
   isOpen: boolean;
@@ -17,8 +19,10 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
   onClose,
   onAddItem,
 }) => {
+  const { showToast } = useWardrobeContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [photoData, setPhotoData] = useState<string | null>(null);
+  const [photoBlob, setPhotoBlob] = useState<Blob | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,7 +35,13 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
   const [formality, setFormality] = useState(2);
 
   const resetForm = () => {
-    setPhotoData(null);
+    if (photoPreview) {
+      try {
+        URL.revokeObjectURL(photoPreview);
+      } catch {}
+    }
+    setPhotoBlob(null);
+    setPhotoPreview(null);
     setIsProcessing(false);
     setError(null);
     setName('');
@@ -50,9 +60,17 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
     setIsProcessing(true);
 
     try {
-      // 1. Client-side canvas compression (~800px max, JPEG 0.78)
-      const compressed = await compressImage(file);
-      setPhotoData(compressed);
+      // 1. Client-side canvas compression (~800px max side, JPEG quality ~0.8) into a Blob
+      const blob = await compressImageToBlob(file, 800, 0.8);
+      setPhotoBlob(blob);
+
+      if (photoPreview) {
+        try {
+          URL.revokeObjectURL(photoPreview);
+        } catch {}
+      }
+      const preview = URL.createObjectURL(blob);
+      setPhotoPreview(preview);
 
       // 2. Vision auto-tagging seam
       const tagResult = await autoTagImage(file);
@@ -68,7 +86,13 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
       setName(`${colorStr}${subStr}`.replace(/^\w/, (c) => c.toUpperCase()));
     } catch (err: any) {
       setError(err?.message || "Couldn't add this photo. Try another image.");
-      setPhotoData(null);
+      if (photoPreview) {
+        try {
+          URL.revokeObjectURL(photoPreview);
+        } catch {}
+      }
+      setPhotoBlob(null);
+      setPhotoPreview(null);
     } finally {
       setIsProcessing(false);
     }
@@ -95,10 +119,23 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
   };
 
   const handleSave = async () => {
+    let photoId: string | undefined;
+
+    if (photoBlob) {
+      const id = crypto.randomUUID ? crypto.randomUUID() : `photo-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      try {
+        await saveImage(id, photoBlob);
+        photoId = id;
+      } catch (saveErr) {
+        console.warn('Failed to save image into IndexedDB:', saveErr);
+        showToast("Couldn't save the photo, the item was saved without one");
+      }
+    }
+
     const newItem: WardrobeItem = {
       id: crypto.randomUUID ? crypto.randomUUID() : `item-${Date.now()}`,
       name: name.trim() || `${category} piece`,
-      photo: photoData,
+      photoId, // store only photoId on the item
       category,
       subcategory,
       colors,
@@ -138,11 +175,11 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
             onChange={handleFileChange}
           />
 
-          {photoData ? (
+          {photoPreview ? (
             <div className="space-y-3">
               <div className="relative aspect-4/3 w-full overflow-hidden rounded-2xl border border-(--border) bg-(--ivory)">
                 <img
-                  src={photoData}
+                  src={photoPreview}
                   alt="Upload preview"
                   className="h-full w-full object-contain p-2"
                 />

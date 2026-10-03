@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowRight } from 'lucide-react';
 import { SmartBuyRecommendation } from '../../types';
-import { LazyImage } from '../common/LazyImage';
+import { ItemImage } from '../common/ItemImage';
 
 interface SmartBuyCardProps {
   recommendation: SmartBuyRecommendation;
@@ -45,12 +45,8 @@ export const SmartBuyCard: React.FC<SmartBuyCardProps> = ({
         {/* Piece Preview & Details */}
         <div className="flex gap-3.5 items-start">
           <div className="relative aspect-4/5 w-20 shrink-0 overflow-hidden rounded-xl border border-(--border) bg-(--ivory)">
-            <LazyImage
-              src={candidate.photo}
-              alt={candidate.name}
-              category={candidate.category}
-              subcategory={candidate.subcategory}
-              colors={candidate.colors}
+            <ItemImage
+              item={candidate}
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-102"
             />
           </div>

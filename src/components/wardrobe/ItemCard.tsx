@@ -1,7 +1,7 @@
 import React from 'react';
 import { Heart } from 'lucide-react';
 import { WardrobeItem } from '../../types';
-import { LazyImage } from '../common/LazyImage';
+import { ItemImage } from '../common/ItemImage';
 
 interface ItemCardProps {
   item: WardrobeItem;
@@ -26,12 +26,8 @@ export const ItemCard: React.FC<ItemCardProps> = ({
     >
       {/* Editorial Photo Frame */}
       <div className="relative aspect-4/5 w-full overflow-hidden rounded-2xl border border-(--border) bg-(--card) transition-all duration-300 group-hover:border-(--muted)/60">
-        <LazyImage
-          src={item.photo}
-          alt={item.name}
-          category={item.category}
-          subcategory={item.subcategory}
-          colors={item.colors}
+        <ItemImage
+          item={item}
           className="h-full w-full object-contain p-2"
         />
 

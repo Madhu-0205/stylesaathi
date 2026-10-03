@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Bookmark, Check, RefreshCw, Plus } from 'lucide-react';
 import { GeneratedOutfit, WardrobeItem, Occasion } from '../../types';
-import { LazyImage } from '../common/LazyImage';
+import { ItemImage } from '../common/ItemImage';
 import { getOutfitWhyReasons } from '../../engine/scoring';
 
 interface OutfitCardProps {
@@ -93,12 +93,8 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
         {/* Large Primary Hero Garment (Left ~58% width) */}
         {primarySlot && primarySlot[1][0] && (
           <div className="col-span-7 relative aspect-3/4 overflow-hidden rounded-xl border border-(--border)/80 bg-(--ivory)">
-            <LazyImage
-              src={primarySlot[1][0].photo}
-              alt={primarySlot[1][0].name}
-              category={primarySlot[1][0].category}
-              subcategory={primarySlot[1][0].subcategory}
-              colors={primarySlot[1][0].colors}
+            <ItemImage
+              item={primarySlot[1][0]}
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-101"
             />
             <div className="absolute bottom-2 left-2 right-2 truncate rounded-md bg-(--ink)/80 px-2 py-1 text-[10px] font-medium text-(--paper) backdrop-blur-xs tracking-wide">
@@ -121,12 +117,8 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
                   key={slotName}
                   className="relative flex-1 min-h-24 overflow-hidden rounded-xl border border-(--border)/80 bg-(--ivory)"
                 >
-                  <LazyImage
-                    src={piece.photo}
-                    alt={piece.name}
-                    category={piece.category}
-                    subcategory={piece.subcategory}
-                    colors={piece.colors}
+                  <ItemImage
+                    item={piece}
                     className="h-full w-full object-cover"
                   />
                   <div className="absolute bottom-1.5 left-1.5 right-1.5 truncate rounded bg-(--ink)/80 px-1.5 py-0.5 text-[9px] font-medium text-(--paper) backdrop-blur-xs">
@@ -140,12 +132,8 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
               {/* First secondary piece (e.g. Kurta / Top) */}
               {secondarySlots[0] && secondarySlots[0][1][0] && (
                 <div className="relative flex-1 min-h-24 overflow-hidden rounded-xl border border-(--border)/80 bg-(--ivory)">
-                  <LazyImage
-                    src={secondarySlots[0][1][0].photo}
-                    alt={secondarySlots[0][1][0].name}
-                    category={secondarySlots[0][1][0].category}
-                    subcategory={secondarySlots[0][1][0].subcategory}
-                    colors={secondarySlots[0][1][0].colors}
+                  <ItemImage
+                    item={secondarySlots[0][1][0]}
                     className="h-full w-full object-cover"
                   />
                   <div className="absolute bottom-1.5 left-1.5 right-1.5 truncate rounded bg-(--ink)/80 px-1.5 py-0.5 text-[9px] font-medium text-(--paper) backdrop-blur-xs">
@@ -163,12 +151,8 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
                       key={slotName}
                       className="relative aspect-square overflow-hidden rounded-xl border border-(--border)/80 bg-(--ivory)"
                     >
-                      <LazyImage
-                        src={piece.photo}
-                        alt={piece.name}
-                        category={piece.category}
-                        subcategory={piece.subcategory}
-                        colors={piece.colors}
+                      <ItemImage
+                        item={piece}
                         className="h-full w-full object-cover"
                       />
                       <div className="absolute bottom-1 left-1 right-1 truncate rounded bg-(--ink)/80 px-1 py-0.5 text-[8px] font-medium text-(--paper) backdrop-blur-xs">

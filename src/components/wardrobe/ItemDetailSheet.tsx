@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Heart, Trash2, Plus } from 'lucide-react';
 import { WardrobeItem, Status } from '../../types';
 import { BottomSheet } from '../common/BottomSheet';
-import { LazyImage } from '../common/LazyImage';
+import { ItemImage } from '../common/ItemImage';
 
 interface ItemDetailSheetProps {
   item: WardrobeItem | null;
@@ -59,13 +59,9 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
       <div className="space-y-5">
         {/* Large Garment Photograph */}
         <div className="relative aspect-4/3 w-full overflow-hidden rounded-2xl border border-(--border) bg-(--ivory)">
-          <LazyImage
-            src={item.photo}
-            alt={name}
-            category={item.category}
-            subcategory={item.subcategory}
-            colors={item.colors}
-            className="h-full w-full object-cover"
+          <ItemImage
+            item={item}
+            className="h-full w-full object-contain p-2"
             isHero
           />
           <button

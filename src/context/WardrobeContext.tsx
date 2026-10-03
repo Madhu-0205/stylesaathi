@@ -2,6 +2,8 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import { WardrobeItem, SavedOutfit, GeneratedOutfit } from '../types';
 import { wardrobeRepository } from '../repositories/LocalStorageWardrobeRepository';
 import { sampleWardrobe } from '../data/sampleWardrobe';
+import { clearImages, deleteImage } from '../services/imageStore';
+import { migrateLegacyPhotos } from '../services/migration';
 
 const SETTINGS_KEY = 'stylesaathi-settings-v1';
 
@@ -18,6 +20,9 @@ interface WardrobeContextValue {
   onboarded: boolean;
   styleVibes: string[];
   savedOutfits: SavedOutfit[];
+  toast: string | null;
+  showToast: (msg: string) => void;
+  clearToast: () => void;
   addItem: (item: WardrobeItem) => Promise<void>;
   updateItem: (id: string, patch: Partial<WardrobeItem>) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
@@ -37,6 +42,15 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [items, setItems] = useState<WardrobeItem[]>([]);
   const [savedOutfits, setSavedOutfits] = useState<SavedOutfit[]>([]);
   const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState<string | null>(null);
+
+  const showToast = useCallback((msg: string) => {
+    setToast(msg);
+  }, []);
+
+  const clearToast = useCallback(() => {
+    setToast(null);
+  }, []);
 
   // Settings state (theme, onboarded, styleVibes)
   const [settings, setSettings] = useState<SettingsData>(() => {
@@ -61,7 +75,7 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [settings.theme]);
 
-  // Load items and saved outfits on mount
+  // Load items and saved outfits on mount + execute safe migration
   const refreshData = useCallback(async () => {
     try {
       setLoading(true);
@@ -69,8 +83,21 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         wardrobeRepository.getItems(),
         wardrobeRepository.getSavedOutfits(),
       ]);
-      setItems(loadedItems);
+
+      // Run safe idempotent migration from base64 photos to IndexedDB
+      const { migratedItems, hasChanges } = await migrateLegacyPhotos(loadedItems);
+      if (hasChanges) {
+        for (const itm of migratedItems) {
+          await wardrobeRepository.updateItem(itm.id, itm);
+        }
+        setItems(migratedItems);
+      } else {
+        setItems(loadedItems);
+      }
+
       setSavedOutfits(loadedOutfits);
+    } catch (err) {
+      console.warn('Error refreshing wardrobe data:', err);
     } finally {
       setLoading(false);
     }
@@ -90,13 +117,30 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
   }, []);
 
-  const deleteItem = useCallback(async (id: string) => {
-    await wardrobeRepository.deleteItem(id);
-    setItems((prev) => prev.filter((item) => item.id !== id));
-  }, []);
+  const deleteItem = useCallback(
+    async (id: string) => {
+      try {
+        const itemToDelete = items.find((i) => i.id === id);
+        if (itemToDelete?.photoId) {
+          await deleteImage(itemToDelete.photoId);
+        }
+        await deleteImage(id);
+      } catch (err) {
+        console.warn('Failed to clean up image for item', id, err);
+      }
+      await wardrobeRepository.deleteItem(id);
+      setItems((prev) => prev.filter((item) => item.id !== id));
+    },
+    [items]
+  );
 
   const loadSample = useCallback(async () => {
     setLoading(true);
+    try {
+      await clearImages();
+    } catch (err) {
+      console.warn('Failed to clear images during loadSample:', err);
+    }
     await wardrobeRepository.clear();
     for (const item of sampleWardrobe) {
       await wardrobeRepository.addItem(item);
@@ -107,12 +151,22 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const resetWardrobe = useCallback(async () => {
+    try {
+      await clearImages();
+    } catch (err) {
+      console.warn('Failed to clear images during resetWardrobe:', err);
+    }
     await wardrobeRepository.clear();
     setItems([]);
     setSavedOutfits([]);
   }, []);
 
   const resetAll = useCallback(async () => {
+    try {
+      await clearImages();
+    } catch (err) {
+      console.warn('Failed to clear images during resetAll:', err);
+    }
     await wardrobeRepository.clear();
     setItems([]);
     setSavedOutfits([]);
@@ -150,6 +204,9 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       onboarded: settings.onboarded,
       styleVibes: settings.styleVibes,
       savedOutfits,
+      toast,
+      showToast,
+      clearToast,
       addItem,
       updateItem,
       deleteItem,
@@ -167,6 +224,9 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       loading,
       settings,
       savedOutfits,
+      toast,
+      showToast,
+      clearToast,
       addItem,
       updateItem,
       deleteItem,

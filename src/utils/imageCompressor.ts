@@ -1,8 +1,35 @@
 /**
- * Client-side image compressor using HTML5 Canvas.
- * Resizes max dimension to ~800px and exports JPEG at 0.78 quality.
+ * Utility functions for image compression and format conversion.
  */
-export async function compressImage(file: File, maxDimension = 800, quality = 0.78): Promise<string> {
+
+/**
+ * Converts a base64 data URL string into a native Blob.
+ */
+export function dataUrlToBlob(dataUrl: string): Blob {
+  const parts = dataUrl.split(',');
+  if (parts.length < 2) {
+    throw new Error('Invalid data URL string');
+  }
+  const mimeMatch = parts[0].match(/:(.*?);/);
+  const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+  const binaryStr = atob(parts[1]);
+  const len = binaryStr.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryStr.charCodeAt(i);
+  }
+  return new Blob([bytes], { type: mime });
+}
+
+/**
+ * Compresses an uploaded image file using HTML5 Canvas to a max dimension
+ * of ~800px as a JPEG Blob with quality ~0.8.
+ */
+export async function compressImageToBlob(
+  file: File,
+  maxDimension = 800,
+  quality = 0.8
+): Promise<Blob> {
   // Validate file type
   if (!file.type.startsWith('image/')) {
     throw new Error('Selected file is not an image');
@@ -13,7 +40,7 @@ export async function compressImage(file: File, maxDimension = 800, quality = 0.
     throw new Error('Image size is too large (maximum 15MB)');
   }
 
-  return new Promise<string>((resolve, reject) => {
+  return new Promise<Blob>((resolve, reject) => {
     const reader = new FileReader();
 
     reader.onload = () => {
@@ -45,8 +72,28 @@ export async function compressImage(file: File, maxDimension = 800, quality = 0.
 
           ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
 
-          const dataUrl = canvas.toDataURL('image/jpeg', quality);
-          resolve(dataUrl);
+          if (canvas.toBlob) {
+            canvas.toBlob(
+              (blob) => {
+                if (blob) {
+                  resolve(blob);
+                } else {
+                  // Fallback via dataUrl if toBlob returns null
+                  try {
+                    const dataUrl = canvas.toDataURL('image/jpeg', quality);
+                    resolve(dataUrlToBlob(dataUrl));
+                  } catch (e) {
+                    reject(new Error('Failed to create image blob'));
+                  }
+                }
+              },
+              'image/jpeg',
+              quality
+            );
+          } else {
+            const dataUrl = canvas.toDataURL('image/jpeg', quality);
+            resolve(dataUrlToBlob(dataUrl));
+          }
         } catch (err) {
           reject(new Error('Failed to process and compress image'));
         }
@@ -64,5 +111,22 @@ export async function compressImage(file: File, maxDimension = 800, quality = 0.
     };
 
     reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * Backward-compatible helper returning base64 data URL string.
+ */
+export async function compressImage(
+  file: File,
+  maxDimension = 800,
+  quality = 0.78
+): Promise<string> {
+  const blob = await compressImageToBlob(file, maxDimension, quality);
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error('Failed to read blob as data URL'));
+    reader.readAsDataURL(blob);
   });
 }

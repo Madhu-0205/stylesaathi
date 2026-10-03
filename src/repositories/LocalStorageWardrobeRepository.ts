@@ -1,6 +1,6 @@
 import { WardrobeRepository } from './WardrobeRepository';
 import { WardrobeItem, GeneratedOutfit, SavedOutfit } from '../types';
-import { photoStore } from '../utils/photoStore';
+import { deleteImage, clearImages } from '../services/imageStore';
 
 const STORAGE_KEY = 'stylesaathi-v1';
 const SAVED_OUTFITS_KEY = 'stylesaathi-saved-outfits-v1';
@@ -72,18 +72,7 @@ export class LocalStorageWardrobeRepository implements WardrobeRepository {
 
   async getItems(): Promise<WardrobeItem[]> {
     const data = this.getStorageData();
-    const hydrated = await Promise.all(
-      data.items.map(async (item) => {
-        if (!item.photo && item.id) {
-          const storedPhoto = await photoStore.getPhoto(item.id);
-          if (storedPhoto) {
-            return { ...item, photo: storedPhoto };
-          }
-        }
-        return item;
-      })
-    );
-    return hydrated;
+    return data.items;
   }
 
   async getItem(id: string): Promise<WardrobeItem | null> {
@@ -93,25 +82,26 @@ export class LocalStorageWardrobeRepository implements WardrobeRepository {
 
   async addItem(item: WardrobeItem): Promise<void> {
     const data = this.getStorageData();
-    const savedItem = { ...item };
-
-    if (item.photo && item.photo.startsWith('data:')) {
-      await photoStore.savePhoto(item.id, item.photo);
+    // Do not store heavy base64 strings in localStorage metadata
+    const itemToSave = { ...item };
+    if (itemToSave.photo && itemToSave.photo.startsWith('data:')) {
+      delete itemToSave.photo;
     }
 
-    const updated = [savedItem, ...data.items.filter((i) => i.id !== item.id)];
+    const updated = [itemToSave, ...data.items.filter((i) => i.id !== item.id)];
     this.setStorageData({ ...data, items: updated });
   }
 
   async updateItem(id: string, patch: Partial<WardrobeItem>): Promise<void> {
     const data = this.getStorageData();
-    if (patch.photo && patch.photo.startsWith('data:')) {
-      await photoStore.savePhoto(id, patch.photo);
+    const patchToApply = { ...patch };
+    if (patchToApply.photo && patchToApply.photo.startsWith('data:')) {
+      delete patchToApply.photo;
     }
 
     const updated = data.items.map((item) => {
       if (item.id === id) {
-        return { ...item, ...patch };
+        return { ...item, ...patchToApply };
       }
       return item;
     });
@@ -121,7 +111,16 @@ export class LocalStorageWardrobeRepository implements WardrobeRepository {
 
   async deleteItem(id: string): Promise<void> {
     const data = this.getStorageData();
-    await photoStore.deletePhoto(id);
+    const itemToDelete = data.items.find((i) => i.id === id);
+    if (itemToDelete?.photoId) {
+      try {
+        await deleteImage(itemToDelete.photoId);
+      } catch {}
+    }
+    try {
+      await deleteImage(id);
+    } catch {}
+
     const updated = data.items.filter((i) => i.id !== id);
     this.setStorageData({ ...data, items: updated });
   }
@@ -159,7 +158,9 @@ export class LocalStorageWardrobeRepository implements WardrobeRepository {
     this.removeItemRaw(STORAGE_KEY);
     this.removeItemRaw(SAVED_OUTFITS_KEY);
     this.memStorage.clear();
-    await photoStore.clearPhotos();
+    try {
+      await clearImages();
+    } catch {}
   }
 }
 

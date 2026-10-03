@@ -1,7 +1,7 @@
 import React from 'react';
 import { SmartBuyRecommendation } from '../../types';
 import { BottomSheet } from '../common/BottomSheet';
-import { LazyImage } from '../common/LazyImage';
+import { ItemImage } from '../common/ItemImage';
 
 interface CombinationsModalProps {
   recommendation: SmartBuyRecommendation | null;
@@ -26,12 +26,8 @@ export const CombinationsModal: React.FC<CombinationsModalProps> = ({
         <div className="rounded-2xl border border-(--burnished-gold)/50 bg-(--ivory) p-4">
           <div className="flex items-center gap-4">
             <div className="h-20 w-16 shrink-0 overflow-hidden rounded-xl border border-(--border) bg-(--paper)">
-              <LazyImage
-                src={candidate.photo}
-                alt={candidate.name}
-                category={candidate.category}
-                subcategory={candidate.subcategory}
-                colors={candidate.colors}
+              <ItemImage
+                item={candidate}
                 className="h-full w-full object-cover"
               />
             </div>
@@ -73,12 +69,8 @@ export const CombinationsModal: React.FC<CombinationsModalProps> = ({
                   className="w-20 shrink-0 flex flex-col items-center rounded-xl border border-(--border) bg-(--card) p-1.5"
                 >
                   <div className="aspect-square w-full overflow-hidden rounded-lg bg-(--ivory)">
-                    <LazyImage
-                      src={item.photo}
-                      alt={item.name}
-                      category={item.category}
-                      subcategory={item.subcategory}
-                      colors={item.colors}
+                    <ItemImage
+                      item={item}
                       className="h-full w-full object-cover"
                     />
                   </div>
@@ -138,12 +130,8 @@ export const CombinationsModal: React.FC<CombinationsModalProps> = ({
                             }`}
                           >
                             <div className="aspect-square w-full overflow-hidden rounded-lg bg-(--ivory)">
-                              <LazyImage
-                                src={p.photo}
-                                alt={p.name}
-                                category={p.category}
-                                subcategory={p.subcategory}
-                                colors={p.colors}
+                              <ItemImage
+                                item={p}
                                 className="h-full w-full object-cover"
                               />
                             </div>
