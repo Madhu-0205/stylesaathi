@@ -53,7 +53,7 @@ export const AccessoryDrawer: React.FC<AccessoryDrawerProps> = ({
                 onSelectAccessory(null);
                 onClose();
               }}
-              className="flex min-h-9 items-center gap-1 rounded-full border border-(--border) bg-(--card) px-3 text-xs font-semibold text-(--muted) hover:text-red-600 transition-colors"
+              className="flex min-h-11 items-center gap-1.5 rounded-full border border-(--border) bg-(--card) px-3.5 text-xs font-semibold text-(--muted) hover:text-red-600 transition-colors active:scale-95"
             >
               <X className="h-3.5 w-3.5" />
               Remove

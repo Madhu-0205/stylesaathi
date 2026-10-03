@@ -228,7 +228,7 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
                   key={sub}
                   type="button"
                   onClick={() => setSubcategory(sub)}
-                  className={`min-h-9 rounded-full px-3 py-1 text-[11px] font-semibold capitalize transition-all ${
+                  className={`min-h-10 rounded-full px-3.5 py-1 text-xs font-semibold capitalize transition-all active:scale-95 ${
                     subcategory === sub
                       ? 'bg-(--text) text-(--background) shadow-xs'
                       : 'border border-(--border) bg-(--card) text-(--muted) hover:text-(--text)'
@@ -254,10 +254,10 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
                   key={c}
                   type="button"
                   onClick={() => toggleColor(c)}
-                  className={`flex min-h-8.5 items-center gap-1.5 rounded-full border px-3 text-xs font-medium capitalize transition-all ${
+                  className={`flex min-h-10 items-center gap-1.5 rounded-full border px-3.5 py-1 text-xs font-medium capitalize transition-all active:scale-95 ${
                     isSelected
                       ? 'border-(--accent) bg-(--accent-light) text-(--accent) font-bold shadow-2xs'
-                      : 'border-(--border) bg-(--card) text-(--muted)'
+                      : 'border-(--border) bg-(--card) text-(--muted) hover:border-(--muted)'
                   }`}
                 >
                   <span
@@ -290,16 +290,16 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
                 : 'Wedding / Ultra Festive'}
             </span>
           </div>
-          <div className="mt-2 grid grid-cols-5 gap-1.5">
+          <div className="mt-2 grid grid-cols-5 gap-2">
             {[1, 2, 3, 4, 5].map((lvl) => (
               <button
                 key={lvl}
                 type="button"
                 onClick={() => setFormality(lvl)}
-                className={`min-h-10 rounded-xl text-xs font-bold transition-all ${
+                className={`min-h-11 rounded-xl text-xs font-bold transition-all active:scale-95 ${
                   formality === lvl
                     ? 'bg-(--accent) text-white shadow-xs'
-                    : 'border border-(--border) bg-(--card) text-(--muted)'
+                    : 'border border-(--border) bg-(--card) text-(--muted) hover:border-(--muted)'
                 }`}
               >
                 {lvl}
@@ -313,7 +313,7 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
           <label className="text-[11px] font-bold uppercase tracking-wider text-(--muted)">
             Suitable Occasions
           </label>
-          <div className="mt-2 flex flex-wrap gap-1.5">
+          <div className="mt-2 flex flex-wrap gap-2">
             {OCCASIONS.map((occ) => {
               const isSelected = occasions.includes(occ);
               return (
@@ -321,10 +321,10 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
                   key={occ}
                   type="button"
                   onClick={() => toggleOccasion(occ)}
-                  className={`min-h-8 rounded-full px-3 text-[11px] font-semibold capitalize transition-all ${
+                  className={`min-h-10 rounded-full px-3.5 py-1 text-xs font-semibold capitalize transition-all active:scale-95 ${
                     isSelected
                       ? 'bg-(--accent) text-white shadow-2xs'
-                      : 'border border-(--border) bg-(--card) text-(--muted)'
+                      : 'border border-(--border) bg-(--card) text-(--muted) hover:border-(--muted)'
                   }`}
                 >
                   {occ}

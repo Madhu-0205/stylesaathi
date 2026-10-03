@@ -65,7 +65,7 @@ export const SmartBuyCard: React.FC<SmartBuyCardProps> = ({
         <button
           type="button"
           onClick={() => onSeeCombinations(recommendation)}
-          className="inline-flex min-h-9.5 items-center gap-1.5 rounded-xl bg-(--background) px-3 py-1.5 text-xs font-bold text-(--accent) transition-all hover:bg-(--accent) hover:text-white active:scale-95"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-(--background) px-3.5 py-2 text-xs font-bold text-(--accent) transition-all hover:bg-(--accent) hover:text-white active:scale-95"
         >
           <span>See combinations</span>
           <ArrowRight className="h-3.5 w-3.5" />

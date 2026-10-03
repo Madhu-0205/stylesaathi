@@ -50,20 +50,22 @@ export const ItemCard: React.FC<ItemCardProps> = ({
           </span>
         </div>
 
-        {/* Favorite heart button */}
+        {/* Favorite heart button - 44px touch target with sleek visual badge */}
         <button
           type="button"
           aria-label={item.favorite ? 'Remove from favorites' : 'Add to favorites'}
           onClick={(e) => onToggleFavorite(e, item)}
-          className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 backdrop-blur-xs text-(--muted) transition-transform hover:scale-110 active:scale-90 dark:bg-black/60"
+          className="absolute right-1 top-1 z-10 flex h-11 w-11 items-center justify-center rounded-full text-(--muted) transition-transform hover:scale-105 active:scale-90"
         >
-          <Heart
-            className={`h-4 w-4 transition-colors ${
-              item.favorite
-                ? 'fill-(--accent) stroke-(--accent)'
-                : 'stroke-(--text)/70 hover:stroke-(--accent)'
-            }`}
-          />
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/85 backdrop-blur-xs shadow-2xs dark:bg-black/65">
+            <Heart
+              className={`h-4 w-4 transition-colors ${
+                item.favorite
+                  ? 'fill-(--accent) stroke-(--accent)'
+                  : 'stroke-(--text)/70 hover:stroke-(--accent)'
+              }`}
+            />
+          </div>
         </button>
       </div>
 

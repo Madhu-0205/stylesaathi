@@ -71,7 +71,8 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
           <button
             type="button"
             onClick={() => setFavorite(!favorite)}
-            className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 backdrop-blur-xs text-(--muted) shadow-md transition-transform hover:scale-105 active:scale-95 dark:bg-black/70"
+            aria-label={favorite ? 'Remove from favorites' : 'Add to favorites'}
+            className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 backdrop-blur-xs text-(--muted) shadow-md transition-transform hover:scale-105 active:scale-95 dark:bg-black/70"
           >
             <Heart
               className={`h-5 w-5 transition-colors ${

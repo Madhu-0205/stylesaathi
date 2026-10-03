@@ -148,18 +148,22 @@ export const OnboardingScreen: React.FC = () => {
           </div>
         )}
 
-        {/* Step dots */}
-        <div className="flex justify-center gap-2 pt-2">
+        {/* Step dots - 44px touch target with sleek indicator */}
+        <div className="flex justify-center gap-1 pt-1">
           {slides.map((_, i) => (
             <button
               key={i}
               type="button"
               onClick={() => setStep(i)}
               aria-label={`Go to slide ${i + 1}`}
-              className={`h-2 rounded-full transition-all ${
-                i === step ? 'w-6 bg-(--accent)' : 'w-2 bg-(--border)'
-              }`}
-            />
+              className="flex h-11 w-8 items-center justify-center rounded-full transition-transform active:scale-90"
+            >
+              <span
+                className={`h-2 rounded-full transition-all ${
+                  i === step ? 'w-6 bg-(--accent)' : 'w-2 bg-(--border)'
+                }`}
+              />
+            </button>
           ))}
         </div>
       </div>

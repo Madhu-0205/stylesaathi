@@ -53,6 +53,7 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
           <button
             type="button"
             onClick={onOpenAddItem}
+            aria-label="Add clothing item"
             className="flex min-h-11 items-center gap-1.5 rounded-2xl bg-(--accent) px-4 py-2 text-xs font-bold text-white shadow-xs transition-transform hover:opacity-95 active:scale-95"
           >
             <Plus className="h-4 w-4 stroke-3" />
