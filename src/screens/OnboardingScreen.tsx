@@ -52,7 +52,16 @@ export const OnboardingScreen: React.FC = () => {
     <div className="w-full max-w-lg md:max-w-xl mx-auto flex min-h-[100dvh] flex-col justify-between p-5 sm:p-8 animate-fade-in bg-(--background)">
       {/* Refined Brand Header */}
       <div className="flex items-center justify-between pt-2 border-b border-(--border) pb-3">
-        <StyleSaathiLogo variant="full" size="sm" showTagline={true} />
+        {step === 0 ? (
+          <div className="flex items-center gap-2">
+            <StyleSaathiLogo variant="mark" size="xs" />
+            <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--burnished-gold)">
+              STYLESAATHI
+            </span>
+          </div>
+        ) : (
+          <StyleSaathiLogo variant="full" size="sm" showTagline={true} />
+        )}
         <span className="text-[11px] font-serif italic text-(--muted)">
           0{step + 1} / 03
         </span>
