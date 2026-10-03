@@ -85,30 +85,30 @@ export const AuthView: React.FC<AuthViewProps> = ({
       </h1>
 
       <p className="mt-2 text-xs sm:text-sm text-(--muted) leading-relaxed max-w-sm">
-        Create your StyleSaathi profile to unlock your personalized wardrobe companion.
+        Create your StyleSaathi profile to unlock your personalized wardrobe.
       </p>
 
       {/* Value highlights */}
-      <div className="mt-5 w-full rounded-xl border border-(--border)/80 bg-(--card) p-4 text-left shadow-2xs">
-        <span className="text-[9.5px] font-bold uppercase tracking-[0.16em] text-(--burnished-gold) block mb-2">
-          UNLOCK WITH YOUR PROFILE:
+      <div className="mt-5 w-full rounded-2xl border border-(--border) bg-(--ivory)/70 p-4 text-left shadow-2xs">
+        <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-(--burnished-gold) block mb-2.5">
+          WITH YOUR PROFILE:
         </span>
-        <ul className="space-y-1.5 text-xs text-(--text)">
-          <li className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-(--kumkum)" />
+        <ul className="space-y-2 text-xs text-(--text)">
+          <li className="flex items-center gap-2.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-(--kumkum) shrink-0" />
             <span>Personalized styling &amp; aesthetic memory</span>
           </li>
-          <li className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-(--burnished-gold)" />
-            <span>Style Calendar for planning upcoming looks</span>
+          <li className="flex items-center gap-2.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-(--burnished-gold) shrink-0" />
+            <span>Style Calendar for upcoming looks &amp; plans</span>
           </li>
-          <li className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-(--kumkum)" />
-            <span>Wear history &amp; rotation tracking</span>
+          <li className="flex items-center gap-2.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-(--kumkum) shrink-0" />
+            <span>Wear history &amp; rotation intelligence</span>
           </li>
-          <li className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-(--burnished-gold)" />
-            <span>Local-first with safe multi-device sync</span>
+          <li className="flex items-center gap-2.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-(--burnished-gold) shrink-0" />
+            <span>Local-first archive with safe cross-device sync</span>
           </li>
         </ul>
       </div>

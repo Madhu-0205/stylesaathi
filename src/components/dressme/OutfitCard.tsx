@@ -266,7 +266,7 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
                 title="Plan this look on Style Calendar"
               >
                 <Calendar className="h-3.5 w-3.5 text-(--burnished-gold)" />
-                <span className="hidden sm:inline">Plan</span>
+                <span>Plan</span>
               </button>
             )}
 

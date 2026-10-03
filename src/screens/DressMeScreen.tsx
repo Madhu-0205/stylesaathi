@@ -61,6 +61,9 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
           <h1 className="mt-0.5 font-serif text-2xl sm:text-3xl italic text-(--ink) tracking-tight">
             Aaj kya pehenna hai?
           </h1>
+          <p className="text-[11px] text-(--muted) font-medium">
+            Styled around your wardrobe · Curated for how you like to dress
+          </p>
         </div>
 
         <div className="flex items-center gap-2">

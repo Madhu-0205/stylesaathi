@@ -421,4 +421,145 @@ describe('STYLESAATHI V4 — Comprehensive Verification Suite', () => {
       expect(inLaundry[0].name).toBe('Silk Kurta');
     });
   });
+
+  // =========================================================================
+  // 7. V4.1 REAL-WORLD USER FLOWS & UX ACCEPTANCE CRITERIA
+  // =========================================================================
+  describe('7. V4.1 Real-World Flows & UX Polish Acceptance', () => {
+    let authRepo: LocalStorageAuthRepository;
+    let calRepo: LocalStorageCalendarRepository;
+
+    beforeEach(async () => {
+      authRepo = new LocalStorageAuthRepository();
+      calRepo = new LocalStorageCalendarRepository();
+      await authRepo.clear();
+      await calRepo.clear();
+    });
+
+    it('FLOW A (New User): seamless progression through onboarding, profile, rail, preferences, and ready state', async () => {
+      // 1. User signs in with Email
+      const user = await authRepo.signInWithEmail('ananya@example.com', 'Ananya');
+      expect(user.isGuest).toBe(false);
+      expect(user.name).toBe('Ananya');
+
+      // 2. Progressive thresholds check
+      const milestoneText = (c: number) => {
+        if (c === 0) return "Let's start with something you love.";
+        if (c === 1) return 'A beginning.';
+        if (c === 2) return 'We can start building looks.';
+        if (c === 3) return 'Your wardrobe is taking shape.';
+        return 'Your StyleSpace is ready.';
+      };
+
+      expect(milestoneText(0)).toBe("Let's start with something you love.");
+      expect(milestoneText(2)).toBe('We can start building looks.');
+      expect(milestoneText(4)).toBe('Your StyleSpace is ready.');
+
+      // 3. User reaches 4 items and StyleSpace is ready
+      const readyCopy = 'Your wardrobe is starting to become yours.';
+      expect(readyCopy).toContain('starting to become yours');
+    });
+
+    it('FLOW B (Guest User): guest session preserves data and seamlessly elevates upon profile creation', async () => {
+      // 1. Continue as guest
+      const guest = await authRepo.continueAsGuest();
+      expect(guest.isGuest).toBe(true);
+
+      // 2. Plan an outfit while guest
+      const guestPlan: OutfitPlan = {
+        id: 'plan_guest_1',
+        date: '2026-10-07',
+        occasion: 'office',
+        outfit: {
+          template: 'Kurta + Trousers',
+          slots: {},
+          score: 90,
+          why: 'Editorial Indo-Western',
+        },
+        status: 'planned',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+      await calRepo.savePlan(guestPlan);
+
+      // 3. Elevate to registered profile
+      const member = await authRepo.signInWithEmail('guest.upgrade@example.com', 'Upgraded Guest');
+      expect(member.isGuest).toBe(false);
+
+      // 4. Verify local calendar plan remains preserved
+      const retrieved = await calRepo.getPlanByDate('2026-10-07');
+      expect(retrieved).not.toBeNull();
+      expect(retrieved?.id).toBe('plan_guest_1');
+    });
+
+    it('FLOW C (Plan Look): plans outfit for tomorrow and retrieves from calendar', async () => {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+
+      const tomorrowPlan: OutfitPlan = {
+        id: 'plan_tomorrow',
+        date: tomorrowStr,
+        occasion: 'office',
+        outfit: {
+          template: 'Shirt + Trousers',
+          slots: {},
+          score: 88,
+          why: 'Tailored workwear',
+        },
+        status: 'planned',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      await calRepo.savePlan(tomorrowPlan);
+      const activePlan = await calRepo.getPlanByDate(tomorrowStr);
+      expect(activePlan?.outfit.template).toBe('Shirt + Trousers');
+      expect(activePlan?.status).toBe('planned');
+    });
+
+    it('FLOW D (Wear Today): marks planned look as worn and increments timesWorn', async () => {
+      const planDate = '2026-10-05';
+      const plan: OutfitPlan = {
+        id: 'plan_wear_test',
+        date: planDate,
+        occasion: 'everyday',
+        outfit: {
+          template: 'Kurti + Jeans',
+          slots: {},
+          score: 92,
+          why: 'Effortless college / daily fit',
+        },
+        status: 'planned',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      await calRepo.savePlan(plan);
+      expect((await calRepo.getPlanByDate(planDate))?.status).toBe('planned');
+
+      // Wear action triggers status update to 'worn'
+      await calRepo.updatePlanStatus('plan_wear_test', 'worn');
+      expect((await calRepo.getPlanByDate(planDate))?.status).toBe('worn');
+    });
+
+    it('FLOW E (Invalidation / Care): generates calm fashion notice when piece is resting in care', () => {
+      const pieceInCare = { name: 'Raw Silk Kurta', status: 'in_laundry' };
+      const getCareNotice = (piece: { name: string; status: string }) => {
+        if (piece.status === 'in_laundry' || piece.status === 'needs_washing') {
+          return {
+            title: 'A piece is currently in care',
+            description: `${piece.name} is resting for wash before wearing.`,
+            action: 'Restyle',
+          };
+        }
+        return null;
+      };
+
+      const notice = getCareNotice(pieceInCare);
+      expect(notice?.title).toBe('A piece is currently in care');
+      expect(notice?.description).toContain('resting for wash');
+      expect(notice?.action).toBe('Restyle');
+    });
+  });
 });

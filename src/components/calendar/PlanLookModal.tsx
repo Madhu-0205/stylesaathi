@@ -57,7 +57,7 @@ export const PlanLookModal: React.FC<PlanLookModalProps> = ({
         occasion,
         status: 'planned',
       });
-      showToast(`Look planned for ${selectedDate}`);
+      showToast('LOOK PLANNED · Added to Style Calendar');
       onClose();
     } finally {
       setIsSubmitting(false);
@@ -152,7 +152,7 @@ export const PlanLookModal: React.FC<PlanLookModalProps> = ({
                   : 'border-(--border) bg-(--card) text-(--muted) hover:border-(--ink)'
               }`}
             >
-              <span className="block text-[10px] uppercase font-semibold">In 2 Days</span>
+              <span className="block text-[9px] uppercase font-semibold">Day After</span>
               <span className="text-xs">{dayAfter.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</span>
             </button>
           </div>
@@ -161,7 +161,7 @@ export const PlanLookModal: React.FC<PlanLookModalProps> = ({
         {/* Custom Date Input */}
         <div className="mb-5">
           <label className="block text-[10px] font-bold uppercase tracking-wider text-(--muted) mb-1">
-            OR SELECT A SPECIFIC DATE:
+            CHOOSE A DATE:
           </label>
           <input
             type="date"
@@ -180,7 +180,7 @@ export const PlanLookModal: React.FC<PlanLookModalProps> = ({
             disabled={isSubmitting || !selectedDate}
             className="w-full flex min-h-11 items-center justify-center gap-2 rounded-xl border border-(--ink) bg-(--ink) px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-(--paper) transition-all hover:opacity-95 active:scale-[0.98] shadow-2xs disabled:opacity-50"
           >
-            <span>Confirm Plan</span>
+            <span>Plan This Look</span>
             <ArrowRight className="h-3.5 w-3.5 text-(--burnished-gold)" />
           </button>
         </div>

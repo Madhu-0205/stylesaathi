@@ -175,25 +175,42 @@ export const WardrobeSetupScreen: React.FC<WardrobeSetupScreenProps> = ({ onComp
 
         {/* Footer Actions */}
         <div className="space-y-3 pb-4">
-          <button
-            type="button"
-            onClick={() => setIsAddOpen(true)}
-            className="w-full flex min-h-12 items-center justify-center gap-2.5 rounded-xl border border-(--ink) bg-(--ink) px-4 py-3 text-xs sm:text-sm font-semibold uppercase tracking-wider text-(--paper) transition-all hover:opacity-95 active:scale-[0.98] shadow-2xs"
-          >
-            <Plus className="h-4 w-4 text-(--burnished-gold)" />
-            <span>Add {count === 0 ? 'Your First Piece' : 'Another Piece'}</span>
-          </button>
-
           {canProceed && (
+            <div className="rounded-xl border border-(--burnished-gold)/40 bg-(--ivory) p-3 text-center animate-fade-in shadow-2xs">
+              <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--kumkum) block">
+                WE CAN START BUILDING LOOKS.
+              </span>
+              <p className="mt-0.5 text-xs text-(--muted)">
+                We have enough pieces to begin styling outfits. You can continue adding pieces or proceed to personalize.
+              </p>
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row gap-2.5">
             <button
               type="button"
-              onClick={() => setSubStep('preferences')}
-              className="w-full flex min-h-11 items-center justify-center gap-2 rounded-xl border border-(--burnished-gold) bg-(--ivory) px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-(--ink) transition-all hover:bg-(--card) active:scale-[0.98] shadow-2xs"
+              onClick={() => setIsAddOpen(true)}
+              className={`flex-1 flex min-h-12 items-center justify-center gap-2.5 rounded-xl border px-4 py-3 text-xs sm:text-sm font-semibold uppercase tracking-wider transition-all active:scale-[0.98] shadow-2xs ${
+                canProceed
+                  ? 'border-(--border) bg-(--card) text-(--ink) hover:border-(--ink)'
+                  : 'border-(--ink) bg-(--ink) text-(--paper) hover:opacity-95'
+              }`}
             >
-              <span>Personalize My Style ({count} pieces added)</span>
-              <ArrowRight className="h-3.5 w-3.5 text-(--burnished-gold)" />
+              <Plus className="h-4 w-4 text-(--burnished-gold)" />
+              <span>Add {count === 0 ? 'Your First Piece' : 'Another Piece'}</span>
             </button>
-          )}
+
+            {canProceed && (
+              <button
+                type="button"
+                onClick={() => setSubStep('preferences')}
+                className="flex-1 flex min-h-12 items-center justify-center gap-2 rounded-xl border border-(--ink) bg-(--ink) px-4 py-3 text-xs sm:text-sm font-semibold uppercase tracking-wider text-(--paper) transition-all hover:opacity-95 active:scale-[0.98] shadow-2xs"
+              >
+                <span>Continue Styling</span>
+                <ArrowRight className="h-4 w-4 text-(--burnished-gold)" />
+              </button>
+            )}
+          </div>
 
           {count === 0 && (
             <button
@@ -395,8 +412,8 @@ export const WardrobeSetupScreen: React.FC<WardrobeSetupScreenProps> = ({ onComp
             YOUR STYLESPACE IS READY.
           </h1>
 
-          <p className="mt-3 text-xs sm:text-sm text-(--muted) leading-relaxed max-w-sm mx-auto font-normal">
-            Your wardrobe is starting to become yours. We have indexed your pieces, established Indian garment relationships, and tuned styling to your aesthetic.
+          <p className="mt-2 text-xs sm:text-sm text-(--muted) leading-relaxed max-w-sm mx-auto font-normal">
+            Your wardrobe is starting to become yours.
           </p>
 
           {/* Garments Mosaic Preview */}
