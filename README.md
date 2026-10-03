@@ -43,6 +43,7 @@ npm run build
 - `src/data/sample.ts` — 25-piece realistic Indian wardrobe dataset with intentional category gaps.
 - `src/data/candidates.ts` — Static catalog of Smart Buy candidates with estimated Indian price ranges.
 - `src/screens/` & `src/components/` — Mobile-first editorial UI components.
+- `docs/design-spec.md` — Detailed product design specification, editorial aesthetic guidelines, Indian fashion taxonomy, and color palette tokens.
 
 ## Deploy
 Deploy easily to Vercel or Netlify:
