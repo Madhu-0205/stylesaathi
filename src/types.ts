@@ -128,15 +128,7 @@ export interface SmartBuyRecommendation {
   reason: string;
 }
 
-export interface AutoTagResult {
-  category: Category;
-  subcategory?: Subcategory;
-  colors: string[];
-  occasions: Occasion[];
-  formality: number;
-  confidence: number;
-  note?: string;
-}
+export type { AutoTagResult } from './services/autoTag';
 
 export interface WardrobeRepository {
   getItems(): Promise<WardrobeItem[]>;

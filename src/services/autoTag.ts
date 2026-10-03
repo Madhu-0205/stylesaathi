@@ -1,0 +1,114 @@
+import { Category, Subcategory, Occasion } from '../types';
+
+export interface AutoTagResult {
+  category: Category;
+  subcategory?: Subcategory;
+  colors: string[];
+  style?: string;
+  occasions: Occasion[];
+  formality: number;
+  confidence?: number;
+  note?: string;
+}
+
+/**
+ * Seam for integrating a real vision model (e.g., Google Cloud Vision, Gemini Vision, or on-device ViT).
+ *
+ * What it should return:
+ * - category: The broad wardrobe category (Tops, Bottoms, Ethnic, Dresses, Outerwear, Footwear, Accessories)
+ * - colors: Prominent detected colors mapped to our taxonomy
+ * - style/subcategory: Silhouette or item style (e.g., 'kurta', 't-shirt', 'saree')
+ * - confidence: (optional) Confidence score between 0 and 1
+ *
+ * NOTE: The UI MUST preserve the confirm/tweak step so users can inspect, correct,
+ * or refine model-suggested tags before adding items to their wardrobe.
+ */
+export async function autoTagImage(file: File): Promise<AutoTagResult> {
+  const fn = file.name.toLowerCase();
+
+  // Intelligent filename heuristic for demo/testing convenience
+  let category: Category = 'Tops';
+  let subcategory: Subcategory = 't-shirt';
+  let colors = ['white'];
+  let occasions: Occasion[] = ['college', 'casual outing'];
+  let formality = 2;
+
+  if (fn.includes('kurta') || fn.includes('kurti')) {
+    category = 'Ethnic';
+    subcategory = fn.includes('kurti') ? 'kurti' : 'kurta';
+    occasions = ['college', 'family function', 'puja'];
+    formality = 3;
+    colors = ['white', 'cream'];
+  } else if (fn.includes('saree')) {
+    category = 'Ethnic';
+    subcategory = 'saree';
+    occasions = ['wedding guest', 'Diwali', 'party'];
+    formality = 5;
+    colors = ['black', 'gold'];
+  } else if (fn.includes('lehenga')) {
+    category = 'Ethnic';
+    subcategory = 'lehenga';
+    occasions = ['wedding guest', 'Diwali'];
+    formality = 5;
+    colors = ['navy', 'pink'];
+  } else if (fn.includes('palazzo') || fn.includes('churidar')) {
+    category = 'Ethnic';
+    subcategory = fn.includes('palazzo') ? 'palazzo' : 'churidar';
+    occasions = ['college', 'family function', 'puja'];
+    formality = 3;
+    colors = ['cream', 'beige'];
+  } else if (fn.includes('jean') || fn.includes('denim')) {
+    category = 'Bottoms';
+    subcategory = 'jeans';
+    occasions = ['college', 'casual outing', 'date', 'travel'];
+    formality = 2;
+    colors = ['blue'];
+  } else if (fn.includes('trouser') || fn.includes('pant')) {
+    category = 'Bottoms';
+    subcategory = 'trousers';
+    occasions = ['office', 'college', 'date'];
+    formality = 3;
+    colors = ['black', 'beige'];
+  } else if (fn.includes('dress')) {
+    category = 'Dresses';
+    subcategory = 'western dress';
+    occasions = ['date', 'party', 'casual outing'];
+    formality = 3;
+    colors = ['black'];
+  } else if (fn.includes('jacket') || fn.includes('blazer')) {
+    category = 'Outerwear';
+    subcategory = fn.includes('blazer') ? 'blazer' : 'jacket';
+    occasions = ['office', 'party', 'date'];
+    formality = 4;
+    colors = ['black', 'blue'];
+  } else if (fn.includes('sneaker') || fn.includes('shoe')) {
+    category = 'Footwear';
+    subcategory = 'sneakers';
+    occasions = ['college', 'casual outing', 'travel'];
+    formality = 2;
+    colors = ['white'];
+  } else if (fn.includes('jutti') || fn.includes('kolhapuri')) {
+    category = 'Footwear';
+    subcategory = 'juttis';
+    occasions = ['wedding guest', 'Diwali', 'puja'];
+    formality = 4;
+    colors = ['mustard', 'gold'];
+  } else if (fn.includes('shirt')) {
+    category = 'Tops';
+    subcategory = 'shirt';
+    occasions = ['college', 'office', 'date'];
+    formality = 3;
+    colors = ['blue', 'white'];
+  }
+
+  return {
+    category,
+    subcategory,
+    colors,
+    style: subcategory,
+    occasions,
+    formality,
+    confidence: 0.88,
+    note: 'Auto-detected tags. Tap any tag to refine.',
+  };
+}

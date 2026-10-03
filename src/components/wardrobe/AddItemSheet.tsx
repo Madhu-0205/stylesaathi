@@ -4,7 +4,7 @@ import { BottomSheet } from '../common/BottomSheet';
 import { Category, Subcategory, Occasion, WardrobeItem } from '../../types';
 import { CATEGORIES, SUBCATEGORIES, OCCASIONS, COLOR_PALETTE } from '../../data/taxonomy';
 import { compressImage } from '../../utils/imageCompressor';
-import { autoTagger } from '../../utils/autoTagger';
+import { autoTagImage } from '../../services/autoTag';
 
 interface AddItemSheetProps {
   isOpen: boolean;
@@ -55,7 +55,7 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
       setPhotoData(compressed);
 
       // 2. Vision auto-tagging seam
-      const tagResult = await autoTagger.analyze(file);
+      const tagResult = await autoTagImage(file);
       setCategory(tagResult.category);
       if (tagResult.subcategory) setSubcategory(tagResult.subcategory);
       setColors(tagResult.colors);
