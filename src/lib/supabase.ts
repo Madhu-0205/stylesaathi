@@ -1,17 +1,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const rawUrl =
-  import.meta.env.VITE_SUPABASE_URL ||
-  (import.meta.env as any).NEXT_PUBLIC_SUPABASE_URL ||
-  (import.meta.env as any).SUPABASE_URL;
-
-const rawKey =
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-  import.meta.env.VITE_SUPABASE_ANON_KEY ||
-  (import.meta.env as any).NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  (import.meta.env as any).NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-  (import.meta.env as any).SUPABASE_ANON_KEY ||
-  (import.meta.env as any).SUPABASE_PUBLISHABLE_KEY;
+const rawUrl = import.meta.env.VITE_SUPABASE_URL;
+const rawKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 export const supabaseUrl: string = typeof rawUrl === 'string' ? rawUrl.trim().replace(/^["']|["']$/g, '') : '';
 export const supabaseAnonKey: string = typeof rawKey === 'string' ? rawKey.trim().replace(/^["']|["']$/g, '') : '';
