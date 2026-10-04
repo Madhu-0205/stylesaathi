@@ -4,6 +4,7 @@ const AUTH_USER_KEY = 'stylesaathi-auth-user-v1';
 
 export class LocalStorageAuthRepository implements AuthRepository {
   private memStorage = new Map<string, string>();
+  private listeners = new Set<(user: User | null) => void>();
 
   private getRaw(key: string): string | null {
     try {
@@ -45,6 +46,16 @@ export class LocalStorageAuthRepository implements AuthRepository {
     this.memStorage.delete(key);
   }
 
+  private notify(user: User | null): void {
+    for (const listener of this.listeners) {
+      try {
+        listener(user);
+      } catch (err) {
+        console.warn('Listener error in LocalStorageAuthRepository:', err);
+      }
+    }
+  }
+
   async getUser(): Promise<User | null> {
     const raw = this.getRaw(AUTH_USER_KEY);
     if (!raw) return null;
@@ -64,7 +75,16 @@ export class LocalStorageAuthRepository implements AuthRepository {
       createdAt: Date.now(),
     };
     this.setRaw(AUTH_USER_KEY, JSON.stringify(user));
+    this.notify(user);
     return user;
+  }
+
+  async sendEmailOtp(_email: string, _name?: string): Promise<void> {
+    // Local mock for unit tests: no-op
+  }
+
+  async verifyEmailOtp(email: string, name?: string): Promise<User> {
+    return this.signInWithEmail(email, name);
   }
 
   async signInWithEmail(email: string, name?: string): Promise<User> {
@@ -78,6 +98,7 @@ export class LocalStorageAuthRepository implements AuthRepository {
       createdAt: Date.now(),
     };
     this.setRaw(AUTH_USER_KEY, JSON.stringify(user));
+    this.notify(user);
     return user;
   }
 
@@ -89,15 +110,24 @@ export class LocalStorageAuthRepository implements AuthRepository {
       createdAt: Date.now(),
     };
     this.setRaw(AUTH_USER_KEY, JSON.stringify(user));
+    this.notify(user);
     return user;
   }
 
   async signOut(): Promise<void> {
     this.removeRaw(AUTH_USER_KEY);
+    this.notify(null);
   }
 
   async clear(): Promise<void> {
     await this.signOut();
+  }
+
+  onAuthStateChange(callback: (user: User | null) => void): () => void {
+    this.listeners.add(callback);
+    return () => {
+      this.listeners.delete(callback);
+    };
   }
 }
 

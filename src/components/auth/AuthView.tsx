@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Sparkles, X, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Mail, ArrowRight, ShieldCheck, KeyRound, ArrowLeft, RefreshCw } from 'lucide-react';
 import { StyleSaathiLogo } from '../brand/StyleSaathiLogo';
 import { useAuth } from '../../context/AuthContext';
 
@@ -16,12 +16,23 @@ export const AuthView: React.FC<AuthViewProps> = ({
   isModal = false,
   onClose,
 }) => {
-  const { signInWithGoogle, signInWithEmail, continueAsGuest } = useAuth();
+  const {
+    signInWithGoogle,
+    signInWithEmail,
+    sendEmailOtp,
+    verifyEmailOtp,
+    continueAsGuest,
+    isCloudConfigured,
+  } = useAuth();
+
   const [showEmailForm, setShowEmailForm] = useState(false);
+  const [step, setStep] = useState<'details' | 'otp'>('details');
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
+  const [otpToken, setOtpToken] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
   const handleGoogleSignIn = async () => {
     try {
@@ -36,19 +47,61 @@ export const AuthView: React.FC<AuthViewProps> = ({
     }
   };
 
-  const handleEmailSubmit = async (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !email.includes('@')) {
       setError('Please enter a valid email address');
       return;
     }
+
     try {
       setIsSubmitting(true);
       setError(null);
-      await signInWithEmail(email, name);
+      setInfoMessage(null);
+
+      if (isCloudConfigured && sendEmailOtp) {
+        await sendEmailOtp(email, name);
+        setStep('otp');
+        setInfoMessage(`We sent a 6-digit code to ${email.trim()}`);
+      } else {
+        // Local-first development fallback
+        await signInWithEmail(email, name);
+        onSuccess?.();
+      }
+    } catch (e: any) {
+      setError(e.message || 'Failed to send login code');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otpToken.trim() || otpToken.trim().length < 6) {
+      setError('Please enter the complete 6-digit code');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      await verifyEmailOtp(email, otpToken.trim());
       onSuccess?.();
     } catch (e: any) {
-      setError(e.message || 'Email authentication failed');
+      setError(e.message || 'Invalid or expired code');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      await sendEmailOtp(email, name);
+      setInfoMessage(`A fresh 6-digit code was sent to ${email.trim()}`);
+    } catch (e: any) {
+      setError(e.message || 'Failed to resend code');
     } finally {
       setIsSubmitting(false);
     }
@@ -113,6 +166,12 @@ export const AuthView: React.FC<AuthViewProps> = ({
         </ul>
       </div>
 
+      {infoMessage && (
+        <div className="mt-3 w-full rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/40 p-2.5 text-xs text-emerald-800 dark:text-emerald-300 text-center">
+          {infoMessage}
+        </div>
+      )}
+
       {error && (
         <div className="mt-3 w-full rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 p-2.5 text-xs text-red-700 dark:text-red-300 text-center">
           {error}
@@ -154,7 +213,10 @@ export const AuthView: React.FC<AuthViewProps> = ({
             {/* Continue with Email */}
             <button
               type="button"
-              onClick={() => setShowEmailForm(true)}
+              onClick={() => {
+                setShowEmailForm(true);
+                setStep('details');
+              }}
               disabled={isSubmitting}
               className="w-full flex min-h-12 items-center justify-center gap-2.5 rounded-xl border border-(--ink) bg-(--ink) px-4 py-3 text-xs sm:text-sm font-semibold uppercase tracking-wider text-(--paper) transition-all hover:opacity-95 active:scale-[0.98] shadow-2xs disabled:opacity-50"
             >
@@ -172,11 +234,11 @@ export const AuthView: React.FC<AuthViewProps> = ({
               Continue without an account
             </button>
           </>
-        ) : (
-          <form onSubmit={handleEmailSubmit} className="space-y-3 text-left">
+        ) : step === 'details' ? (
+          <form onSubmit={handleSendOtp} className="space-y-3 text-left">
             <div>
               <label className="block text-[10px] font-bold uppercase tracking-wider text-(--muted) mb-1">
-                Your Name
+                Your Name (Optional)
               </label>
               <input
                 type="text"
@@ -205,17 +267,73 @@ export const AuthView: React.FC<AuthViewProps> = ({
               disabled={isSubmitting}
               className="w-full flex min-h-11 items-center justify-center gap-2 rounded-xl border border-(--ink) bg-(--ink) px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-(--paper) transition-all hover:opacity-95 active:scale-[0.98] shadow-2xs disabled:opacity-50"
             >
-              <span>Create Profile</span>
+              <span>{isCloudConfigured ? 'Send Login Code' : 'Continue'}</span>
               <ArrowRight className="h-3.5 w-3.5 text-(--burnished-gold)" />
             </button>
 
             <button
               type="button"
-              onClick={() => setShowEmailForm(false)}
+              onClick={() => {
+                setShowEmailForm(false);
+                setError(null);
+              }}
               className="w-full text-center text-[11px] font-semibold tracking-wider text-(--muted) hover:text-(--ink) pt-1"
             >
               Back to other sign-in options
             </button>
+          </form>
+        ) : (
+          <form onSubmit={handleVerifyOtp} className="space-y-3 text-left">
+            <div className="flex items-center gap-1.5 text-xs text-(--muted) mb-1">
+              <KeyRound className="h-3.5 w-3.5 text-(--burnished-gold)" />
+              <span>Enter the 6-digit code sent to <strong>{email}</strong></span>
+            </div>
+
+            <div>
+              <input
+                type="text"
+                required
+                maxLength={8}
+                value={otpToken}
+                onChange={(e) => setOtpToken(e.target.value)}
+                placeholder="123456"
+                autoFocus
+                className="w-full text-center tracking-[0.3em] font-mono text-xl rounded-lg border border-(--border) bg-(--card) px-3 py-2 text-(--ink) focus:border-(--ink) focus:outline-none"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full flex min-h-11 items-center justify-center gap-2 rounded-xl border border-(--ink) bg-(--ink) px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-(--paper) transition-all hover:opacity-95 active:scale-[0.98] shadow-2xs disabled:opacity-50"
+            >
+              <span>Verify &amp; Sign In</span>
+              <ArrowRight className="h-3.5 w-3.5 text-(--burnished-gold)" />
+            </button>
+
+            <div className="flex items-center justify-between pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setStep('details');
+                  setError(null);
+                }}
+                className="flex items-center gap-1 text-[11px] font-semibold tracking-wider text-(--muted) hover:text-(--ink)"
+              >
+                <ArrowLeft className="h-3 w-3" />
+                <span>Change email</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleResendOtp}
+                disabled={isSubmitting}
+                className="flex items-center gap-1 text-[11px] font-semibold tracking-wider text-(--burnished-gold) hover:underline"
+              >
+                <RefreshCw className="h-3 w-3" />
+                <span>Resend code</span>
+              </button>
+            </div>
           </form>
         )}
       </div>
@@ -238,7 +356,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
               className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full text-(--muted) hover:text-(--ink) hover:bg-(--ivory)"
               aria-label="Close"
             >
-              <X className="h-4 w-4" />
+              &times;
             </button>
           )}
           {content}

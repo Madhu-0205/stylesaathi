@@ -72,7 +72,7 @@ export class LocalStorageWardrobeRepository implements WardrobeRepository {
 
   async getItems(): Promise<WardrobeItem[]> {
     const data = this.getStorageData();
-    return data.items;
+    return data.items.filter((i) => !i.isDeleted);
   }
 
   async getItem(id: string): Promise<WardrobeItem | null> {
@@ -80,10 +80,36 @@ export class LocalStorageWardrobeRepository implements WardrobeRepository {
     return items.find((i) => i.id === id) || null;
   }
 
+  async getAllItemsRaw(): Promise<WardrobeItem[]> {
+    const data = this.getStorageData();
+    return data.items;
+  }
+
+  async upsertItemRaw(item: WardrobeItem): Promise<void> {
+    const data = this.getStorageData();
+    const existingIndex = data.items.findIndex((i) => i.id === item.id);
+    const itemToSave = { ...item };
+    if (itemToSave.photo && itemToSave.photo.startsWith('data:')) {
+      delete itemToSave.photo;
+    }
+    if (existingIndex >= 0) {
+      data.items[existingIndex] = itemToSave;
+    } else {
+      data.items.unshift(itemToSave);
+    }
+    this.setStorageData(data);
+  }
+
   async addItem(item: WardrobeItem): Promise<void> {
     const data = this.getStorageData();
-    // Do not store heavy base64 strings in localStorage metadata
-    const itemToSave = { ...item };
+    const now = Date.now();
+    const itemToSave: WardrobeItem = {
+      ...item,
+      isDeleted: false,
+      deletedAt: undefined,
+      createdAt: item.createdAt || now,
+      clientUpdatedAt: now,
+    };
     if (itemToSave.photo && itemToSave.photo.startsWith('data:')) {
       delete itemToSave.photo;
     }
@@ -99,9 +125,14 @@ export class LocalStorageWardrobeRepository implements WardrobeRepository {
       delete patchToApply.photo;
     }
 
+    const now = Date.now();
     const updated = data.items.map((item) => {
       if (item.id === id) {
-        return { ...item, ...patchToApply };
+        return {
+          ...item,
+          ...patchToApply,
+          clientUpdatedAt: patchToApply.clientUpdatedAt || now,
+        };
       }
       return item;
     });
@@ -112,7 +143,9 @@ export class LocalStorageWardrobeRepository implements WardrobeRepository {
   async deleteItem(id: string): Promise<void> {
     const data = this.getStorageData();
     const itemToDelete = data.items.find((i) => i.id === id);
-    if (itemToDelete?.photoId) {
+    if (!itemToDelete) return;
+
+    if (itemToDelete.photoId) {
       try {
         await deleteImage(itemToDelete.photoId);
       } catch {}
@@ -121,7 +154,19 @@ export class LocalStorageWardrobeRepository implements WardrobeRepository {
       await deleteImage(id);
     } catch {}
 
-    const updated = data.items.filter((i) => i.id !== id);
+    const now = Date.now();
+    // Soft tombstone: keep in storage so sync engine knows about the deletion
+    const updated = data.items.map((item) => {
+      if (item.id === id) {
+        return {
+          ...item,
+          isDeleted: true,
+          deletedAt: now,
+          clientUpdatedAt: now,
+        };
+      }
+      return item;
+    });
     this.setStorageData({ ...data, items: updated });
   }
 
@@ -129,28 +174,66 @@ export class LocalStorageWardrobeRepository implements WardrobeRepository {
     try {
       const raw = this.getItemRaw(SAVED_OUTFITS_KEY);
       if (!raw) return [];
-      return JSON.parse(raw);
+      const parsed: SavedOutfit[] = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.filter((o) => !o.isDeleted) : [];
     } catch {
       return [];
     }
   }
 
+  async getAllSavedOutfitsRaw(): Promise<SavedOutfit[]> {
+    try {
+      const raw = this.getItemRaw(SAVED_OUTFITS_KEY);
+      if (!raw) return [];
+      const parsed: SavedOutfit[] = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  async upsertSavedOutfitRaw(outfit: SavedOutfit): Promise<void> {
+    const saved = await this.getAllSavedOutfitsRaw();
+    const idx = saved.findIndex((o) => o.id === outfit.id);
+    if (idx >= 0) {
+      saved[idx] = outfit;
+    } else {
+      saved.unshift(outfit);
+    }
+    this.setItemRaw(SAVED_OUTFITS_KEY, JSON.stringify(saved));
+  }
+
   async saveOutfit(outfit: GeneratedOutfit, name?: string): Promise<SavedOutfit> {
-    const saved = await this.getSavedOutfits();
+    const saved = await this.getAllSavedOutfitsRaw();
+    const now = Date.now();
     const entry: SavedOutfit = {
-      id: crypto.randomUUID ? crypto.randomUUID() : `outfit-${Date.now()}`,
+      id: crypto.randomUUID ? crypto.randomUUID() : `outfit-${now}`,
       name: name || `Look ${Math.floor(outfit.score * 10) % 99 + 1}`,
       outfit,
-      savedAt: Date.now(),
+      savedAt: now,
+      isDeleted: false,
+      deletedAt: undefined,
+      clientUpdatedAt: now,
     };
-    const updated = [entry, ...saved];
+    const updated = [entry, ...saved.filter((o) => o.id !== entry.id)];
     this.setItemRaw(SAVED_OUTFITS_KEY, JSON.stringify(updated));
     return entry;
   }
 
   async deleteSavedOutfit(id: string): Promise<void> {
-    const saved = await this.getSavedOutfits();
-    const updated = saved.filter((o) => o.id !== id);
+    const saved = await this.getAllSavedOutfitsRaw();
+    const now = Date.now();
+    const updated = saved.map((o) => {
+      if (o.id === id) {
+        return {
+          ...o,
+          isDeleted: true,
+          deletedAt: now,
+          clientUpdatedAt: now,
+        };
+      }
+      return o;
+    });
     this.setItemRaw(SAVED_OUTFITS_KEY, JSON.stringify(updated));
   }
 

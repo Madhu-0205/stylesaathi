@@ -10,11 +10,16 @@ import {
   LogOut,
   Sliders,
   Check,
+  Cloud,
+  RefreshCw,
+  WifiOff,
 } from 'lucide-react';
 import { useWardrobeContext } from '../context/WardrobeContext';
 import { useAuth } from '../context/AuthContext';
 import { AuthView } from '../components/auth/AuthView';
 import { StylingMode } from '../types';
+import { useSyncStatus } from '../hooks/useSyncStatus';
+import { syncService } from '../lib/sync/syncService';
 
 const CONTEXT_OPTIONS = [
   'College',
@@ -58,6 +63,7 @@ export const ProfileScreen: React.FC = () => {
 
   const { user, isGuest, isAuthenticated, signOut } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const { statusLabel, isOnline, status: syncStatus, pendingCount } = useSyncStatus();
 
   // Metrics
   const totalPieces = items.length;
@@ -169,6 +175,31 @@ export const ProfileScreen: React.FC = () => {
               </button>
             )}
           </div>
+        </div>
+
+        {/* Sync Status Bar */}
+        <div className="mt-3 pt-3 border-t border-(--border)/60 flex flex-wrap items-center justify-between gap-2 text-xs text-(--muted)">
+          <div className="flex items-center gap-2">
+            {!isOnline ? (
+              <WifiOff className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+            ) : syncStatus === 'syncing' ? (
+              <RefreshCw className="h-3.5 w-3.5 text-(--burnished-gold) animate-spin shrink-0" />
+            ) : (
+              <Cloud className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+            )}
+            <span className="text-[11px] font-medium">{statusLabel}</span>
+          </div>
+
+          {isAuthenticated && (pendingCount > 0 || !isOnline) && (
+            <button
+              type="button"
+              onClick={() => syncService.processQueue()}
+              disabled={syncStatus === 'syncing'}
+              className="text-[10px] font-bold uppercase tracking-wider text-(--burnished-gold) hover:underline flex items-center gap-1"
+            >
+              <span>Sync now</span>
+            </button>
+          )}
         </div>
       </section>
 

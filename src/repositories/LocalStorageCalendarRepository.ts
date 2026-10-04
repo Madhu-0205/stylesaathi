@@ -46,6 +46,16 @@ export class LocalStorageCalendarRepository implements CalendarRepository {
   }
 
   async getPlans(): Promise<OutfitPlan[]> {
+    const plans = await this.getAllPlansRaw();
+    return plans.filter((p) => !p.isDeleted);
+  }
+
+  async getPlanByDate(date: string): Promise<OutfitPlan | null> {
+    const plans = await this.getPlans();
+    return plans.find((p) => p.date === date) || null;
+  }
+
+  async getAllPlansRaw(): Promise<OutfitPlan[]> {
     const raw = this.getRaw(CALENDAR_PLANS_KEY);
     if (!raw) return [];
     try {
@@ -56,34 +66,78 @@ export class LocalStorageCalendarRepository implements CalendarRepository {
     }
   }
 
-  async getPlanByDate(date: string): Promise<OutfitPlan | null> {
-    const plans = await this.getPlans();
-    return plans.find((p) => p.date === date) || null;
+  async upsertPlanRaw(plan: OutfitPlan): Promise<void> {
+    const plans = await this.getAllPlansRaw();
+    const existingIndex = plans.findIndex((p) => p.id === plan.id || p.date === plan.date);
+    if (existingIndex >= 0) {
+      plans[existingIndex] = plan;
+    } else {
+      plans.push(plan);
+    }
+    this.setRaw(CALENDAR_PLANS_KEY, JSON.stringify(plans));
   }
 
   async savePlan(plan: OutfitPlan): Promise<void> {
-    const plans = await this.getPlans();
+    const plans = await this.getAllPlansRaw();
     const existingIndex = plans.findIndex((p) => p.date === plan.date || p.id === plan.id);
+    const now = Date.now();
+
     if (existingIndex >= 0) {
-      plans[existingIndex] = { ...plan, updatedAt: Date.now() };
+      const existing = plans[existingIndex];
+      // MONOTONIC RULE: A stale 'planned' mutation must NEVER revert 'worn'
+      const finalStatus: PlanStatus =
+        existing.status === 'worn' && plan.status === 'planned' ? 'worn' : plan.status;
+
+      plans[existingIndex] = {
+        ...plan,
+        status: finalStatus,
+        isDeleted: false,
+        deletedAt: undefined,
+        updatedAt: now,
+        clientUpdatedAt: now,
+      };
     } else {
-      plans.push({ ...plan, createdAt: plan.createdAt || Date.now(), updatedAt: Date.now() });
+      plans.push({
+        ...plan,
+        isDeleted: false,
+        deletedAt: undefined,
+        createdAt: plan.createdAt || now,
+        updatedAt: now,
+        clientUpdatedAt: now,
+      });
     }
     this.setRaw(CALENDAR_PLANS_KEY, JSON.stringify(plans));
   }
 
   async deletePlan(id: string): Promise<void> {
-    const plans = await this.getPlans();
-    const filtered = plans.filter((p) => p.id !== id);
-    this.setRaw(CALENDAR_PLANS_KEY, JSON.stringify(filtered));
+    const plans = await this.getAllPlansRaw();
+    const now = Date.now();
+    // Soft tombstone: keep in storage so sync engine knows about the deletion
+    const updated = plans.map((p) => {
+      if (p.id === id) {
+        return {
+          ...p,
+          isDeleted: true,
+          deletedAt: now,
+          clientUpdatedAt: now,
+        };
+      }
+      return p;
+    });
+    this.setRaw(CALENDAR_PLANS_KEY, JSON.stringify(updated));
   }
 
   async updatePlanStatus(id: string, status: PlanStatus): Promise<void> {
-    const plans = await this.getPlans();
+    const plans = await this.getAllPlansRaw();
     const plan = plans.find((p) => p.id === id);
     if (plan) {
+      // MONOTONIC RULE: If already 'worn', prevent regression to 'planned'
+      if (plan.status === 'worn' && status === 'planned') {
+        return; // Reject regression
+      }
       plan.status = status;
       plan.updatedAt = Date.now();
+      plan.clientUpdatedAt = Date.now();
       this.setRaw(CALENDAR_PLANS_KEY, JSON.stringify(plans));
     }
   }

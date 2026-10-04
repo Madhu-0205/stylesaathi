@@ -1,11 +1,22 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
-import { WardrobeItem, SavedOutfit, GeneratedOutfit, StylePreferences, OutfitPlan, PlanStatus } from '../types';
+import {
+  WardrobeItem,
+  SavedOutfit,
+  GeneratedOutfit,
+  StylePreferences,
+  OutfitPlan,
+  PlanStatus,
+  WearEvent,
+} from '../types';
 import { wardrobeRepository } from '../repositories/LocalStorageWardrobeRepository';
 import { preferencesRepository, DEFAULT_STYLE_PREFERENCES } from '../repositories/LocalStoragePreferencesRepository';
 import { calendarRepository } from '../repositories/LocalStorageCalendarRepository';
+import { wearEventsRepository } from '../repositories/LocalStorageWearEventsRepository';
 import { sampleWardrobe } from '../data/sampleWardrobe';
 import { clearImages, deleteImage } from '../services/imageStore';
 import { migrateLegacyPhotos } from '../services/migration';
+import { syncQueue } from '../lib/sync/syncQueue';
+import { syncService } from '../lib/sync/syncService';
 
 const SETTINGS_KEY = 'stylesaathi-settings-v1';
 
@@ -46,6 +57,7 @@ interface WardrobeContextValue {
   markOutfitWornOnDate: (outfit: GeneratedOutfit, dateStr: string, accessory?: WardrobeItem | null) => Promise<void>;
   saveOutfit: (outfit: GeneratedOutfit, name?: string) => Promise<SavedOutfit>;
   deleteSavedOutfit: (id: string) => Promise<void>;
+  refreshData: () => Promise<void>;
 }
 
 const WardrobeContext = createContext<WardrobeContextValue | null>(null);
@@ -58,6 +70,40 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
 
+  const [settings, setSettings] = useState<SettingsData>(() => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const raw = window.localStorage.getItem(SETTINGS_KEY);
+        if (raw) return JSON.parse(raw);
+      }
+    } catch {}
+    return {
+      theme: 'light',
+      onboarded: false,
+      styleVibes: [],
+      setupCompleted: false,
+    };
+  });
+
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+      }
+    } catch (e) {
+      console.error('Failed to save settings to localStorage', e);
+    }
+  }, [settings]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (settings.theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+  }, [settings.theme]);
+
   const showToast = useCallback((msg: string) => {
     setToast(msg);
   }, []);
@@ -66,33 +112,8 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setToast(null);
   }, []);
 
-  // Settings state (theme, onboarded, styleVibes, setupCompleted)
-  const [settings, setSettings] = useState<SettingsData>(() => {
-    try {
-      const raw = localStorage.getItem(SETTINGS_KEY);
-      if (raw) return JSON.parse(raw);
-    } catch {}
-    return { theme: 'light', onboarded: false, styleVibes: ['Casual'], setupCompleted: false };
-  });
-
-  // Sync settings to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-    } catch {}
-  }, [settings]);
-
-  // Apply dark mode class to document
-  useEffect(() => {
-    if (typeof document !== 'undefined') {
-      document.documentElement.classList.toggle('dark', settings.theme === 'dark');
-    }
-  }, [settings.theme]);
-
-  // Load items, saved outfits, preferences, and plans on mount + execute safe migration
   const refreshData = useCallback(async () => {
     try {
-      setLoading(true);
       const [loadedItems, loadedOutfits, loadedPrefs, loadedPlans] = await Promise.all([
         wardrobeRepository.getItems(),
         wardrobeRepository.getSavedOutfits(),
@@ -128,11 +149,57 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const addItem = useCallback(async (item: WardrobeItem) => {
     await wardrobeRepository.addItem(item);
     setItems((prev) => [item, ...prev.filter((i) => i.id !== item.id)]);
+
+    try {
+      let imageMutId: string | undefined;
+      const user = syncService.getCurrentUser();
+      const userId = user?.id || 'guest';
+      if (item.photoId) {
+        const imgMutation = await syncQueue.enqueue({
+          entityType: 'wardrobe_image',
+          entityId: item.photoId,
+          operation: 'UPLOAD_IMAGE',
+          payload: {
+            itemId: item.id,
+            photoId: item.photoId,
+            storagePath: `wardrobe/${userId}/${item.id}/${item.photoId}.jpg`,
+          },
+        });
+        imageMutId = imgMutation.id;
+      }
+
+      await syncQueue.enqueue({
+        entityType: 'wardrobe_item',
+        entityId: item.id,
+        operation: 'UPSERT',
+        payload: item,
+        dependencies: imageMutId ? [imageMutId] : [],
+      });
+
+      syncService.processQueue();
+    } catch (err) {
+      console.warn('Sync enqueue failed for addItem:', err);
+    }
   }, []);
 
   const updateItem = useCallback(async (id: string, patch: Partial<WardrobeItem>) => {
     await wardrobeRepository.updateItem(id, patch);
     setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
+
+    try {
+      const updated = await wardrobeRepository.getItem(id);
+      if (updated) {
+        await syncQueue.enqueue({
+          entityType: 'wardrobe_item',
+          entityId: id,
+          operation: 'UPSERT',
+          payload: updated,
+        });
+        syncService.processQueue();
+      }
+    } catch (err) {
+      console.warn('Sync enqueue failed for updateItem:', err);
+    }
   }, []);
 
   const deleteItem = useCallback(
@@ -148,6 +215,18 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
       await wardrobeRepository.deleteItem(id);
       setItems((prev) => prev.filter((item) => item.id !== id));
+
+      try {
+        await syncQueue.enqueue({
+          entityType: 'wardrobe_item',
+          entityId: id,
+          operation: 'DELETE',
+          payload: { id, deletedAt: Date.now() },
+        });
+        syncService.processQueue();
+      } catch (err) {
+        console.warn('Sync enqueue failed for deleteItem:', err);
+      }
     },
     [items]
   );
@@ -220,6 +299,19 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       };
       await preferencesRepository.savePreferences(updated);
       setPreferences(updated);
+
+      try {
+        const user = syncService.getCurrentUser();
+        await syncQueue.enqueue({
+          entityType: 'style_preferences',
+          entityId: user?.id || 'preferences',
+          operation: 'UPSERT',
+          payload: updated,
+        });
+        syncService.processQueue();
+      } catch (err) {
+        console.warn('Sync enqueue failed for preferences:', err);
+      }
     },
     [preferences]
   );
@@ -246,22 +338,70 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
         return [...prev, fullPlan];
       });
+
+      try {
+        await syncQueue.enqueue({
+          entityType: 'calendar_plan',
+          entityId: fullPlan.id,
+          operation: 'UPSERT',
+          payload: fullPlan,
+        });
+        syncService.processQueue();
+      } catch (err) {
+        console.warn('Sync enqueue failed for savePlan:', err);
+      }
       return fullPlan;
     },
     []
   );
 
-  const deletePlan = useCallback(async (id: string) => {
-    await calendarRepository.deletePlan(id);
-    setPlans((prev) => prev.filter((p) => p.id !== id));
-  }, []);
+  const deletePlan = useCallback(
+    async (id: string) => {
+      const planToDelete = plans.find((p) => p.id === id);
+      await calendarRepository.deletePlan(id);
+      setPlans((prev) => prev.filter((p) => p.id !== id));
 
-  const updatePlanStatus = useCallback(async (id: string, status: PlanStatus) => {
-    await calendarRepository.updatePlanStatus(id, status);
-    setPlans((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, status, updatedAt: Date.now() } : p))
-    );
-  }, []);
+      try {
+        await syncQueue.enqueue({
+          entityType: 'calendar_plan',
+          entityId: id,
+          operation: 'DELETE',
+          payload: { id, date: planToDelete?.date || '', deletedAt: Date.now() },
+        });
+        syncService.processQueue();
+      } catch (err) {
+        console.warn('Sync enqueue failed for deletePlan:', err);
+      }
+    },
+    [plans]
+  );
+
+  const updatePlanStatus = useCallback(
+    async (id: string, status: PlanStatus) => {
+      await calendarRepository.updatePlanStatus(id, status);
+      setPlans((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, status, updatedAt: Date.now() } : p))
+      );
+
+      try {
+        const plan = await calendarRepository.getPlanByDate(
+          plans.find((p) => p.id === id)?.date || ''
+        );
+        if (plan) {
+          await syncQueue.enqueue({
+            entityType: 'calendar_plan',
+            entityId: id,
+            operation: 'UPSERT',
+            payload: plan,
+          });
+          syncService.processQueue();
+        }
+      } catch (err) {
+        console.warn('Sync enqueue failed for updatePlanStatus:', err);
+      }
+    },
+    [plans]
+  );
 
   const markOutfitWornOnDate = useCallback(
     async (outfit: GeneratedOutfit, dateStr: string, accessory?: WardrobeItem | null) => {
@@ -270,12 +410,45 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         allPieces.push(accessory);
       }
       const now = Date.now();
+      const user = syncService.getCurrentUser();
+      const userId = user?.id || 'local';
+
       for (const piece of allPieces) {
+        const nextTimesWorn = (piece.timesWorn || 0) + 1;
         await updateItem(piece.id, {
-          timesWorn: (piece.timesWorn || 0) + 1,
+          timesWorn: nextTimesWorn,
           lastWorn: now,
         });
+
+        // RULE 5: Wear events are append-only.
+        // Use a client-generated stable UUID/event ID.
+        const eventId =
+          typeof crypto !== 'undefined' && crypto.randomUUID
+            ? crypto.randomUUID()
+            : `wear-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
+        const wearEvent: WearEvent = {
+          id: eventId,
+          userId,
+          wardrobeItemId: piece.id,
+          plannedDate: dateStr,
+          wornAt: now,
+          createdAt: now,
+        };
+
+        try {
+          await wearEventsRepository.addEvent(wearEvent);
+          await syncQueue.enqueue({
+            entityType: 'wear_event',
+            entityId: eventId,
+            operation: 'APPEND_WEAR',
+            payload: wearEvent,
+          });
+        } catch (err) {
+          console.warn('Failed to record wear event:', err);
+        }
       }
+
       // If a plan exists for this date, update its status to 'worn'
       const existingPlan = plans.find((p) => p.date === dateStr);
       if (existingPlan) {
@@ -290,6 +463,8 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           status: 'worn',
         });
       }
+
+      syncService.processQueue();
     },
     [plans, savePlan, updateItem, updatePlanStatus]
   );
@@ -297,12 +472,36 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const saveOutfit = useCallback(async (outfit: GeneratedOutfit, name?: string) => {
     const saved = await wardrobeRepository.saveOutfit(outfit, name);
     setSavedOutfits((prev) => [saved, ...prev]);
+
+    try {
+      await syncQueue.enqueue({
+        entityType: 'saved_outfit',
+        entityId: saved.id,
+        operation: 'UPSERT',
+        payload: saved,
+      });
+      syncService.processQueue();
+    } catch (err) {
+      console.warn('Sync enqueue failed for saveOutfit:', err);
+    }
     return saved;
   }, []);
 
   const deleteSavedOutfit = useCallback(async (id: string) => {
     await wardrobeRepository.deleteSavedOutfit(id);
     setSavedOutfits((prev) => prev.filter((o) => o.id !== id));
+
+    try {
+      await syncQueue.enqueue({
+        entityType: 'saved_outfit',
+        entityId: id,
+        operation: 'DELETE',
+        payload: { id, deletedAt: Date.now() },
+      });
+      syncService.processQueue();
+    } catch (err) {
+      console.warn('Sync enqueue failed for deleteSavedOutfit:', err);
+    }
   }, []);
 
   const value = useMemo<WardrobeContextValue>(
@@ -336,11 +535,15 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       markOutfitWornOnDate,
       saveOutfit,
       deleteSavedOutfit,
+      refreshData,
     }),
     [
       items,
       loading,
-      settings,
+      settings.theme,
+      settings.onboarded,
+      settings.styleVibes,
+      settings.setupCompleted,
       savedOutfits,
       preferences,
       plans,
@@ -364,16 +567,20 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       markOutfitWornOnDate,
       saveOutfit,
       deleteSavedOutfit,
+      refreshData,
     ]
   );
 
   return <WardrobeContext.Provider value={value}>{children}</WardrobeContext.Provider>;
 };
 
-export const useWardrobeContext = (): WardrobeContextValue => {
+export const useWardrobe = (): WardrobeContextValue => {
   const ctx = useContext(WardrobeContext);
   if (!ctx) {
-    throw new Error('useWardrobeContext must be used within a WardrobeProvider');
+    throw new Error('useWardrobe must be used within a WardrobeProvider');
   }
   return ctx;
 };
+
+export const useWardrobeContext = useWardrobe;
+

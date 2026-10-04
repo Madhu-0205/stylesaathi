@@ -63,6 +63,16 @@ export class LocalStoragePreferencesRepository implements PreferencesRepository 
   }
 
   async savePreferences(prefs: StylePreferences): Promise<void> {
+    const now = Date.now();
+    const toSave: StylePreferences = {
+      ...prefs,
+      updatedAt: now,
+      clientUpdatedAt: now,
+    };
+    this.setRaw(PREFERENCES_KEY, JSON.stringify(toSave));
+  }
+
+  async upsertPreferencesRaw(prefs: StylePreferences): Promise<void> {
     this.setRaw(PREFERENCES_KEY, JSON.stringify(prefs));
   }
 
