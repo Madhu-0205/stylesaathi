@@ -7,8 +7,10 @@ import { OutfitCard } from '../components/dressme/OutfitCard';
 import { AccessoryDrawer } from '../components/dressme/AccessoryDrawer';
 import { EmptyState } from '../components/common/EmptyState';
 import { PlanLookModal } from '../components/calendar/PlanLookModal';
-import { OCCASIONS, SEASONS } from '../data/taxonomy';
 import { Occasion, Season, GeneratedOutfit } from '../types';
+import { OCCASIONS, SEASONS } from '../data/taxonomy';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 interface DressMeScreenProps {
   onGoToWardrobe: () => void;
@@ -51,7 +53,7 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
   return (
     <div className="pb-12 animate-fade-in">
       {/* Compact Editorial Header: "Aaj kya pehenna hai?" + Actions */}
-      <header className="mb-3 flex items-center justify-between border-b border-(--border) pb-2.5">
+      <header className="mb-3 flex items-center justify-between border-b border-border pb-2.5">
         <div>
           <div className="flex items-center gap-2">
             <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
@@ -61,7 +63,7 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
           <h1 className="mt-0.5 font-serif text-2xl sm:text-3xl italic text-(--ink) tracking-tight">
             Aaj kya pehenna hai?
           </h1>
-          <p className="text-[11px] text-(--muted) font-medium">
+          <p className="text-[11px] text-muted font-medium">
             Styled around your wardrobe · Curated for how you like to dress
           </p>
         </div>
@@ -70,21 +72,22 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
           <button
             type="button"
             onClick={toggleTheme}
-            className="md:hidden flex h-9 w-9 items-center justify-center rounded-full border border-(--border) text-(--muted) transition-colors hover:border-(--ink) hover:text-(--ink)"
+            className="md:hidden flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted transition-colors hover:border-(--ink) hover:text-(--ink)"
             aria-label="Toggle theme"
           >
             {theme === 'light' ? '☾' : '☼'}
           </button>
 
-          <button
-            type="button"
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={handleShuffle}
-            className="flex min-h-9 items-center gap-1.5 rounded-full border border-(--ink) bg-(--card) px-3 py-1 text-xs font-semibold uppercase tracking-wider text-(--ink) transition-all hover:bg-(--ink) hover:text-(--paper) active:scale-95 shadow-2xs"
+            className="rounded-full shadow-2xs font-semibold uppercase tracking-wider"
             aria-label="Shuffle combinations"
           >
             <RefreshCw className={`h-3 w-3 text-(--burnished-gold) ${isShuffling ? 'animate-spin' : ''}`} />
             <span>Shuffle</span>
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -94,45 +97,47 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
           <div className="flex items-center gap-2.5">
             <Calendar className="h-4 w-4 text-(--burnished-gold)" />
             <div className="text-left">
-              <span className="text-[9px] font-bold uppercase tracking-wider text-(--kumkum) block">
+              <Badge variant="gold" className="text-[9px] px-1.5 py-0 mb-0.5">
                 TOMORROW · LOOK READY
-              </span>
-              <span className="text-xs font-serif font-medium text-(--ink)">
+              </Badge>
+              <span className="text-xs font-serif font-medium text-(--ink) block">
                 {tomorrowPlan.outfit.template} ({tomorrowPlan.occasion})
               </span>
             </div>
           </div>
           {onGoToCalendar && (
-            <button
-              type="button"
+            <Button
+              variant="outline"
+              size="sm"
               onClick={onGoToCalendar}
-              className="rounded-lg border border-(--border) bg-(--card) px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-(--ink) hover:bg-(--ivory)"
+              className="text-[10px] font-semibold uppercase tracking-wider h-7 px-2.5"
             >
               View in Calendar
-            </button>
+            </Button>
           )}
         </div>
       ) : (
-        <div className="mb-3 rounded-xl border border-(--border)/80 bg-(--card) p-3 flex items-center justify-between shadow-2xs">
+        <div className="mb-3 rounded-xl border border-(--border)/80 bg-card p-3 flex items-center justify-between shadow-2xs">
           <div className="flex items-center gap-2.5">
-            <Calendar className="h-4 w-4 text-(--muted)" />
+            <Calendar className="h-4 w-4 text-muted" />
             <div className="text-left">
-              <span className="text-[9px] font-bold uppercase tracking-wider text-(--muted) block">
+              <span className="text-[9px] font-bold uppercase tracking-wider text-muted block">
                 TOMORROW · {tomorrow.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
               </span>
-              <span className="text-xs text-(--muted)">
+              <span className="text-xs text-muted">
                 Already know what you're wearing?
               </span>
             </div>
           </div>
           {outfits.length > 0 && (
-            <button
-              type="button"
+            <Button
+              variant="default"
+              size="sm"
               onClick={() => setPlanningOutfit(outfits[0])}
-              className="rounded-lg border border-(--ink) bg-(--ink) px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-(--paper) hover:opacity-90 active:scale-95 shadow-2xs"
+              className="text-[10px] font-semibold uppercase tracking-wider h-7 px-2.5 shadow-2xs"
             >
               Plan Tomorrow
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -152,12 +157,12 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
         </div>
 
         {/* Season Inline Switcher */}
-        <div className="flex items-center justify-between px-0.5 text-[11px] text-(--muted)">
+        <div className="flex items-center justify-between px-0.5 text-[11px] text-muted">
           <div className="flex items-center gap-1">
-            <span className="text-[9px] font-bold uppercase tracking-wider text-(--muted)">
+            <span className="text-[9px] font-bold uppercase tracking-wider text-muted">
               CLIMATE:
             </span>
-            <div className="inline-flex rounded-lg border border-(--border) bg-(--card) p-0.5">
+            <div className="inline-flex rounded-lg border border-border bg-card p-0.5">
               {SEASONS.map((s) => (
                 <button
                   key={s}
@@ -166,7 +171,7 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
                   className={`rounded-md px-2 py-0.5 text-[10px] uppercase font-semibold tracking-wider transition-colors ${
                     season === s
                       ? 'bg-(--ink) text-(--paper) shadow-2xs'
-                      : 'text-(--muted) hover:text-(--ink)'
+                      : 'text-muted hover:text-(--ink)'
                   }`}
                 >
                   {s}

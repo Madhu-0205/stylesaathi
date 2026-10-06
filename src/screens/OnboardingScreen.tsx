@@ -3,6 +3,7 @@ import { ArrowRight, Check, Sparkles } from 'lucide-react';
 import { useWardrobeContext } from '../context/WardrobeContext';
 import { STYLE_VIBES } from '../data/taxonomy';
 import { StyleSaathiLogo } from '../components/brand/StyleSaathiLogo';
+import { Button } from '@/components/ui/button';
 
 export const OnboardingScreen: React.FC = () => {
   const { loadSample, setOnboarded, styleVibes, setStyleVibes } = useWardrobeContext();
@@ -49,9 +50,9 @@ export const OnboardingScreen: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-lg md:max-w-xl mx-auto flex min-h-dvh flex-col justify-between p-5 sm:p-8 animate-fade-in bg-(--background)">
+    <div className="w-full max-w-lg md:max-w-xl mx-auto flex min-h-dvh flex-col justify-between p-5 sm:p-8 animate-fade-in bg-background">
       {/* Refined Brand Header */}
-      <div className="flex items-center justify-between pt-2 border-b border-(--border) pb-3">
+      <div className="flex items-center justify-between pt-2 border-b border-border pb-3">
         {step === 0 ? (
           <div className="flex items-center gap-2">
             <StyleSaathiLogo variant="mark" size="xs" />
@@ -62,14 +63,14 @@ export const OnboardingScreen: React.FC = () => {
         ) : (
           <StyleSaathiLogo variant="full" size="sm" showTagline={true} />
         )}
-        <span className="text-[11px] font-serif italic text-(--muted)">
+        <span className="text-[11px] font-serif italic text-muted">
           0{step + 1} / 03
         </span>
       </div>
 
       {/* Main Slide Card */}
       <div className="my-auto py-6">
-        <div className="rounded-2xl border border-(--border) bg-(--card) p-6 sm:p-8 shadow-xs">
+        <div className="rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-xs">
           {/* Canonical Wardrobe Brand Presentation on First Slide */}
           {step === 0 && (
             <div className="mb-5 flex justify-center py-2 border-b border-(--border)/60 pb-5">
@@ -88,14 +89,14 @@ export const OnboardingScreen: React.FC = () => {
           </h1>
 
           {/* Subtitle */}
-          <p className="mt-3 text-xs sm:text-sm text-(--muted) leading-relaxed font-normal">
+          <p className="mt-3 text-xs sm:text-sm text-muted leading-relaxed font-normal">
             {currentSlide.subtitle}
           </p>
 
           {/* Step 2 Vibe selection interactive chips */}
           {step === 1 && (
-            <div className="mt-6 pt-5 border-t border-(--border)">
-              <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-(--muted) block mb-2.5">
+            <div className="mt-6 pt-5 border-t border-border">
+              <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted block mb-2.5">
                 CURATE YOUR AESTHETIC VIBES:
               </label>
               <div className="flex flex-wrap gap-2">
@@ -109,7 +110,7 @@ export const OnboardingScreen: React.FC = () => {
                       className={`inline-flex min-h-10 items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all active:scale-95 ${
                         isSelected
                           ? 'border border-(--ink) bg-(--ink) text-(--paper) shadow-2xs'
-                          : 'border border-(--border) bg-(--card) text-(--muted) hover:border-(--ink)'
+                          : 'border border-border bg-card text-muted hover:border-(--ink)'
                       }`}
                     >
                       {isSelected && <Check className="h-3 w-3 stroke-3 text-(--burnished-gold)" />}
@@ -126,31 +127,34 @@ export const OnboardingScreen: React.FC = () => {
       {/* Footer Navigation */}
       <div className="space-y-4 pb-4">
         {step < 2 ? (
-          <button
-            type="button"
+          <Button
+            variant="default"
+            size="lg"
             onClick={() => setStep(step + 1)}
-            className="w-full min-h-12 inline-flex items-center justify-center gap-2 rounded-xl border border-(--ink) bg-(--ink) px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-(--paper) shadow-sm transition-all hover:bg-(--ink)/90 active:scale-98"
+            className="w-full min-h-12 gap-2 shadow-sm font-semibold uppercase tracking-wider"
           >
             <span>Continue</span>
             <ArrowRight className="h-3.5 w-3.5 text-(--burnished-gold)" />
-          </button>
+          </Button>
         ) : (
           <div className="space-y-2.5">
-            <button
-              type="button"
+            <Button
+              variant="default"
+              size="lg"
               onClick={handleFinishWithSample}
-              className="w-full min-h-12.5 inline-flex items-center justify-center gap-2 rounded-xl border border-(--ink) bg-(--ink) px-5 py-3.5 text-xs font-semibold uppercase tracking-wider text-(--paper) shadow-sm transition-all hover:bg-(--ink)/90 active:scale-98"
+              className="w-full min-h-12.5 gap-2 shadow-sm font-semibold uppercase tracking-wider"
             >
               <Sparkles className="h-3.5 w-3.5 text-(--burnished-gold)" />
               <span>Load Sample Indian Wardrobe</span>
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="outline"
+              size="default"
               onClick={handleFinishEmpty}
-              className="w-full min-h-11 rounded-xl border border-(--border) bg-(--card) px-5 py-3 text-xs font-semibold uppercase tracking-wider text-(--muted) hover:border-(--ink) hover:text-(--ink) transition-colors active:scale-98"
+              className="w-full min-h-11 font-semibold uppercase tracking-wider text-muted hover:text-(--ink)"
             >
               Start Empty With My Clothes
-            </button>
+            </Button>
           </div>
         )}
 
@@ -166,7 +170,7 @@ export const OnboardingScreen: React.FC = () => {
             >
               <span
                 className={`h-1.5 rounded-full transition-all ${
-                  i === step ? 'w-6 bg-(--ink)' : 'w-1.5 bg-(--border)'
+                  i === step ? 'w-6 bg-(--ink)' : 'w-1.5 bg-border'
                 }`}
               />
             </button>

@@ -8,6 +8,7 @@ import { EmptyState } from '../components/common/EmptyState';
 import { CATEGORIES } from '../data/taxonomy';
 import { WardrobeItem, Category, Status } from '../types';
 import { StyleSaathiLogo } from '../components/brand/StyleSaathiLogo';
+import { Button } from '@/components/ui/button';
 
 interface WardrobeScreenProps {
   onOpenAddItem: () => void;
@@ -44,7 +45,7 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
   return (
     <div className="pb-8 animate-fade-in">
       {/* Compact Fashion Archive Header */}
-      <header className="mb-3 flex items-center justify-between border-b border-(--border) pb-2.5">
+      <header className="mb-3 flex items-center justify-between border-b border-border pb-2.5">
         <div>
           <div className="flex items-center gap-2">
             <span className="md:hidden">
@@ -57,7 +58,7 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
           <h1 className="mt-0.5 font-serif text-2xl sm:text-3xl font-normal text-(--ink) tracking-tight">
             Personal Archive
           </h1>
-          <p className="text-[11px] text-(--muted) font-medium">
+          <p className="text-[11px] text-muted font-medium">
             {stats.total} pieces in rotation · {stats.clean} ready to wear
           </p>
         </div>
@@ -66,21 +67,21 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
           <button
             type="button"
             onClick={toggleTheme}
-            className="md:hidden flex h-9 w-9 items-center justify-center rounded-full border border-(--border) text-(--muted) transition-colors hover:border-(--ink) hover:text-(--ink)"
+            className="md:hidden flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted transition-colors hover:border-(--ink) hover:text-(--ink)"
             aria-label="Toggle theme"
           >
             {theme === 'light' ? '☾' : '☼'}
           </button>
 
-          <button
-            type="button"
+          <Button
+            size="sm"
             onClick={onOpenAddItem}
             aria-label="Add clothing item"
-            className="flex min-h-9 items-center gap-1.5 rounded-full bg-(--accent) px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs transition-transform hover:opacity-95 active:scale-95"
+            className="flex min-h-9 items-center gap-1.5 rounded-full bg-accent px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs transition-transform hover:opacity-95 active:scale-95"
           >
             <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
             <span>Add Piece</span>
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -88,19 +89,19 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
       <div className="mb-4 space-y-2.5 md:space-y-3">
         {/* Search Bar */}
         <div className="relative">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-(--muted) pointer-events-none" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted pointer-events-none" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search garments by name, color, fabric..."
-            className="w-full min-h-11 rounded-xl border border-(--border) bg-(--card)/60 pl-10 pr-12 text-xs font-medium text-(--text) outline-none transition-colors placeholder:text-(--muted) focus:border-(--accent) focus:bg-(--card)"
+            className="w-full min-h-11 rounded-xl border border-border bg-card/60 pl-10 pr-12 text-xs font-medium text-(--text) outline-none transition-colors placeholder:text-muted focus:border-accent focus:bg-card"
           />
           {search && (
             <button
               type="button"
               onClick={() => setSearch('')}
-              className="absolute right-1 top-1/2 -translate-y-1/2 flex min-h-11 min-w-11 items-center justify-center text-[11px] font-bold text-(--muted) hover:text-(--ink) transition-colors active:scale-95"
+              className="absolute right-1 top-1/2 -translate-y-1/2 flex min-h-11 min-w-11 items-center justify-center text-[11px] font-bold text-muted hover:text-(--ink) transition-colors active:scale-95"
               aria-label="Clear search"
             >
               Clear
@@ -135,7 +136,7 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
             className={`inline-flex min-h-8.5 items-center gap-1 rounded-lg px-3 text-[10px] font-semibold tracking-wider uppercase transition-all whitespace-nowrap active:scale-95 ${
               favoriteOnly
                 ? 'border border-(--kumkum) bg-(--kumkum) text-white shadow-2xs'
-                : 'border border-(--border) bg-(--card) text-(--muted) hover:border-(--ink)'
+                : 'border border-border bg-card text-muted hover:border-(--ink)'
             }`}
           >
             <span>Favorites ({stats.favorites})</span>
@@ -155,7 +156,7 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
               className={`inline-flex min-h-8.5 items-center gap-1 rounded-lg px-3 text-[10px] font-semibold tracking-wider uppercase transition-all whitespace-nowrap active:scale-95 ${
                 statusFilter === s.id
                   ? 'border border-(--ink) bg-(--ink) text-(--paper) shadow-2xs'
-                  : 'border border-(--border) bg-(--card) text-(--muted) hover:border-(--ink)'
+                  : 'border border-border bg-card text-muted hover:border-(--ink)'
               }`}
             >
               <span>{s.label}</span>
@@ -170,7 +171,7 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
           {[1, 2, 3, 4, 5, 6].map((n) => (
             <div
               key={n}
-              className="aspect-4/5 animate-pulse rounded-2xl border border-(--border) bg-(--card)"
+              className="aspect-4/5 animate-pulse rounded-2xl border border-border bg-card"
             />
           ))}
         </div>

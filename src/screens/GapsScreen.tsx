@@ -8,6 +8,7 @@ import { SmartBuyCard } from '../components/gaps/SmartBuyCard';
 import { CombinationsModal } from '../components/gaps/CombinationsModal';
 import { EmptyState } from '../components/common/EmptyState';
 import { SmartBuyRecommendation } from '../types';
+import { Badge } from '@/components/ui/badge';
 
 export const GapsScreen: React.FC = () => {
   const { theme, toggleTheme, items, loadSample } = useWardrobeContext();
@@ -34,7 +35,7 @@ export const GapsScreen: React.FC = () => {
   return (
     <div className="pb-12 animate-fade-in space-y-4">
       {/* Compact Editorial Header: "INSIGHT · Your wardrobe has a gap" */}
-      <header className="flex items-center justify-between border-b border-(--border) pb-2.5">
+      <header className="flex items-center justify-between border-b border-border pb-2.5">
         <div>
           <div className="flex items-center gap-2">
             <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
@@ -44,7 +45,7 @@ export const GapsScreen: React.FC = () => {
           <h1 className="mt-0.5 font-serif text-2xl sm:text-3xl font-normal text-(--ink) tracking-tight">
             Your wardrobe has a gap.
           </h1>
-          <p className="text-[11px] text-(--muted) font-medium">
+          <p className="text-[11px] text-muted font-medium">
             {topsCount} tops · {bottomsCount} bottoms · {ethnicCount} ethnic pieces
           </p>
         </div>
@@ -52,7 +53,7 @@ export const GapsScreen: React.FC = () => {
         <button
           type="button"
           onClick={toggleTheme}
-          className="md:hidden flex h-9 w-9 items-center justify-center rounded-full border border-(--border) text-(--muted) transition-colors hover:border-(--ink) hover:text-(--ink)"
+          className="md:hidden flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted transition-colors hover:border-(--ink) hover:text-(--ink)"
           aria-label="Toggle theme"
         >
           {theme === 'light' ? '☾' : '☼'}
@@ -74,16 +75,16 @@ export const GapsScreen: React.FC = () => {
           {/* Left Column on Desktop / Tablet: Gap Analysis & Metrics */}
           <div className="md:col-span-5 md:space-y-4">
             {/* Stylist Insight Narrative: "GAP DIAGNOSIS" */}
-            <section className="rounded-xl border border-(--border) bg-(--card) p-3.5 sm:p-4 shadow-2xs">
+            <section className="rounded-xl border border-border bg-card p-3.5 sm:p-4 shadow-2xs">
               <div className="flex items-baseline justify-between">
                 <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
                   GAP DIAGNOSIS
                 </span>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-(--burnished-gold)">
+                <Badge variant="gold" className="text-[10px] font-bold uppercase tracking-wider">
                   {biggestGapLabel}
-                </span>
+                </Badge>
               </div>
-              <p className="mt-1.5 text-xs text-(--muted) font-normal leading-relaxed">
+              <p className="mt-1.5 text-xs text-muted font-normal leading-relaxed">
                 {insight}
               </p>
             </section>
@@ -104,7 +105,7 @@ export const GapsScreen: React.FC = () => {
                   <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
                     THE ONE TO ADD
                   </span>
-                  <span className="text-[10.5px] text-(--muted)">
+                  <span className="text-[10.5px] text-muted">
                     Highest combination multiplier
                   </span>
                 </div>
@@ -121,11 +122,11 @@ export const GapsScreen: React.FC = () => {
             {/* Secondary Smart Additions */}
             {secondaryRecommendations.length > 0 && (
               <section className="space-y-3 pt-1 md:pt-2">
-                <div className="flex items-baseline justify-between px-0.5 border-b border-(--border) pb-2">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-(--muted)">
+                <div className="flex items-baseline justify-between px-0.5 border-b border-border pb-2">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted">
                     OTHER STRATEGIC ADDITIONS
                   </span>
-                  <span className="text-[11px] text-(--muted)">
+                  <span className="text-[11px] text-muted">
                     Ranked by new outfits unlocked
                   </span>
                 </div>

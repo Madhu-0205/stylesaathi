@@ -16,6 +16,18 @@ import { useAuth } from '../context/AuthContext';
 import { ItemImage } from '../components/common/ItemImage';
 import { AuthView } from '../components/auth/AuthView';
 import { WardrobeItem, OutfitPlan } from '../types';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface CalendarScreenProps {
   onGoToDress: (occasion?: string) => void;
@@ -25,6 +37,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
   const { plans, items, deletePlan, markOutfitWornOnDate, showToast } = useWardrobeContext();
   const { isGuest } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Month navigation state
   const [viewDate, setViewDate] = useState(() => new Date());
@@ -109,10 +122,11 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
     showToast('Look marked as worn! Recency updated.');
   };
 
-  const handleDeletePlan = async () => {
+  const handleConfirmDeletePlan = async () => {
     if (!selectedPlan) return;
     await deletePlan(selectedPlan.id);
     showToast('Plan removed from calendar');
+    setIsDeleteDialogOpen(false);
   };
 
   // Formatted date string for selected date heading
@@ -131,7 +145,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
   return (
     <div className="pb-12 animate-fade-in">
       {/* Header */}
-      <header className="mb-3 sm:mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-(--border) pb-2.5 sm:pb-3 gap-2">
+      <header className="mb-3 sm:mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-border pb-2.5 sm:pb-3 gap-2">
         <div>
           <div className="flex items-center gap-2">
             <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
@@ -145,18 +159,19 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
 
         {/* Month Navigation Controls */}
         <div className="flex items-center gap-2">
-          <button
-            type="button"
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={handleJumpToToday}
-            className="min-h-8 rounded-full border border-(--border) bg-(--card) px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-(--ink) hover:bg-(--ivory) active:scale-95 shadow-2xs"
+            className="min-h-8 rounded-full shadow-2xs font-semibold uppercase tracking-wider text-[11px] px-3 py-1"
           >
             Today
-          </button>
-          <div className="inline-flex items-center rounded-full border border-(--border) bg-(--card) p-0.5 shadow-2xs">
+          </Button>
+          <div className="inline-flex items-center rounded-full border border-border bg-card p-0.5 shadow-2xs">
             <button
               type="button"
               onClick={handlePrevMonth}
-              className="flex min-h-8 min-w-8 items-center justify-center rounded-full text-(--muted) hover:text-(--ink) hover:bg-(--ivory)"
+              className="flex min-h-8 min-w-8 items-center justify-center rounded-full text-muted hover:text-(--ink) hover:bg-(--ivory)"
               aria-label="Previous month"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -167,7 +182,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
             <button
               type="button"
               onClick={handleNextMonth}
-              className="flex min-h-8 min-w-8 items-center justify-center rounded-full text-(--muted) hover:text-(--ink) hover:bg-(--ivory)"
+              className="flex min-h-8 min-w-8 items-center justify-center rounded-full text-muted hover:text-(--ink) hover:bg-(--ivory)"
               aria-label="Next month"
             >
               <ChevronRight className="h-4 w-4" />
@@ -198,7 +213,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
                     ? 'border-(--ink) bg-(--ink) text-(--paper) shadow-2xs font-bold'
                     : isToday
                     ? 'border-(--kumkum) bg-(--ivory) text-(--ink)'
-                    : 'border-(--border) bg-(--card) text-(--muted) hover:border-(--ink)'
+                    : 'border-border bg-card text-muted hover:border-(--ink)'
                 }`}
               >
                 <span className="text-[9px] uppercase font-medium opacity-80">{weekday}</span>
@@ -225,11 +240,11 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
       {/* Grid: Tablet/Desktop Matrix on Left, Selected Day Outfit on Right */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-5 lg:gap-6 items-start">
         {/* TABLET / DESKTOP CALENDAR MATRIX (hidden on mobile) */}
-        <div className="hidden md:block md:col-span-5 rounded-2xl border border-(--border) bg-(--card) p-5 shadow-2xs">
+        <div className="hidden md:block md:col-span-5 rounded-2xl border border-border bg-card p-5 shadow-2xs">
           {/* Days of week header */}
           <div className="grid grid-cols-7 text-center mb-2">
             {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
-              <span key={idx} className="text-[10px] font-bold text-(--muted) uppercase tracking-wider">
+              <span key={idx} className="text-[10px] font-bold text-muted uppercase tracking-wider">
                 {day}
               </span>
             ))}
@@ -260,7 +275,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
                       ? 'border border-(--ink) bg-(--ink) text-(--paper) shadow-2xs'
                       : isToday
                       ? 'border border-(--kumkum) bg-(--ivory) text-(--ink)'
-                      : 'border border-transparent hover:border-(--border) hover:bg-(--ivory)/60 text-(--ink)'
+                      : 'border border-transparent hover:border-border hover:bg-(--ivory)/60 text-(--ink)'
                   }`}
                 >
                   <span className={`text-xs font-semibold ${isSelected ? 'text-(--paper)' : ''}`}>
@@ -284,7 +299,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
           </div>
 
           {/* Calendar Legend */}
-          <div className="mt-4 pt-3 border-t border-(--border)/70 flex items-center justify-between text-[10px] text-(--muted)">
+          <div className="mt-4 pt-3 border-t border-(--border)/70 flex items-center justify-between text-[10px] text-muted">
             <div className="flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-(--kumkum)" />
               <span>Planned</span>
@@ -302,11 +317,11 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
 
         {/* SELECTED DAY OUTFIT DETAIL (Dominant, Fashion-First) */}
         <div className="md:col-span-7">
-          <div className="rounded-2xl border border-(--border) bg-(--card) p-4 sm:p-6 shadow-2xs">
+          <div className="rounded-2xl border border-border bg-card p-4 sm:p-6 shadow-2xs">
             {/* Header: Date + Badges */}
-            <div className="flex items-center justify-between border-b border-(--border) pb-3 mb-4">
+            <div className="flex items-center justify-between border-b border-border pb-3 mb-4">
               <div>
-                <span className="text-[9.5px] font-bold uppercase tracking-[0.18em] text-(--muted) block">
+                <span className="text-[9.5px] font-bold uppercase tracking-[0.18em] text-muted block">
                   SELECTED DAY
                 </span>
                 <h2 className="font-serif text-xl sm:text-2xl font-normal text-(--ink) tracking-tight">
@@ -316,18 +331,19 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
 
               {selectedPlan && (
                 <div className="flex items-center gap-2">
-                  <span className="rounded-md bg-(--ivory) border border-(--border) px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-(--burnished-gold)">
+                  <Badge variant="gold" className="text-[9px] font-bold uppercase tracking-wider">
                     {selectedPlan.occasion}
-                  </span>
-                  <span
-                    className={`rounded-md px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+                  </Badge>
+                  <Badge
+                    variant={selectedPlan.status === 'worn' ? 'outline' : 'default'}
+                    className={`text-[9px] font-bold uppercase tracking-wider ${
                       selectedPlan.status === 'worn'
-                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                        : 'bg-(--ink) text-(--paper)'
+                        ? 'border-emerald-600/40 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                        : ''
                     }`}
                   >
                     {selectedPlan.status === 'worn' ? '✓ Worn' : 'Planned'}
-                  </span>
+                  </Badge>
                 </div>
               )}
             </div>
@@ -379,7 +395,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
                   {planIntegrity?.pieces.map((piece, pIdx) => (
                     <div
                       key={piece.id || pIdx}
-                      className="aspect-3/4 rounded-xl border border-(--border) bg-(--card) overflow-hidden flex flex-col shadow-2xs relative"
+                      className="aspect-3/4 rounded-xl border border-border bg-card overflow-hidden flex flex-col shadow-2xs relative"
                     >
                       <ItemImage item={piece} className="h-full w-full object-contain p-1" />
                       <div className="absolute bottom-0 inset-x-0 bg-(--card)/90 backdrop-blur-xs py-0.5 px-1 text-center">
@@ -396,7 +412,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
                   <h3 className="font-serif text-lg text-(--ink) font-medium">
                     {selectedPlan.outfit.template}
                   </h3>
-                  <p className="mt-1 text-xs text-(--muted) leading-relaxed">
+                  <p className="mt-1 text-xs text-muted leading-relaxed">
                     {selectedPlan.outfit.why}
                   </p>
                 </div>
@@ -404,54 +420,57 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
                 {/* Action Buttons */}
                 <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-(--border)/60">
                   {selectedPlan.status !== 'worn' && (
-                    <button
-                      type="button"
+                    <Button
+                      variant="default"
+                      size="default"
                       onClick={handleWearToday}
-                      className="flex-1 flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-(--ink) bg-(--ink) px-4 py-2 text-xs font-semibold uppercase tracking-wider text-(--paper) hover:opacity-95 active:scale-95 shadow-2xs"
+                      className="flex-1 min-h-11 shadow-2xs font-semibold uppercase tracking-wider"
                     >
                       <Check className="h-3.5 w-3.5 text-(--burnished-gold)" />
                       <span>Wear Today</span>
-                    </button>
+                    </Button>
                   )}
 
-                  <button
-                    type="button"
+                  <Button
+                    variant="outline"
+                    size="default"
                     onClick={() => onGoToDress(selectedPlan.occasion)}
-                    className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-(--border) bg-(--card) px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-(--ink) hover:bg-(--ivory) active:scale-95 shadow-2xs"
+                    className="min-h-11 shadow-2xs font-semibold uppercase tracking-wider"
                   >
                     <span>Change Look</span>
-                  </button>
+                  </Button>
 
-                  <button
-                    type="button"
-                    onClick={handleDeletePlan}
-                    className="flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-(--border) text-(--muted) hover:text-red-600 hover:border-red-300 transition-colors"
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsDeleteDialogOpen(true)}
+                    className="min-h-11 min-w-11 text-muted hover:text-red-600 hover:border-red-300 border border-border"
                     aria-label="Delete plan"
                   >
                     <Trash2 className="h-4 w-4" />
-                  </button>
+                  </Button>
                 </div>
               </div>
             ) : (
               /* Empty Day State */
               <div className="py-8 text-center flex flex-col items-center justify-center">
-                <div className="h-12 w-12 rounded-full bg-(--ivory) border border-(--border) flex items-center justify-center mb-3">
+                <div className="h-12 w-12 rounded-full bg-(--ivory) border border-border flex items-center justify-center mb-3">
                   <Shirt className="h-5 w-5 text-(--burnished-gold)" />
                 </div>
                 <h3 className="font-serif text-lg font-normal text-(--ink)">
                   No outfit planned for this date
                 </h3>
-                <p className="mt-1 text-xs text-(--muted) max-w-xs">
+                <p className="mt-1 text-xs text-muted max-w-xs">
                   Schedule a look from Dress Me to keep your wardrobe ready ahead of time.
                 </p>
-                <button
-                  type="button"
+                <Button
+                  variant="default"
                   onClick={() => onGoToDress()}
-                  className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl border border-(--ink) bg-(--ink) px-4 py-2 text-xs font-semibold uppercase tracking-wider text-(--paper) transition-all hover:opacity-95 active:scale-95 shadow-2xs"
+                  className="mt-4 min-h-11 gap-2 shadow-2xs font-semibold uppercase tracking-wider"
                 >
                   <Sparkles className="h-3.5 w-3.5 text-(--burnished-gold)" />
                   <span>Style a Look</span>
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -460,52 +479,71 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
 
       {/* Global Empty State if user has 0 plans total */}
       {plans.length === 0 && (
-        <div className="mt-6 rounded-2xl border border-dashed border-(--border) bg-(--ivory)/60 p-6 text-center">
+        <div className="mt-6 rounded-2xl border border-dashed border-border bg-(--ivory)/60 p-6 text-center">
           <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-(--kumkum) block mb-1">
             WARDROBE RHYTHM
           </span>
           <h2 className="font-serif text-xl sm:text-2xl text-(--ink) font-normal">
             YOUR STYLE CALENDAR IS QUIET.
           </h2>
-          <p className="mt-1.5 text-xs text-(--muted) max-w-sm mx-auto">
+          <p className="mt-1.5 text-xs text-muted max-w-sm mx-auto">
             Plan a look from Dress Me and it will appear here. Build intentional daily wear without morning decision fatigue.
           </p>
-          <button
-            type="button"
+          <Button
+            variant="default"
             onClick={() => onGoToDress()}
-            className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl border border-(--ink) bg-(--ink) px-4 py-2 text-xs font-semibold uppercase tracking-wider text-(--paper) transition-all hover:opacity-95 active:scale-95 shadow-2xs"
+            className="mt-3 min-h-11 gap-2 shadow-2xs font-semibold uppercase tracking-wider"
           >
             <Sparkles className="h-3.5 w-3.5 text-(--burnished-gold)" />
             <span>STYLE A LOOK</span>
-          </button>
+          </Button>
         </div>
       )}
 
       {/* Guest Mode Value Banner */}
       {isGuest && (
-        <div className="mt-6 rounded-2xl border border-(--border) bg-(--card) p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
+        <div className="mt-6 rounded-2xl border border-border bg-card p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-(--ivory) border border-(--border) flex items-center justify-center shrink-0">
+            <div className="h-9 w-9 rounded-full bg-(--ivory) border border-border flex items-center justify-center shrink-0">
               <UserPlus className="h-4 w-4 text-(--burnished-gold)" />
             </div>
             <div className="text-left">
               <span className="text-xs font-semibold text-(--ink) block">
                 Create your StyleSaathi profile
               </span>
-              <span className="text-[11px] text-(--muted)">
+              <span className="text-[11px] text-muted">
                 Keep your style preferences, outfit plans, and wear history synchronized safely.
               </span>
             </div>
           </div>
-          <button
-            type="button"
+          <Button
+            variant="default"
+            size="sm"
             onClick={() => setShowAuthModal(true)}
-            className="shrink-0 rounded-xl border border-(--ink) bg-(--ink) px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider text-(--paper) hover:opacity-95"
+            className="shrink-0 font-semibold uppercase tracking-wider"
           >
             Create Profile
-          </button>
+          </Button>
         </div>
       )}
+
+      {/* Delete Plan Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Planned Look?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove the scheduled outfit plan for {selectedDateHeading}. Your garments will remain in your wardrobe.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={handleConfirmDeletePlan}>
+              Remove Plan
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Auth Modal if guest clicks to create profile */}
       {showAuthModal && (

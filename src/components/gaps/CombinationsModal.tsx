@@ -2,6 +2,8 @@ import React from 'react';
 import { SmartBuyRecommendation } from '../../types';
 import { BottomSheet } from '../common/BottomSheet';
 import { ItemImage } from '../common/ItemImage';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 interface CombinationsModalProps {
   recommendation: SmartBuyRecommendation | null;
@@ -25,7 +27,7 @@ export const CombinationsModal: React.FC<CombinationsModalProps> = ({
         {/* Candidate Stylist Spotlight */}
         <div className="rounded-2xl border border-(--burnished-gold)/50 bg-(--ivory) p-4">
           <div className="flex items-center gap-4">
-            <div className="h-20 w-16 shrink-0 overflow-hidden rounded-xl border border-(--border) bg-(--paper)">
+            <div className="h-20 w-16 shrink-0 overflow-hidden rounded-xl border border-border bg-(--paper)">
               <ItemImage
                 item={candidate}
                 className="h-full w-full object-cover"
@@ -38,7 +40,7 @@ export const CombinationsModal: React.FC<CombinationsModalProps> = ({
               <h4 className="font-serif text-lg font-normal text-(--ink)">
                 {candidate.name}
               </h4>
-              <p className="text-xs text-(--muted) font-medium">
+              <p className="text-xs text-muted font-medium">
                 {candidate.priceRange || '₹1,299–₹1,999'} · Unlocks {newOutfitsUnlocked} combinations
               </p>
             </div>
@@ -55,10 +57,10 @@ export const CombinationsModal: React.FC<CombinationsModalProps> = ({
         {compatibleExistingItems.length > 0 && (
           <div>
             <div className="flex items-baseline justify-between mb-2.5">
-              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-(--muted)">
+              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted">
                 PAIRS WITH YOUR CLOSET
               </span>
-              <span className="text-[11px] text-(--muted)">
+              <span className="text-[11px] text-muted">
                 {compatibleExistingItems.length} matching pieces
               </span>
             </div>
@@ -66,7 +68,7 @@ export const CombinationsModal: React.FC<CombinationsModalProps> = ({
               {compatibleExistingItems.map((item) => (
                 <div
                   key={item.id}
-                  className="w-20 shrink-0 flex flex-col items-center rounded-xl border border-(--border) bg-(--card) p-1.5"
+                  className="w-20 shrink-0 flex flex-col items-center rounded-xl border border-border bg-card p-1.5"
                 >
                   <div className="aspect-square w-full overflow-hidden rounded-lg bg-(--ivory)">
                     <ItemImage
@@ -85,17 +87,17 @@ export const CombinationsModal: React.FC<CombinationsModalProps> = ({
 
         {/* Editorial Gallery of Unlocked Outfits */}
         <div className="space-y-3">
-          <div className="flex items-baseline justify-between border-b border-(--border) pb-2">
+          <div className="flex items-baseline justify-between border-b border-border pb-2">
             <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
               SIMULATED LOOKBOOK
             </span>
-            <span className="text-[11px] text-(--muted)">
+            <span className="text-[11px] text-muted">
               {previewOutfits.length} featured {previewOutfits.length === 1 ? 'look' : 'looks'}
             </span>
           </div>
 
           {previewOutfits.length === 0 ? (
-            <p className="text-xs text-(--muted) py-4 text-center italic">
+            <p className="text-xs text-muted py-4 text-center italic">
               Adds {newOutfitsUnlocked} valid styling variations across your occasion calendar.
             </p>
           ) : (
@@ -105,13 +107,13 @@ export const CombinationsModal: React.FC<CombinationsModalProps> = ({
                 return (
                   <article
                     key={idx}
-                    className="rounded-2xl border border-(--border) bg-(--card) p-4 space-y-3 shadow-2xs"
+                    className="rounded-2xl border border-border bg-card p-4 space-y-3 shadow-2xs"
                   >
                     <div className="flex items-baseline justify-between">
                       <span className="font-serif text-sm font-semibold tracking-tight text-(--ink)">
                         LOOK 0{idx + 1}
                       </span>
-                      <span className="text-[10px] uppercase tracking-wider text-(--muted)">
+                      <span className="text-[10px] uppercase tracking-wider text-muted">
                         {outfit.template}
                       </span>
                     </div>
@@ -126,7 +128,7 @@ export const CombinationsModal: React.FC<CombinationsModalProps> = ({
                             className={`relative flex flex-col overflow-hidden rounded-xl border p-1.5 transition-all ${
                               isCandidatePiece
                                 ? 'border-(--burnished-gold) bg-(--ivory)'
-                                : 'border-(--border) bg-(--paper)'
+                                : 'border-border bg-(--paper)'
                             }`}
                           >
                             <div className="aspect-square w-full overflow-hidden rounded-lg bg-(--ivory)">
@@ -145,16 +147,16 @@ export const CombinationsModal: React.FC<CombinationsModalProps> = ({
                               {p.name}
                             </span>
                             {isCandidatePiece && (
-                              <div className="absolute top-2 right-2 rounded bg-(--burnished-gold) px-1 py-0.2 text-[8px] font-bold uppercase tracking-wider text-(--paper)">
+                              <Badge variant="gold" className="absolute top-2 right-2 px-1 py-0 text-[8px] font-bold uppercase tracking-wider">
                                 New
-                              </div>
+                              </Badge>
                             )}
                           </div>
                         );
                       })}
                     </div>
 
-                    <p className="font-serif text-xs italic text-(--muted) border-t border-(--border)/60 pt-2">
+                    <p className="font-serif text-xs italic text-muted border-t border-(--border)/60 pt-2">
                       &ldquo;{outfit.why}&rdquo;
                     </p>
                   </article>
@@ -164,13 +166,14 @@ export const CombinationsModal: React.FC<CombinationsModalProps> = ({
           )}
         </div>
 
-        <button
-          type="button"
+        <Button
+          variant="default"
+          size="lg"
           onClick={onClose}
-          className="w-full min-h-12 rounded-xl border border-(--ink) bg-(--ink) px-4 py-3 text-xs font-semibold uppercase tracking-wider text-(--paper) shadow-sm transition-all hover:bg-(--ink)/90 active:scale-98"
+          className="w-full min-h-12 shadow-sm font-semibold uppercase tracking-wider"
         >
           Close Lookbook
-        </button>
+        </Button>
       </div>
     </BottomSheet>
   );
