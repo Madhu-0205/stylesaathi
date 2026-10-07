@@ -197,6 +197,42 @@ export function matchSemanticIntent(query: string): MatchResult {
     };
   }
 
+  // 0. DESTRUCTIVE ACTIONS (delete, clear, reset, wipe, remove)
+  const destructiveWords = ['delete', 'remove', 'clear', 'wipe', 'reset', 'drop', 'destroy', 'purge'];
+  const hasDestructive = destructiveWords.some((w) => q.includes(w));
+  if (hasDestructive) {
+    if (q.includes('wardrobe') || q.includes('item') || q.includes('garment') || q.includes('cloth')) {
+      return {
+        toolCall: {
+          name: 'search_wardrobe',
+          arguments: {},
+        },
+        confidence: 0.95,
+        reasoning: 'Destructive action detected on wardrobe items. Must gate behind confirmation.',
+      };
+    }
+    if (q.includes('plan') || q.includes('calendar')) {
+      return {
+        toolCall: {
+          name: 'create_style_plan',
+          arguments: { date: 'today', occasion: 'everyday' },
+        },
+        confidence: 0.95,
+        reasoning: 'Destructive action detected on calendar plans. Must gate behind confirmation.',
+      };
+    }
+    if (q.includes('wear')) {
+      return {
+        toolCall: {
+          name: 'record_wear',
+          arguments: { itemName: 'outfit', date: 'today' },
+        },
+        confidence: 0.95,
+        reasoning: 'Destructive action detected on wear tracking. Must gate behind confirmation.',
+      };
+    }
+  }
+
   // 1. RECORD WEAR (Must be checked before search)
   const wearTriggers = ['wore', 'worn', 'recorded wear', 'put on'];
   const hasWearTrigger = wearTriggers.some((t) => q.includes(t));
