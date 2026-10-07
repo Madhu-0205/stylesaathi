@@ -137,12 +137,12 @@ export const AuthView: React.FC<AuthViewProps> = ({
         YOUR WARDROBE.<br />YOUR STYLE.<br />YOUR SAATHI.
       </h1>
 
-      <p className="mt-2 text-xs sm:text-sm text-(--muted) leading-relaxed max-w-sm">
+      <p className="mt-2 text-xs sm:text-sm text-muted leading-relaxed max-w-sm">
         Create your StyleSaathi profile to unlock your personalized wardrobe.
       </p>
 
       {/* Value highlights */}
-      <div className="mt-5 w-full rounded-2xl border border-(--border) bg-(--ivory)/70 p-4 text-left shadow-2xs">
+      <div className="mt-5 w-full rounded-2xl border border-border bg-(--ivory)/70 p-4 text-left shadow-2xs">
         <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-(--burnished-gold) block mb-2.5">
           WITH YOUR PROFILE:
         </span>
@@ -187,7 +187,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
               type="button"
               onClick={handleGoogleSignIn}
               disabled={isSubmitting}
-              className="w-full flex min-h-12 items-center justify-center gap-3 rounded-xl border border-(--border) bg-(--card) px-4 py-3 text-xs sm:text-sm font-semibold uppercase tracking-wider text-(--ink) transition-all hover:bg-(--ivory) hover:border-(--ink) active:scale-[0.98] shadow-2xs disabled:opacity-50"
+              className="w-full flex min-h-12 items-center justify-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-xs sm:text-sm font-semibold uppercase tracking-wider text-(--ink) transition-all hover:bg-(--ivory) hover:border-(--ink) active:scale-[0.98] shadow-2xs disabled:opacity-50"
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24">
                 <path
@@ -229,7 +229,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
               type="button"
               onClick={handleGuest}
               disabled={isSubmitting}
-              className="w-full pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-(--muted) hover:text-(--ink) transition-colors"
+              className="w-full pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-muted hover:text-(--ink) transition-colors"
             >
               Continue without an account
             </button>
@@ -237,7 +237,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
         ) : step === 'details' ? (
           <form onSubmit={handleSendOtp} className="space-y-3 text-left">
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-(--muted) mb-1">
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-muted mb-1">
                 Your Name (Optional)
               </label>
               <input
@@ -245,11 +245,11 @@ export const AuthView: React.FC<AuthViewProps> = ({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Ananya"
-                className="w-full rounded-lg border border-(--border) bg-(--card) px-3 py-2 text-sm text-(--ink) focus:border-(--ink) focus:outline-none"
+                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-(--ink) focus:border-(--ink) focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-(--muted) mb-1">
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-muted mb-1">
                 Email Address <span className="text-(--kumkum)">*</span>
               </label>
               <input
@@ -258,7 +258,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="w-full rounded-lg border border-(--border) bg-(--card) px-3 py-2 text-sm text-(--ink) focus:border-(--ink) focus:outline-none"
+                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-(--ink) focus:border-(--ink) focus:outline-none"
               />
             </div>
 
@@ -277,14 +277,14 @@ export const AuthView: React.FC<AuthViewProps> = ({
                 setShowEmailForm(false);
                 setError(null);
               }}
-              className="w-full text-center text-[11px] font-semibold tracking-wider text-(--muted) hover:text-(--ink) pt-1"
+              className="w-full text-center text-[11px] font-semibold tracking-wider text-muted hover:text-(--ink) pt-1"
             >
               Back to other sign-in options
             </button>
           </form>
         ) : (
           <form onSubmit={handleVerifyOtp} className="space-y-3 text-left">
-            <div className="flex items-center gap-1.5 text-xs text-(--muted) mb-1">
+            <div className="flex items-center gap-1.5 text-xs text-muted mb-1">
               <KeyRound className="h-3.5 w-3.5 text-(--burnished-gold)" />
               <span>Enter the 6-digit code sent to <strong>{email}</strong></span>
             </div>
@@ -298,7 +298,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
                 onChange={(e) => setOtpToken(e.target.value)}
                 placeholder="123456"
                 autoFocus
-                className="w-full text-center tracking-[0.3em] font-mono text-xl rounded-lg border border-(--border) bg-(--card) px-3 py-2 text-(--ink) focus:border-(--ink) focus:outline-none"
+                className="w-full text-center tracking-[0.3em] font-mono text-xl rounded-lg border border-border bg-card px-3 py-2 text-(--ink) focus:border-(--ink) focus:outline-none"
               />
             </div>
 
@@ -318,7 +318,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
                   setStep('details');
                   setError(null);
                 }}
-                className="flex items-center gap-1 text-[11px] font-semibold tracking-wider text-(--muted) hover:text-(--ink)"
+                className="flex items-center gap-1 text-[11px] font-semibold tracking-wider text-muted hover:text-(--ink)"
               >
                 <ArrowLeft className="h-3 w-3" />
                 <span>Change email</span>
@@ -338,7 +338,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
         )}
       </div>
 
-      <div className="mt-6 flex items-center justify-center gap-1.5 text-[10px] text-(--muted)">
+      <div className="mt-6 flex items-center justify-center gap-1.5 text-[10px] text-muted">
         <ShieldCheck className="h-3.5 w-3.5 text-(--burnished-gold)" />
         <span>Local-first &amp; privacy-honoring. No spam.</span>
       </div>
@@ -347,13 +347,13 @@ export const AuthView: React.FC<AuthViewProps> = ({
 
   if (isModal) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-(--background)/80 backdrop-blur-md p-4 animate-fade-in">
-        <div className="relative w-full max-w-md rounded-2xl border border-(--border) bg-(--card) shadow-xl">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-md p-4 animate-fade-in">
+        <div className="relative w-full max-w-md rounded-2xl border border-border bg-card shadow-xl">
           {onClose && (
             <button
               type="button"
               onClick={onClose}
-              className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full text-(--muted) hover:text-(--ink) hover:bg-(--ivory)"
+              className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full text-muted hover:text-(--ink) hover:bg-(--ivory)"
               aria-label="Close"
             >
               &times;
@@ -366,7 +366,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
   }
 
   return (
-    <div className="min-h-dvh flex items-center justify-center bg-(--background) p-4">
+    <div className="min-h-dvh flex items-center justify-center bg-background p-4">
       {content}
     </div>
   );

@@ -12,8 +12,8 @@ interface OccasionCoverageListProps {
 
 export const OccasionCoverageList: React.FC<OccasionCoverageListProps> = ({ coverage }) => {
   return (
-    <div className="rounded-2xl border border-(--border) bg-(--card) p-5">
-      <div className="flex items-baseline justify-between border-b border-(--border) pb-3 mb-4">
+    <div className="rounded-2xl border border-border bg-card p-5">
+      <div className="flex items-baseline justify-between border-b border-border pb-3 mb-4">
         <div>
           <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
             READINESS
@@ -22,7 +22,7 @@ export const OccasionCoverageList: React.FC<OccasionCoverageListProps> = ({ cove
             Occasion Coverage
           </h3>
         </div>
-        <span className="text-[11px] text-(--muted) font-medium">Clean items</span>
+        <span className="text-[11px] text-muted font-medium">Clean items</span>
       </div>
 
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
@@ -31,8 +31,8 @@ export const OccasionCoverageList: React.FC<OccasionCoverageListProps> = ({ cove
             key={c.occasion}
             className={`flex items-center justify-between rounded-xl border p-3 transition-colors ${
               c.isCovered
-                ? 'border-(--border) bg-(--ivory)/60'
-                : 'border-dashed border-(--border) bg-(--card)'
+                ? 'border-border bg-(--ivory)/60'
+                : 'border-dashed border-border bg-card'
             }`}
           >
             <span className="truncate text-xs font-semibold capitalize text-(--ink)">
@@ -44,7 +44,7 @@ export const OccasionCoverageList: React.FC<OccasionCoverageListProps> = ({ cove
                 Ready
               </span>
             ) : (
-              <span className="rounded border border-(--border) px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-(--muted)">
+              <span className="rounded border border-border px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-muted">
                 Gap
               </span>
             )}

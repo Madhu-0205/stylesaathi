@@ -25,7 +25,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
       }`}
     >
       {/* Editorial Photo Frame */}
-      <div className="relative aspect-4/5 w-full overflow-hidden rounded-2xl border border-(--border) bg-(--card) transition-all duration-300 group-hover:border-(--muted)/60">
+      <div className="relative aspect-4/5 w-full overflow-hidden rounded-2xl border border-border bg-card transition-all duration-300 group-hover:border-muted/60">
         <ItemImage
           item={item}
           className="h-full w-full object-contain p-2"
@@ -51,14 +51,14 @@ export const ItemCard: React.FC<ItemCardProps> = ({
           type="button"
           aria-label={item.favorite ? 'Remove from favorites' : 'Add to favorites'}
           onClick={(e) => onToggleFavorite(e, item)}
-          className="absolute right-1 top-1 z-10 flex h-11 w-11 items-center justify-center rounded-full text-(--muted) transition-transform hover:scale-105 active:scale-90"
+          className="absolute right-1 top-1 z-10 flex h-11 w-11 items-center justify-center rounded-full text-muted transition-transform hover:scale-105 active:scale-90"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-(--card)/85 backdrop-blur-md border border-(--border)/60 text-(--muted)">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-card/85 backdrop-blur-md border border-border/60 text-muted">
             <Heart
               className={`h-3.5 w-3.5 transition-colors ${
                 item.favorite
-                  ? 'fill-(--accent) stroke-(--accent)'
-                  : 'stroke-(--text)/70 group-hover:stroke-(--accent)'
+                  ? 'fill-accent stroke-accent'
+                  : 'stroke-(--text)/70 group-hover:stroke-accent'
               }`}
             />
           </div>
@@ -70,10 +70,10 @@ export const ItemCard: React.FC<ItemCardProps> = ({
         <h4 className="truncate text-xs font-bold text-(--text) tracking-tight">
           {item.name}
         </h4>
-        <div className="mt-0.5 flex items-center justify-between text-[11px] text-(--muted) tracking-wide">
+        <div className="mt-0.5 flex items-center justify-between text-[11px] text-muted tracking-wide">
           <span className="capitalize">{item.subcategory || item.category}</span>
           {item.timesWorn > 0 && (
-            <span className="text-[10px] font-medium text-(--muted)/80">
+            <span className="text-[10px] font-medium text-muted/80">
               Worn {item.timesWorn}×
             </span>
           )}

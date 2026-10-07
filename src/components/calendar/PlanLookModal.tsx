@@ -65,13 +65,13 @@ export const PlanLookModal: React.FC<PlanLookModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-(--background)/80 backdrop-blur-md p-4 animate-fade-in">
-      <div className="relative w-full max-w-md rounded-2xl border border-(--border) bg-(--card) p-5 sm:p-6 shadow-xl text-left">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-md p-4 animate-fade-in">
+      <div className="relative w-full max-w-md rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-xl text-left">
         {/* Close Button */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full text-(--muted) hover:text-(--ink) hover:bg-(--ivory)"
+          className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full text-muted hover:text-(--ink) hover:bg-(--ivory)"
           aria-label="Close"
         >
           <X className="h-4 w-4" />
@@ -87,17 +87,17 @@ export const PlanLookModal: React.FC<PlanLookModalProps> = ({
         <h2 className="font-serif text-2xl font-normal text-(--ink) tracking-tight">
           Plan This Look
         </h2>
-        <p className="mt-1 text-xs text-(--muted)">
+        <p className="mt-1 text-xs text-muted">
           Schedule this outfit in your Style Calendar so you are ready ahead of time.
         </p>
 
         {/* Outfit Preview */}
-        <div className="my-4 rounded-xl border border-(--border) bg-(--ivory) p-3 flex items-center gap-3">
+        <div className="my-4 rounded-xl border border-border bg-(--ivory) p-3 flex items-center gap-3">
           <div className="flex -space-x-3 overflow-hidden shrink-0">
             {pieces.slice(0, 3).map((p, idx) => (
               <div
                 key={p.id || idx}
-                className="h-12 w-10 rounded-lg border border-(--border) bg-(--card) overflow-hidden shadow-2xs"
+                className="h-12 w-10 rounded-lg border border-border bg-card overflow-hidden shadow-2xs"
               >
                 <ItemImage item={p} className="h-full w-full object-contain p-0.5" />
               </div>
@@ -107,7 +107,7 @@ export const PlanLookModal: React.FC<PlanLookModalProps> = ({
             <span className="text-xs font-serif font-medium text-(--ink) truncate block">
               {outfit.template}
             </span>
-            <span className="text-[10px] font-sans text-(--muted) uppercase tracking-wider block">
+            <span className="text-[10px] font-sans text-muted uppercase tracking-wider block">
               {occasion} · {pieces.length} pieces
             </span>
           </div>
@@ -115,7 +115,7 @@ export const PlanLookModal: React.FC<PlanLookModalProps> = ({
 
         {/* Quick Date Shortcuts */}
         <div className="space-y-1.5 mb-4">
-          <label className="block text-[10px] font-bold uppercase tracking-wider text-(--muted)">
+          <label className="block text-[10px] font-bold uppercase tracking-wider text-muted">
             WHEN DO YOU WANT TO WEAR THIS?
           </label>
           <div className="grid grid-cols-3 gap-2">
@@ -125,7 +125,7 @@ export const PlanLookModal: React.FC<PlanLookModalProps> = ({
               className={`rounded-xl border p-2 text-center transition-all ${
                 selectedDate === todayStr
                   ? 'border-(--ink) bg-(--ink) text-(--paper) font-bold shadow-2xs'
-                  : 'border-(--border) bg-(--card) text-(--muted) hover:border-(--ink)'
+                  : 'border-border bg-card text-muted hover:border-(--ink)'
               }`}
             >
               <span className="block text-[10px] uppercase font-semibold">Today</span>
@@ -137,7 +137,7 @@ export const PlanLookModal: React.FC<PlanLookModalProps> = ({
               className={`rounded-xl border p-2 text-center transition-all ${
                 selectedDate === tomorrowStr
                   ? 'border-(--ink) bg-(--ink) text-(--paper) font-bold shadow-2xs'
-                  : 'border-(--border) bg-(--card) text-(--muted) hover:border-(--ink)'
+                  : 'border-border bg-card text-muted hover:border-(--ink)'
               }`}
             >
               <span className="block text-[10px] uppercase font-semibold text-(--burnished-gold)">Tomorrow</span>
@@ -149,7 +149,7 @@ export const PlanLookModal: React.FC<PlanLookModalProps> = ({
               className={`rounded-xl border p-2 text-center transition-all ${
                 selectedDate === dayAfterStr
                   ? 'border-(--ink) bg-(--ink) text-(--paper) font-bold shadow-2xs'
-                  : 'border-(--border) bg-(--card) text-(--muted) hover:border-(--ink)'
+                  : 'border-border bg-card text-muted hover:border-(--ink)'
               }`}
             >
               <span className="block text-[9px] uppercase font-semibold">Day After</span>
@@ -160,7 +160,7 @@ export const PlanLookModal: React.FC<PlanLookModalProps> = ({
 
         {/* Custom Date Input */}
         <div className="mb-5">
-          <label className="block text-[10px] font-bold uppercase tracking-wider text-(--muted) mb-1">
+          <label className="block text-[10px] font-bold uppercase tracking-wider text-muted mb-1">
             CHOOSE A DATE:
           </label>
           <input
@@ -168,7 +168,7 @@ export const PlanLookModal: React.FC<PlanLookModalProps> = ({
             value={selectedDate}
             min={todayStr}
             onChange={(e) => setSelectedDate(e.target.value)}
-            className="w-full rounded-xl border border-(--border) bg-(--card) px-3 py-2 text-xs font-semibold text-(--ink) focus:border-(--ink) focus:outline-none"
+            className="w-full rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-(--ink) focus:border-(--ink) focus:outline-none"
           />
         </div>
 

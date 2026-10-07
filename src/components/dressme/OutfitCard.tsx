@@ -74,9 +74,9 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
   const lookTitle = editorialTitles[index % editorialTitles.length];
 
   return (
-    <article className="group relative overflow-hidden rounded-2xl border border-(--border) bg-(--card) p-4 sm:p-5 transition-all duration-300 animate-fade-in shadow-2xs">
+    <article className="group relative overflow-hidden rounded-2xl border border-border bg-card p-4 sm:p-5 transition-all duration-300 animate-fade-in shadow-2xs">
       {/* Top Editorial Header */}
-      <div className="mb-3 flex items-baseline justify-between border-b border-(--border) pb-2.5">
+      <div className="mb-3 flex items-baseline justify-between border-b border-border pb-2.5">
         <div>
           <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
             LOOK 0{index + 1} · {occasion}
@@ -85,7 +85,7 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
             {lookTitle}
           </h3>
         </div>
-        <span className="text-[9.5px] font-medium uppercase tracking-[0.14em] text-(--muted)">
+        <span className="text-[9.5px] font-medium uppercase tracking-[0.14em] text-muted">
           {outfit.template}
         </span>
       </div>
@@ -180,8 +180,8 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
         <div className="md:col-span-5 flex flex-col justify-between h-full space-y-3">
           <div>
             {/* Piece Summary & Optional Accessory Accent Row */}
-            <div className="flex items-center justify-between gap-2 border-b md:border-t-0 border-t border-(--border) pt-2 md:pt-0 pb-2">
-              <p className="text-[11px] text-(--muted) font-medium tracking-tight truncate flex-1">
+            <div className="flex items-center justify-between gap-2 border-b md:border-t-0 border-t border-border pt-2 md:pt-0 pb-2">
+              <p className="text-[11px] text-muted font-medium tracking-tight truncate flex-1">
                 {pieceSummary}
               </p>
 
@@ -200,7 +200,7 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
                 <button
                   type="button"
                   onClick={onOpenAccessoryDrawer}
-                  className="inline-flex shrink-0 min-h-8 items-center gap-1 rounded-md border border-dashed border-(--border) bg-(--ivory)/60 px-2 py-0.5 text-[10px] font-semibold text-(--muted) transition-colors hover:border-(--kumkum) hover:text-(--ink)"
+                  className="inline-flex shrink-0 min-h-8 items-center gap-1 rounded-md border border-dashed border-border bg-(--ivory)/60 px-2 py-0.5 text-[10px] font-semibold text-muted transition-colors hover:border-(--kumkum) hover:text-(--ink)"
                 >
                   <Plus className="h-2.5 w-2.5 text-(--burnished-gold)" />
                   <span>Finish Look</span>
@@ -230,10 +230,10 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
               <button
                 type="button"
                 onClick={onChangeLook}
-                className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-(--border) bg-(--card) px-3 text-xs font-semibold text-(--muted) transition-all hover:border-(--ink) hover:text-(--ink) active:scale-95"
+                className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 text-xs font-semibold text-muted transition-all hover:border-(--ink) hover:text-(--ink) active:scale-95"
                 title="Alternative combination"
               >
-                <RefreshCw className="h-3.5 w-3.5 text-(--muted)" />
+                <RefreshCw className="h-3.5 w-3.5 text-muted" />
                 <span className="hidden sm:inline">Shuffle</span>
               </button>
             )}
@@ -262,7 +262,7 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
               <button
                 type="button"
                 onClick={() => onPlanLook(outfit)}
-                className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-(--border) bg-(--card) px-3 text-xs font-semibold text-(--muted) transition-all hover:border-(--burnished-gold) hover:text-(--ink) active:scale-95"
+                className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 text-xs font-semibold text-muted transition-all hover:border-(--burnished-gold) hover:text-(--ink) active:scale-95"
                 title="Plan this look on Style Calendar"
               >
                 <Calendar className="h-3.5 w-3.5 text-(--burnished-gold)" />
@@ -277,7 +277,7 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
               className={`flex min-h-11 items-center justify-center gap-1.5 rounded-xl border px-3.5 text-xs font-semibold transition-all ${
                 saved
                   ? 'border-(--kumkum) bg-(--kumkum) text-white'
-                  : 'border-(--border) bg-(--card) text-(--muted) hover:border-(--kumkum) hover:text-(--kumkum) active:scale-95'
+                  : 'border-border bg-card text-muted hover:border-(--kumkum) hover:text-(--kumkum) active:scale-95'
               }`}
               title={saved ? 'Saved to Favorites' : 'Save Look'}
             >

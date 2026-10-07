@@ -177,7 +177,7 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
 
           {photoPreview ? (
             <div className="space-y-3">
-              <div className="relative aspect-4/3 w-full overflow-hidden rounded-2xl border border-(--border) bg-(--ivory)">
+              <div className="relative aspect-4/3 w-full overflow-hidden rounded-2xl border border-border bg-(--ivory)">
                 <img
                   src={photoPreview}
                   alt="Upload preview"
@@ -186,7 +186,7 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-lg border border-(--border) bg-(--paper)/90 px-3 py-1.5 text-xs font-semibold text-(--ink) shadow-sm backdrop-blur-xs transition-colors hover:bg-(--paper) active:scale-95"
+                  className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-lg border border-border bg-(--paper)/90 px-3 py-1.5 text-xs font-semibold text-(--ink) shadow-sm backdrop-blur-xs transition-colors hover:bg-(--paper) active:scale-95"
                 >
                   <RefreshCw className="h-3.5 w-3.5 text-(--burnished-gold)" />
                   <span>Change Photo</span>
@@ -206,15 +206,15 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
           ) : (
             <div
               onClick={() => fileInputRef.current?.click()}
-              className="flex aspect-4/3 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-(--border) bg-(--ivory)/40 p-6 text-center transition-all hover:border-(--kumkum) hover:bg-(--ivory) active:scale-[0.99]"
+              className="flex aspect-4/3 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-(--ivory)/40 p-6 text-center transition-all hover:border-(--kumkum) hover:bg-(--ivory) active:scale-[0.99]"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-(--card) text-(--burnished-gold) border border-(--border) shadow-2xs">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-card text-(--burnished-gold) border border-border shadow-2xs">
                 <Camera className="h-5 w-5" />
               </div>
               <h4 className="mt-3 font-serif text-base text-(--ink)">
                 {isProcessing ? 'Suggesting details...' : 'Photograph or select garment'}
               </h4>
-              <p className="mt-1 text-[11px] text-(--muted) max-w-xs">
+              <p className="mt-1 text-[11px] text-muted max-w-xs">
                 Warm directional lighting on a neutral surface gives the cleanest look.
               </p>
             </div>
@@ -230,7 +230,7 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
 
         {/* Item Name Input */}
         <div>
-          <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-(--muted)">
+          <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted">
             GARMENT NAME
           </label>
           <input
@@ -238,13 +238,13 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Ivory Cotton Kurta, Raw Denim Jeans"
-            className="mt-1 w-full rounded-xl border border-(--border) bg-(--paper) px-3.5 py-2.5 font-serif text-base text-(--ink) outline-none focus:border-(--ink)"
+            className="mt-1 w-full rounded-xl border border-border bg-(--paper) px-3.5 py-2.5 font-serif text-base text-(--ink) outline-none focus:border-(--ink)"
           />
         </div>
 
         {/* Category Chips */}
         <div>
-          <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-(--muted)">
+          <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted">
             CATEGORY
           </label>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -256,7 +256,7 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
                 className={`min-h-10 rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all ${
                   category === cat
                     ? 'border border-(--ink) bg-(--ink) text-(--paper) shadow-2xs'
-                    : 'border border-(--border) bg-(--card) text-(--muted) hover:border-(--ink)'
+                    : 'border border-border bg-card text-muted hover:border-(--ink)'
                 }`}
               >
                 {cat}
@@ -268,7 +268,7 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
         {/* Subcategory Chips */}
         {SUBCATEGORIES[category] && (
           <div>
-            <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-(--muted)">
+            <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted">
               GARMENT TYPE
             </label>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -280,7 +280,7 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
                   className={`min-h-9 rounded-lg px-3 py-1 text-xs font-medium capitalize transition-all ${
                     subcategory === sub
                       ? 'border border-(--burnished-gold) bg-(--ivory) text-(--ink) font-semibold'
-                      : 'border border-(--border) bg-(--card) text-(--muted) hover:text-(--ink)'
+                      : 'border border-border bg-card text-muted hover:text-(--ink)'
                   }`}
                 >
                   {sub}
@@ -292,7 +292,7 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
 
         {/* Colors Selection */}
         <div>
-          <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-(--muted)">
+          <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted">
             PRIMARY COLORS
           </label>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -306,7 +306,7 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
                   className={`flex min-h-9 items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium capitalize transition-all ${
                     isSelected
                       ? 'border-(--kumkum) bg-(--ivory) text-(--ink) font-semibold'
-                      : 'border-(--border) bg-(--card) text-(--muted) hover:border-(--ink)'
+                      : 'border border-border bg-card text-muted hover:border-(--ink)'
                   }`}
                 >
                   <span
@@ -324,7 +324,7 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
         {/* Formality level */}
         <div>
           <div className="flex items-center justify-between">
-            <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-(--muted)">
+            <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted">
               FORMALITY LEVEL
             </label>
             <span className="text-xs font-serif italic text-(--ink)">
@@ -348,7 +348,7 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
                 className={`min-h-11 rounded-lg text-xs font-bold transition-all ${
                   formality === lvl
                     ? 'border border-(--ink) bg-(--ink) text-(--paper) shadow-2xs'
-                    : 'border border-(--border) bg-(--card) text-(--muted) hover:border-(--ink)'
+                    : 'border border-border bg-card text-muted hover:border-(--ink)'
                 }`}
               >
                 {lvl}
@@ -359,7 +359,7 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
 
         {/* Suitable Occasions */}
         <div>
-          <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-(--muted)">
+          <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted">
             SUITABLE OCCASIONS
           </label>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -373,7 +373,7 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
                   className={`min-h-9 rounded-lg px-3 py-1 text-xs font-medium uppercase tracking-wider transition-all ${
                     isSelected
                       ? 'border border-(--kumkum) bg-(--kumkum) text-white shadow-2xs'
-                      : 'border border-(--border) bg-(--card) text-(--muted) hover:border-(--ink)'
+                      : 'border border-border bg-card text-muted hover:border-(--ink)'
                   }`}
                 >
                   {occ}

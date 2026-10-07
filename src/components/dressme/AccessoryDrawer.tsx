@@ -22,14 +22,14 @@ export const AccessoryDrawer: React.FC<AccessoryDrawerProps> = ({
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} title="FINISH THE LOOK">
       <div className="space-y-4">
-        <p className="text-xs text-(--muted) font-normal leading-relaxed">
+        <p className="text-xs text-muted font-normal leading-relaxed">
           Curate an accessory from your clean wardrobe pieces — bag, watch, jewellery, or scarf — to complete this editorial composition.
         </p>
 
         {currentAccessory && (
           <div className="flex items-center justify-between rounded-xl border border-(--burnished-gold) bg-(--ivory) p-3">
             <div className="flex items-center gap-3">
-              <div className="h-12 w-12 overflow-hidden rounded-lg bg-(--paper) border border-(--border)">
+              <div className="h-12 w-12 overflow-hidden rounded-lg bg-(--paper) border border-border">
                 <ItemImage
                   item={currentAccessory}
                   className="h-full w-full object-cover"
@@ -50,7 +50,7 @@ export const AccessoryDrawer: React.FC<AccessoryDrawerProps> = ({
                 onSelectAccessory(null);
                 onClose();
               }}
-              className="flex min-h-11 items-center gap-1.5 rounded-lg border border-(--border) bg-(--card) px-3 text-xs font-medium text-(--muted) hover:text-(--kumkum) hover:border-(--kumkum) transition-colors active:scale-95"
+              className="flex min-h-11 items-center gap-1.5 rounded-lg border border-border bg-card px-3 text-xs font-medium text-muted hover:text-(--kumkum) hover:border-(--kumkum) transition-colors active:scale-95"
             >
               <X className="h-3.5 w-3.5" />
               <span>Remove</span>
@@ -59,7 +59,7 @@ export const AccessoryDrawer: React.FC<AccessoryDrawerProps> = ({
         )}
 
         {accessories.length === 0 ? (
-          <div className="rounded-xl border border-(--border) bg-(--ivory) p-6 text-center text-xs text-(--muted)">
+          <div className="rounded-xl border border-border bg-(--ivory) p-6 text-center text-xs text-muted">
             <p className="font-serif text-base italic text-(--ink) mb-1">No clean accessories found</p>
             Add a watch, bag, jewellery, sunglasses, or scarf to your wardrobe to complete your styled looks.
           </div>
@@ -77,7 +77,7 @@ export const AccessoryDrawer: React.FC<AccessoryDrawerProps> = ({
                   className={`group relative flex flex-col overflow-hidden rounded-xl border p-2 cursor-pointer transition-all active:scale-98 ${
                     isSelected
                       ? 'border-(--kumkum) bg-(--ivory) ring-1 ring-(--kumkum)'
-                      : 'border-(--border) bg-(--card) hover:border-(--ink)'
+                      : 'border-border bg-card hover:border-(--ink)'
                   }`}
                 >
                   <div className="aspect-square w-full overflow-hidden rounded-lg bg-(--ivory)">
@@ -90,7 +90,7 @@ export const AccessoryDrawer: React.FC<AccessoryDrawerProps> = ({
                     <h5 className="truncate text-xs font-semibold text-(--ink)">
                       {acc.name}
                     </h5>
-                    <span className="text-[10px] uppercase tracking-wider text-(--muted)">
+                    <span className="text-[10px] uppercase tracking-wider text-muted">
                       {acc.subcategory || 'accessory'}
                     </span>
                   </div>

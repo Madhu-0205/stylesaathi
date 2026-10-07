@@ -38,9 +38,9 @@ describe('Critical Offline Acceptance Test: Needle On-Device AI Flow', () => {
     await clearCachedModel();
   });
 
-  function verifyNoOutboundNetworkCalls(fetchSpy: ReturnType<typeof vi.spyOn>) {
-    const outboundHttpCalls = fetchSpy.mock.calls.filter(([url]) => {
-      const urlStr = String(url);
+  function verifyNoOutboundNetworkCalls(fetchSpy: any) {
+    const outboundHttpCalls = fetchSpy.mock.calls.filter((call: any[]) => {
+      const urlStr = String(call[0] || '');
       return urlStr.startsWith('http://') || urlStr.startsWith('https://');
     });
     expect(outboundHttpCalls).toHaveLength(0);
@@ -58,7 +58,7 @@ describe('Critical Offline Acceptance Test: Needle On-Device AI Flow', () => {
     expect(realWardrobe.length).toBeGreaterThan(5);
 
     const mockPreferences: StylePreferences = {
-      stylingMode: 'balanced',
+      stylingMode: 'variety',
       preferredAesthetics: ['casual', 'minimal'],
       preferredContexts: ['college'],
       updatedAt: Date.now(),
