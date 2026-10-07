@@ -7,6 +7,7 @@ interface TopNavProps {
   currentTab: NavTab;
   onChangeTab: (tab: NavTab) => void;
   onOpenAddItem: () => void;
+  onOpenNeedle?: () => void;
   theme: 'light' | 'dark';
   toggleTheme: () => void;
 }
@@ -23,6 +24,7 @@ export const TopNav: React.FC<TopNavProps> = ({
   currentTab,
   onChangeTab,
   onOpenAddItem,
+  onOpenNeedle,
   theme,
   toggleTheme,
 }) => {
@@ -70,6 +72,21 @@ export const TopNav: React.FC<TopNavProps> = ({
 
         {/* Global Desktop Actions */}
         <div className="flex items-center gap-2.5">
+          {onOpenNeedle && (
+            <button
+              type="button"
+              onClick={onOpenNeedle}
+              className="hidden md:inline-flex min-h-11 items-center gap-2 rounded-full border border-border bg-card/80 px-3.5 py-1.5 text-xs font-medium text-muted-foreground shadow-2xs backdrop-blur-sm transition-all hover:border-primary/40 hover:text-foreground active:scale-98"
+              aria-label="Open AI Stylist (Command + K)"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-amber-500 animate-pulse" />
+              <span className="font-serif tracking-wide">Ask Stylist…</span>
+              <kbd className="ml-1 rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                ⌘K
+              </kbd>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={toggleTheme}

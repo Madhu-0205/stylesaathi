@@ -43,7 +43,9 @@ export async function getCachedModel(): Promise<ArrayBuffer | null> {
       return data;
     }
     if (data instanceof Uint8Array) {
-      return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+      const copy = new ArrayBuffer(data.byteLength);
+      new Uint8Array(copy).set(data);
+      return copy;
     }
     return null;
   } catch (err) {

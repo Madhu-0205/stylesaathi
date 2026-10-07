@@ -425,8 +425,8 @@ export class NeedleService {
 
         if (matchingItem && context?.updateItem) {
           await context.updateItem(matchingItem.id, {
-            wearCount: (matchingItem.wearCount || 0) + 1,
-            lastWornDate: args.date,
+            timesWorn: (matchingItem.timesWorn || 0) + 1,
+            lastWorn: Date.now(),
           });
         }
 
@@ -454,18 +454,12 @@ export class NeedleService {
             date: args.date,
             occasion: args.occasion as any,
             outfit: {
-              items: [],
-              score: 80,
-              why: [args.notes || `Planned with Needle for ${args.occasion}`],
-              aestheticMatches: [],
-              contextFit: 1,
-              versatilityMultiplier: 1,
-              seasonScore: 1,
-              balanceScore: 1,
               template: 'Everyday casual',
+              slots: {},
+              score: 80,
+              why: args.notes || `Planned with Needle for ${args.occasion}`,
             },
             status: 'planned',
-            notes: args.notes,
           });
         }
 
@@ -485,7 +479,7 @@ export class NeedleService {
           toolCall,
           executionStatus: 'executed',
           data: { preferences },
-          message: `Style preferences: Mode is "${preferences?.stylingMode || 'balanced'}" with aesthetics ${preferences?.aestheticPreferences?.join(', ') || 'default'}.`,
+          message: `Style preferences: Mode is "${preferences?.stylingMode || 'balanced'}" with aesthetics ${preferences?.preferredAesthetics?.join(', ') || 'default'}.`,
         };
       }
 

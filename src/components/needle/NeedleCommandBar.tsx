@@ -44,8 +44,13 @@ export const NeedleCommandBar: React.FC<NeedleCommandBarProps> = ({ onNavigateTa
       }
     };
 
+    const handleOpenEvent = () => setIsOpen(true);
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('open-needle-command', handleOpenEvent);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('open-needle-command', handleOpenEvent);
+    };
   }, [isOpen]);
 
   // Focus input when opened

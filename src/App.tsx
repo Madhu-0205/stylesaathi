@@ -14,6 +14,7 @@ import { AuthView } from './components/auth/AuthView';
 import { AddItemSheet } from './components/wardrobe/AddItemSheet';
 import { Toast } from './components/common/Toast';
 import { StyleSaathiLoadingOverlay } from './components/loading/StyleSaathiLoadingOverlay';
+import { NeedleCommandBar } from './components/needle/NeedleCommandBar';
 
 export const App: React.FC = () => {
   const {
@@ -72,13 +73,14 @@ export const App: React.FC = () => {
         <WardrobeSetupScreen onComplete={() => setSetupCompleted(true)} />
       ) : (
         /* 4. Complete V4 Companion Workspace */
-        <div className="min-h-dvh bg-(--background) text-(--text) transition-colors">
+        <div className="min-h-dvh bg-background text-(--text) transition-colors">
           {/* Desktop & Tablet Top Navigation (hidden on mobile) */}
           <div className="hidden md:block">
             <TopNav
               currentTab={currentTab}
               onChangeTab={setCurrentTab}
               onOpenAddItem={() => setIsAddOpen(true)}
+              onOpenNeedle={() => window.dispatchEvent(new CustomEvent('open-needle-command'))}
               theme={theme}
               toggleTheme={toggleTheme}
             />
@@ -105,6 +107,9 @@ export const App: React.FC = () => {
 
             {/* Global sticky 5-tab bottom navigation (mobile only) */}
             <BottomNav currentTab={currentTab} onChangeTab={setCurrentTab} />
+
+            {/* Global Needle 3 On-Device Command Palette */}
+            <NeedleCommandBar onNavigateTab={setCurrentTab} />
 
             {/* Global Add Item Sheet / Dialog */}
             <AddItemSheet

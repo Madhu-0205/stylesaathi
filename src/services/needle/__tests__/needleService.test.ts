@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { NeedleService, needleService } from '../needleService';
-import { WardrobeItem, StylePreferences } from '../../types';
+import { WardrobeItem, StylePreferences } from '../../../types';
 import { clearCachedModel, setCachedModel } from '../needleModelCache';
 
 const sampleItems: WardrobeItem[] = [
@@ -18,7 +18,6 @@ const sampleItems: WardrobeItem[] = [
     note: '',
     timesWorn: 3,
     createdAt: Date.now(),
-    updatedAt: Date.now(),
   },
   {
     id: 'item-2',
@@ -34,7 +33,6 @@ const sampleItems: WardrobeItem[] = [
     note: '',
     timesWorn: 5,
     createdAt: Date.now(),
-    updatedAt: Date.now(),
   },
   {
     id: 'item-3',
@@ -50,17 +48,15 @@ const sampleItems: WardrobeItem[] = [
     note: '',
     timesWorn: 8,
     createdAt: Date.now(),
-    updatedAt: Date.now(),
   },
 ];
 
 const mockPreferences: StylePreferences = {
-  stylingMode: 'balanced',
-  aestheticPreferences: ['minimal', 'casual'],
-  contextPreferences: {
-    college: { comfortPriority: 0.8 },
-  },
-} as unknown as StylePreferences;
+  stylingMode: 'variety',
+  preferredAesthetics: ['minimal', 'casual'],
+  preferredContexts: ['college'],
+  updatedAt: Date.now(),
+};
 
 describe('NeedleService', () => {
   let service: NeedleService;
