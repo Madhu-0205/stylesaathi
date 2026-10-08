@@ -1,4 +1,6 @@
-import { WardrobeItem, Occasion, StylePreferences } from '../types';
+import { WardrobeItem, Occasion, StylePreferences, PersonalStyleProfile } from '../types';
+import { getPatternCompatibilityScore } from './patternIntelligence';
+import { calculatePersonalStyleScore, getPersonalStyleExplanations } from './styleBrain';
 
 export const harmony = (a: string[], b: string[]): number => {
   const neutral = [
@@ -77,7 +79,8 @@ export const calculateOutfitScore = (
   pieces: WardrobeItem[],
   occasion: Occasion,
   seed = 0.5,
-  preferences?: StylePreferences
+  preferences?: StylePreferences,
+  styleProfile?: PersonalStyleProfile
 ): number => {
   let score = 0;
 
@@ -273,6 +276,28 @@ export const calculateOutfitScore = (
     }
   }
 
+  // Phase 2: Pattern compatibility bonus/penalty (when patterns exist)
+  if (pieces.length >= 2) {
+    let patternScoreSum = 0;
+    let patternPairs = 0;
+    for (let i = 0; i < pieces.length; i++) {
+      for (let j = i + 1; j < pieces.length; j++) {
+        if (pieces[i].pattern && pieces[j].pattern) {
+          patternScoreSum += getPatternCompatibilityScore(pieces[i].pattern, pieces[j].pattern);
+          patternPairs++;
+        }
+      }
+    }
+    if (patternPairs > 0) {
+      score += (patternScoreSum / patternPairs) * 0.8;
+    }
+  }
+
+  // Phase 3: Personal Style Brain adjustment (deterministic behavioral score)
+  if (styleProfile) {
+    score += calculatePersonalStyleScore(pieces, occasion, styleProfile, preferences);
+  }
+
   // Controlled seed randomness
   score += (seed - 0.5) * 0.5;
 
@@ -283,9 +308,18 @@ export const getOutfitWhyReasons = (
   pieces: WardrobeItem[],
   occasion: Occasion,
   _score = 3,
-  preferences?: StylePreferences
+  preferences?: StylePreferences,
+  styleProfile?: PersonalStyleProfile
 ): string[] => {
   const reasons: string[] = [];
+
+  // Phase 3: High-confidence evidence-based Personal Style insights
+  if (styleProfile) {
+    const personalReasons = getPersonalStyleExplanations(pieces, occasion, styleProfile);
+    if (personalReasons.length > 0) {
+      reasons.push(personalReasons[0]);
+    }
+  }
 
   // Reason 1: Silhouette and tonal balance
   const pieceColors = pieces.flatMap((p) => p.colors);
@@ -350,12 +384,13 @@ export const generateOutfitWhy = (
   scoreOrPieces: number | WardrobeItem[],
   occasionOrScore?: Occasion | number,
   scoreMaybe?: number,
-  preferences?: StylePreferences
+  preferences?: StylePreferences,
+  styleProfile?: PersonalStyleProfile
 ): string => {
   if (Array.isArray(scoreOrPieces)) {
     const occ = (typeof occasionOrScore === 'string' ? occasionOrScore : 'casual outing') as Occasion;
     const score = typeof scoreMaybe === 'number' ? scoreMaybe : 3;
-    const reasons = getOutfitWhyReasons(scoreOrPieces, occ, score, preferences);
+    const reasons = getOutfitWhyReasons(scoreOrPieces, occ, score, preferences, styleProfile);
     return reasons.join(' · ');
   }
   const score = typeof scoreOrPieces === 'number' ? scoreOrPieces : 3;

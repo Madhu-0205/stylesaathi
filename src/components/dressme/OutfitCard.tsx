@@ -1,8 +1,22 @@
 import React, { useState } from 'react';
-import { Bookmark, Check, RefreshCw, Plus, Calendar } from 'lucide-react';
-import { GeneratedOutfit, WardrobeItem, Occasion } from '../../types';
+import { Bookmark, Check, RefreshCw, Plus, Calendar, ThumbsDown } from 'lucide-react';
+import { GeneratedOutfit, WardrobeItem, Occasion, RejectionReason } from '../../types';
 import { ItemImage } from '../common/ItemImage';
 import { getOutfitWhyReasons } from '../../engine/scoring';
+import { useWardrobeContext } from '../../context/WardrobeContext';
+
+const REJECTION_OPTIONS: { reason: RejectionReason; label: string }[] = [
+  { reason: 'not_my_style', label: 'Not my style' },
+  { reason: 'too_hot', label: 'Too hot' },
+  { reason: 'too_cold', label: 'Too cold' },
+  { reason: 'too_formal', label: 'Too formal' },
+  { reason: 'too_casual', label: 'Too casual' },
+  { reason: 'wrong_color', label: 'Wrong color' },
+  { reason: 'wrong_pattern', label: 'Wrong pattern' },
+  { reason: 'wrong_fit', label: 'Wrong fit' },
+  { reason: 'dislike_combination', label: 'Dislike combo' },
+  { reason: 'other', label: 'Other' },
+];
 
 interface OutfitCardProps {
   outfit: GeneratedOutfit;
@@ -14,6 +28,7 @@ interface OutfitCardProps {
   onSaveOutfit: (outfit: GeneratedOutfit) => Promise<any>;
   onChangeLook?: () => void;
   onPlanLook?: (outfit: GeneratedOutfit) => void;
+  onRejectLook?: (outfit: GeneratedOutfit, reason?: RejectionReason) => Promise<void>;
 }
 
 export const OutfitCard: React.FC<OutfitCardProps> = ({
@@ -26,11 +41,14 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
   onSaveOutfit,
   onChangeLook,
   onPlanLook,
+  onRejectLook,
 }) => {
+  const { preferences, styleProfile } = useWardrobeContext();
   const [wornToday, setWornToday] = useState(false);
   const [saved, setSaved] = useState(false);
   const [isWearing, setIsWearing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
 
   // Extract core pieces from slots
   const allSlotEntries = Object.entries(outfit.slots);
@@ -43,8 +61,8 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
   if (accessory) pieceNames.push(accessory.name);
   const pieceSummary = pieceNames.join(' · ');
 
-  // Get 2-3 concise editorial why reasons
-  const whyReasons = getOutfitWhyReasons(allPieces, occasion, outfit.score);
+  // Get 2-3 concise editorial why reasons, informed by Personal Style Brain
+  const whyReasons = getOutfitWhyReasons(allPieces, occasion, outfit.score, preferences, styleProfile);
 
   const handleWoreClick = async () => {
     if (wornToday) return;
@@ -189,20 +207,20 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
                 <button
                   type="button"
                   onClick={onOpenAccessoryDrawer}
-                  className="inline-flex shrink-0 min-h-8 items-center gap-1 rounded-md border border-(--burnished-gold) bg-(--ivory) px-2 py-0.5 text-[10px] font-semibold text-(--ink) transition-colors hover:border-(--kumkum)"
+                  className="inline-flex shrink-0 min-h-11 items-center gap-1.5 rounded-xl border border-(--burnished-gold) bg-(--ivory) px-3 py-1.5 text-[11px] font-semibold text-(--ink) transition-colors hover:border-(--kumkum) focus-editorial active:scale-95"
                   title="Change accessory"
                 >
-                  <span className="text-[8.5px] uppercase font-bold text-(--burnished-gold)">ACCENT:</span>
-                  <span className="truncate max-w-20">{accessory.name}</span>
-                  <RefreshCw className="h-2.5 w-2.5 text-(--burnished-gold)" />
+                  <span className="text-[9px] uppercase font-bold text-(--burnished-gold)">ACCENT:</span>
+                  <span className="truncate max-w-28">{accessory.name}</span>
+                  <RefreshCw className="h-3 w-3 text-(--burnished-gold)" />
                 </button>
               ) : (
                 <button
                   type="button"
                   onClick={onOpenAccessoryDrawer}
-                  className="inline-flex shrink-0 min-h-8 items-center gap-1 rounded-md border border-dashed border-border bg-(--ivory)/60 px-2 py-0.5 text-[10px] font-semibold text-muted transition-colors hover:border-(--kumkum) hover:text-(--ink)"
+                  className="inline-flex shrink-0 min-h-11 items-center gap-1.5 rounded-xl border border-dashed border-border bg-(--ivory)/60 px-3 py-1.5 text-[11px] font-semibold text-muted transition-colors hover:border-(--kumkum) hover:text-(--ink) focus-editorial active:scale-95"
                 >
-                  <Plus className="h-2.5 w-2.5 text-(--burnished-gold)" />
+                  <Plus className="h-3 w-3 text-(--burnished-gold)" />
                   <span>Finish Look</span>
                 </button>
               )}
@@ -224,7 +242,7 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
             </div>
           </div>
 
-          {/* Editorial Actions: CHANGE LOOK / WEAR TODAY / SAVE */}
+          {/* Editorial Actions: CHANGE LOOK / WEAR TODAY / SAVE / NOT FOR ME */}
           <div className="flex items-center gap-2 pt-2 border-t border-(--border)/60">
             {onChangeLook && (
               <button
@@ -284,7 +302,73 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
               <Bookmark className={`h-4 w-4 ${saved ? 'fill-current' : ''}`} />
               <span>{saved ? 'Saved' : 'Save'}</span>
             </button>
+
+            {onRejectLook && (
+              <button
+                type="button"
+                onClick={() => setShowFeedback((prev) => !prev)}
+                className={`flex min-h-11 items-center justify-center gap-1 rounded-xl border px-2.5 text-xs font-semibold transition-all ${
+                  showFeedback
+                    ? 'border-(--kumkum) bg-(--kumkum)/10 text-(--kumkum)'
+                    : 'border-border bg-card text-muted hover:border-(--kumkum) hover:text-(--kumkum) active:scale-95'
+                }`}
+                title="Not for me (refine style)"
+                aria-label="Not for me"
+              >
+                <ThumbsDown className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Pass</span>
+              </button>
+            )}
           </div>
+
+          {/* Structured Feedback Drawer (Low Friction 1-2 Taps) */}
+          {showFeedback && onRejectLook && (
+            <div className="mt-2.5 rounded-xl border border-(--border)/80 bg-(--ivory) p-3 animate-fade-in space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[9.5px] font-bold uppercase tracking-wider text-(--kumkum)">
+                  Why doesn't this look work for you?
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowFeedback(false)}
+                  className="text-xs text-muted hover:text-(--ink) px-1"
+                  aria-label="Dismiss feedback dialog"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="flex flex-wrap gap-1.5">
+                {REJECTION_OPTIONS.map(({ reason, label }) => (
+                  <button
+                    key={reason}
+                    type="button"
+                    onClick={async () => {
+                      setShowFeedback(false);
+                      await onRejectLook(outfit, reason);
+                    }}
+                    className="min-h-8 rounded-lg border border-border bg-card px-2.5 py-1 text-[11px] font-medium text-(--ink) transition-all hover:border-(--kumkum) hover:text-(--kumkum) active:scale-95"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="pt-1.5 flex items-center justify-between border-t border-(--border)/60 text-[10.5px]">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setShowFeedback(false);
+                    await onRejectLook(outfit);
+                  }}
+                  className="text-muted hover:text-(--ink) underline py-1"
+                >
+                  Just dismiss without reason
+                </button>
+                <span className="text-muted italic">Teaches your StyleSaathi</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </article>

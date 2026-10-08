@@ -71,9 +71,11 @@ export const ItemCard: React.FC<ItemCardProps> = ({
           {item.name}
         </h4>
         <div className="mt-0.5 flex items-center justify-between text-[11px] text-muted tracking-wide">
-          <span className="capitalize">{item.subcategory || item.category}</span>
+          <span className="capitalize truncate max-w-32">
+            {item.fabric ? `${item.fabric} · ` : ''}{item.subcategory || item.category}
+          </span>
           {item.timesWorn > 0 && (
-            <span className="text-[10px] font-medium text-muted/80">
+            <span className="text-[10px] font-medium text-muted/80 shrink-0">
               Worn {item.timesWorn}×
             </span>
           )}

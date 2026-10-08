@@ -208,12 +208,14 @@ export class NeedleService {
     });
 
     const inferMsg = await inferResultPromise;
-    const { success, toolCall: rawToolCall, confidence, error } = inferMsg.payload;
+    const { success, toolCall: rawToolCall, confidence, reasoning, engine, error } = inferMsg.payload;
 
     if (!success || !rawToolCall) {
       const result: NeedleExecutionResult = {
         query: trimmed,
         executionStatus: 'rejected',
+        engine,
+        reasoning,
         message:
           confidence < 0.5
             ? "Could you clarify what you'd like to do? (Low confidence in matched intent)"
@@ -227,11 +229,13 @@ export class NeedleService {
     }
 
     // Validate and normalize raw tool call
-    const validation = validateAndNormalizeToolCall(rawToolCall, confidence, trimmed);
+    const validation = validateAndNormalizeToolCall(rawToolCall, confidence, trimmed, engine, reasoning);
     if (!validation.valid) {
       const result: NeedleExecutionResult = {
         query: trimmed,
         executionStatus: 'rejected',
+        engine,
+        reasoning,
         message: validation.error,
       };
       this.updateState({
@@ -250,6 +254,8 @@ export class NeedleService {
         query: trimmed,
         toolCall: validatedCall,
         executionStatus: 'rejected',
+        engine: validatedCall.engine,
+        reasoning: validatedCall.reasoning,
         message:
           "Could you clarify what you'd like to do? Please specify an occasion or garment.",
       };
@@ -274,6 +280,8 @@ export class NeedleService {
         query: trimmed,
         toolCall: validatedCall,
         executionStatus: 'pending_confirmation',
+        engine: validatedCall.engine,
+        reasoning: validatedCall.reasoning,
         message: validatedCall.isDestructive
           ? `Destructive action detected. Please confirm to proceed: ${validatedCall.explanation}`
           : `Moderate confidence (${Math.round(validatedCall.confidence * 100)}%). Please confirm: ${validatedCall.explanation}`,
@@ -367,6 +375,8 @@ export class NeedleService {
           query,
           toolCall,
           executionStatus: 'executed',
+          engine: toolCall.engine,
+          reasoning: toolCall.reasoning,
           data: { outfits },
           message:
             outfits.length > 0
@@ -412,6 +422,8 @@ export class NeedleService {
           query,
           toolCall,
           executionStatus: 'executed',
+          engine: toolCall.engine,
+          reasoning: toolCall.reasoning,
           data: { items: matched },
           message: `Found ${matched.length} wardrobe item${matched.length === 1 ? '' : 's'}.`,
         };
@@ -434,6 +446,8 @@ export class NeedleService {
           query,
           toolCall,
           executionStatus: 'executed',
+          engine: toolCall.engine,
+          reasoning: toolCall.reasoning,
           data: {
             message: `Recorded wear for "${matchingItem ? matchingItem.name : args.itemName}" on ${args.date}.`,
           },
@@ -467,6 +481,8 @@ export class NeedleService {
           query,
           toolCall,
           executionStatus: 'executed',
+          engine: toolCall.engine,
+          reasoning: toolCall.reasoning,
           data: { plan: savedPlan },
           message: `Scheduled look for ${args.occasion} on ${args.date}.`,
         };
@@ -478,6 +494,8 @@ export class NeedleService {
           query,
           toolCall,
           executionStatus: 'executed',
+          engine: toolCall.engine,
+          reasoning: toolCall.reasoning,
           data: { preferences },
           message: `Style preferences: Mode is "${preferences?.stylingMode || 'balanced'}" with aesthetics ${preferences?.preferredAesthetics?.join(', ') || 'default'}.`,
         };
@@ -488,6 +506,8 @@ export class NeedleService {
           query,
           toolCall,
           executionStatus: 'failed',
+          engine: toolCall.engine,
+          reasoning: toolCall.reasoning,
           message: `Unsupported tool execution: ${toolCall.name}`,
         };
     }

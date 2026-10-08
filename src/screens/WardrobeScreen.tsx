@@ -5,6 +5,7 @@ import { Chip } from '../components/common/Chip';
 import { ItemCard } from '../components/wardrobe/ItemCard';
 import { ItemDetailSheet } from '../components/wardrobe/ItemDetailSheet';
 import { EmptyState } from '../components/common/EmptyState';
+import { WardrobeItemSkeleton } from '../components/common/Skeleton';
 import { CATEGORIES } from '../data/taxonomy';
 import { WardrobeItem, Category, Status } from '../types';
 import { StyleSaathiLogo } from '../components/brand/StyleSaathiLogo';
@@ -133,7 +134,8 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
           <button
             type="button"
             onClick={() => setFavoriteOnly(!favoriteOnly)}
-            className={`inline-flex min-h-8.5 items-center gap-1 rounded-lg px-3 text-[10px] font-semibold tracking-wider uppercase transition-all whitespace-nowrap active:scale-95 ${
+            aria-pressed={favoriteOnly}
+            className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3.5 text-[10.5px] font-semibold tracking-wider uppercase transition-all whitespace-nowrap active:scale-95 focus-editorial ${
               favoriteOnly
                 ? 'border border-(--kumkum) bg-(--kumkum) text-white shadow-2xs'
                 : 'border border-border bg-card text-muted hover:border-(--ink)'
@@ -153,7 +155,8 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
               key={s.id}
               type="button"
               onClick={() => setStatusFilter(statusFilter === s.id ? 'All' : s.id)}
-              className={`inline-flex min-h-8.5 items-center gap-1 rounded-lg px-3 text-[10px] font-semibold tracking-wider uppercase transition-all whitespace-nowrap active:scale-95 ${
+              aria-pressed={statusFilter === s.id}
+              className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3.5 text-[10.5px] font-semibold tracking-wider uppercase transition-all whitespace-nowrap active:scale-95 focus-editorial ${
                 statusFilter === s.id
                   ? 'border border-(--ink) bg-(--ink) text-(--paper) shadow-2xs'
                   : 'border border-border bg-card text-muted hover:border-(--ink)'
@@ -167,12 +170,9 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
 
       {/* Loading Skeleton */}
       {loading && (
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5">
-          {[1, 2, 3, 4, 5, 6].map((n) => (
-            <div
-              key={n}
-              className="aspect-4/5 animate-pulse rounded-2xl border border-border bg-card"
-            />
+        <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:gap-x-4 sm:gap-y-5 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+            <WardrobeItemSkeleton key={n} />
           ))}
         </div>
       )}

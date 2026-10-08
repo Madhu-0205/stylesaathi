@@ -6,6 +6,7 @@ import { Chip } from '../components/common/Chip';
 import { OutfitCard } from '../components/dressme/OutfitCard';
 import { AccessoryDrawer } from '../components/dressme/AccessoryDrawer';
 import { EmptyState } from '../components/common/EmptyState';
+import { OutfitCardSkeleton } from '../components/common/Skeleton';
 import { PlanLookModal } from '../components/calendar/PlanLookModal';
 import { Occasion, Season, GeneratedOutfit } from '../types';
 import { OCCASIONS, SEASONS } from '../data/taxonomy';
@@ -32,6 +33,7 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
     setOutfitAccessory,
     markWoreOutfit,
     saveOutfit,
+    rejectOutfit,
   } = useDressMe();
 
   const [activeDrawerOutfitIndex, setActiveDrawerOutfitIndex] = useState<number | null>(null);
@@ -157,18 +159,19 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
         </div>
 
         {/* Season Inline Switcher */}
-        <div className="flex items-center justify-between px-0.5 text-[11px] text-muted">
-          <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-0.5 text-[11px] text-muted">
+          <div className="flex items-center gap-1.5">
             <span className="text-[9px] font-bold uppercase tracking-wider text-muted">
               CLIMATE:
             </span>
-            <div className="inline-flex rounded-lg border border-border bg-card p-0.5">
+            <div className="inline-flex rounded-xl border border-border bg-card p-0.5">
               {SEASONS.map((s) => (
                 <button
                   key={s}
                   type="button"
                   onClick={() => setSeason(s as Season)}
-                  className={`rounded-md px-2 py-0.5 text-[10px] uppercase font-semibold tracking-wider transition-colors ${
+                  aria-pressed={season === s}
+                  className={`inline-flex min-h-11 items-center justify-center rounded-lg px-3.5 text-[10.5px] uppercase font-bold tracking-wider transition-colors focus-editorial ${
                     season === s
                       ? 'bg-(--ink) text-(--paper) shadow-2xs'
                       : 'text-muted hover:text-(--ink)'
@@ -187,7 +190,12 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
       </div>
 
       {/* Outfit Results: The Outfit Dominates Immediately */}
-      {outfits.length === 0 ? (
+      {isShuffling ? (
+        <div className="space-y-4">
+          <OutfitCardSkeleton />
+          <OutfitCardSkeleton />
+        </div>
+      ) : outfits.length === 0 ? (
         <EmptyState
           icon={<AlertCircle className="h-7 w-7 text-(--kumkum)" />}
           title={emptyStateInfo?.title || 'Not enough clean pieces for this look yet'}
@@ -214,6 +222,7 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
               onSaveOutfit={saveOutfit}
               onChangeLook={handleShuffle}
               onPlanLook={(o) => setPlanningOutfit(o)}
+              onRejectLook={rejectOutfit}
             />
           ))}
         </div>

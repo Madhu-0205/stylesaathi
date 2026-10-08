@@ -414,4 +414,40 @@ describe('Production Conflict Resolvers', () => {
       expect(resolved.isDeleted).toBe(true);
     });
   });
+
+  // ==========================================================================
+  // 6. User-Verified Precedence over Unverified AI Guesses
+  // ==========================================================================
+  describe('6. User-Verified Precedence over Unverified AI Guesses', () => {
+    it('preserves user-verified fabric, pattern, and fit even if an unverified remote sync has later timestamp', () => {
+      const userVerifiedLocal: WardrobeItem = {
+        ...baseItem,
+        fabric: 'khadi',
+        pattern: 'chikankari',
+        fit: 'straight',
+        purchasePrice: 1899,
+        culturalContext: 'traditional',
+        userVerified: true,
+        serverUpdatedAt: '2026-10-04T12:00:00.000Z',
+      };
+
+      const aiUnverifiedRemote: WardrobeItem = {
+        ...baseItem,
+        fabric: 'cotton', // AI guess
+        pattern: 'solid',  // AI guess
+        fit: 'relaxed',    // AI guess
+        aiConfidence: 0.70,
+        userVerified: false,
+        serverUpdatedAt: '2026-10-04T12:05:00.000Z', // Later server timestamp
+      };
+
+      const resolved = resolveWardrobeItemConflict(userVerifiedLocal, aiUnverifiedRemote);
+      // Even though remote committed later, the user's verified attributes are preserved!
+      expect(resolved.fabric).toBe('khadi');
+      expect(resolved.pattern).toBe('chikankari');
+      expect(resolved.fit).toBe('straight');
+      expect(resolved.purchasePrice).toBe(1899);
+      expect(resolved.userVerified).toBe(true);
+    });
+  });
 });

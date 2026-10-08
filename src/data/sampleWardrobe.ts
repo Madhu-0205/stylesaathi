@@ -22,6 +22,11 @@ interface RawItemDef {
   seasons: Season[];
   occasions: Occasion[];
   formality: number;
+  fabric?: WardrobeItem['fabric'];
+  pattern?: WardrobeItem['pattern'];
+  fit?: WardrobeItem['fit'];
+  purchasePrice?: number;
+  culturalContext?: WardrobeItem['culturalContext'];
 }
 
 const rawSampleData: RawItemDef[] = [
@@ -334,4 +339,11 @@ export const sampleWardrobe: WardrobeItem[] = rawSampleData.map((x) => ({
   favorite: ['white-kurta', 'white-sneakers', 'black-trousers'].includes(x.key),
   note: x.key === 'white-kurta' ? 'Dry clean recommended' : '',
   timesWorn: Math.floor(Math.random() * 3),
+  fabric: x.fabric,
+  pattern: x.pattern,
+  fit: x.fit,
+  purchasePrice: x.purchasePrice,
+  culturalContext: x.culturalContext,
+  userVerified: true,
+  aiConfidence: 0.95,
 }));

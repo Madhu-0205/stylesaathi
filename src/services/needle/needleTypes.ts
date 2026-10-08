@@ -73,6 +73,8 @@ export interface RawNeedleToolCall {
   arguments: Record<string, unknown>;
 }
 
+export type NeedleEngineSource = 'needle_wasm' | 'semantic_fallback';
+
 export interface ValidatedToolCall<T = Record<string, unknown>> {
   id: string;
   name: NeedleToolName;
@@ -82,6 +84,8 @@ export interface ValidatedToolCall<T = Record<string, unknown>> {
   isDestructive: boolean;
   requiresConfirmation: boolean;
   explanation: string;
+  engine?: NeedleEngineSource;
+  reasoning?: string;
 }
 
 export type NeedleModelStatus =
@@ -116,6 +120,7 @@ export type NeedleWorkerOutboundMessage =
         toolCall?: RawNeedleToolCall;
         confidence: number;
         reasoning?: string;
+        engine?: NeedleEngineSource;
         error?: string;
       };
     };
@@ -132,6 +137,8 @@ export interface NeedleExecutionResult {
   query: string;
   toolCall?: ValidatedToolCall;
   executionStatus: 'executed' | 'pending_confirmation' | 'rejected' | 'failed';
+  engine?: NeedleEngineSource;
+  reasoning?: string;
   data?: {
     outfits?: GeneratedOutfit[];
     items?: WardrobeItem[];

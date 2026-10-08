@@ -96,3 +96,63 @@ export const COLOR_PALETTE = [
   'purple',
   'grey',
 ];
+
+export const FABRICS = [
+  'cotton',
+  'linen',
+  'khadi',
+  'silk',
+  'chiffon',
+  'georgette',
+  'denim',
+  'wool',
+  'rayon',
+  'viscose',
+  'organza',
+  'velvet',
+  'satin',
+  'crepe',
+  'chanderi',
+  'banarasi',
+  'mulmul',
+  'tussar',
+  'modal',
+  'polyblend',
+] as const;
+
+export const PATTERNS = [
+  'solid',
+  'striped',
+  'checked',
+  'floral',
+  'ikat',
+  'bandhani',
+  'block_print',
+  'kalamkari',
+  'chikankari',
+  'embroidered',
+  'polka_dot',
+  'geometric',
+  'abstract',
+  'zari_brocade',
+] as const;
+
+export const SILHOUETTES = [
+  'slim',
+  'regular',
+  'relaxed',
+  'oversized',
+  'straight',
+  'a_line',
+  'flared',
+  'anarkali',
+  'tailored',
+] as const;
+
+export const CULTURAL_CONTEXTS = [
+  'traditional',
+  'contemporary',
+  'fusion',
+  'ceremonial',
+  'everyday_ethnic',
+] as const;

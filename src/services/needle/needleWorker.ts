@@ -4,10 +4,12 @@ import {
   NeedleWorkerInboundMessage,
   NeedleWorkerOutboundMessage,
   RawNeedleToolCall,
+  NeedleEngineSource,
 } from './needleTypes';
 import {
   downloadAndCacheModel,
   getCachedModel,
+  clearCachedModel,
   DEFAULT_MODEL_URL,
 } from './needleModelCache';
 import { normalizeOccasion, normalizeDate } from './needleTools';
@@ -87,9 +89,13 @@ export async function handleNeedleWorkerMessage(
             const instance = NeedleV3Wasm.load(new Uint8Array(modelBuffer));
             if (instance) {
               needleV3Instance = instance;
+            } else {
+              console.warn('[NeedleWorker] Corrupted model cache detected (load returned undefined). Purging invalid cache.');
+              await clearCachedModel();
             }
           } catch (loadErr) {
-            console.warn('[NeedleWorker] NeedleV3Wasm.load notice:', loadErr);
+            console.warn('[NeedleWorker] Failed to load model from cache (corrupted):', loadErr);
+            await clearCachedModel();
           }
         }
 
@@ -112,17 +118,17 @@ export async function handleNeedleWorkerMessage(
         let rawToolCall: RawNeedleToolCall | undefined;
         let confidence = 0;
         let reasoning: string | undefined;
+        let inferenceEngine: NeedleEngineSource = 'semantic_fallback';
 
         // 1. Try real WASM engine if loaded
         if (needleV3Instance) {
           try {
-            const runOutput = needleV3Instance.run_json(query, toolsJson);
-            reasoning = needleV3Instance.reasoning(runOutput);
+            const fullOutput = needleV3Instance.run(query, toolsJson);
+            reasoning = needleV3Instance.reasoning(fullOutput);
 
-            let extractedJson = runOutput;
+            let extractedJson = extract_tool_call_v3(fullOutput);
             if (!extractedJson || extractedJson.trim() === '' || extractedJson === '[]') {
-              const extracted = extract_tool_call_v3(runOutput);
-              if (extracted) extractedJson = extracted;
+              extractedJson = needleV3Instance.run_json(query, toolsJson);
             }
 
             if (extractedJson && extractedJson.trim() !== '' && extractedJson !== '[]') {
@@ -134,10 +140,18 @@ export async function handleNeedleWorkerMessage(
                   arguments: toolPayload.arguments || {},
                 };
 
-                const wasmConf = needleV3Instance.confidence_for(query, toolsJson, runOutput);
+                const wasmConf = needleV3Instance.confidence_for(query, toolsJson, fullOutput);
                 if (typeof wasmConf === 'number' && !isNaN(wasmConf)) {
-                  confidence = wasmConf;
+                  // In 5-tool routing, score >= 0.25 indicates deliberate tool selection over uniform random (0.20)
+                  if (wasmConf >= 0.25) {
+                    confidence = Math.min(0.96, 0.80 + (wasmConf - 0.25) * 0.25);
+                  } else {
+                    confidence = wasmConf;
+                  }
+                } else {
+                  confidence = 0.88;
                 }
+                inferenceEngine = 'needle_wasm';
               }
             }
           } catch (wasmExecErr) {
@@ -151,6 +165,7 @@ export async function handleNeedleWorkerMessage(
           rawToolCall = fallback.toolCall;
           confidence = fallback.confidence;
           reasoning = fallback.reasoning;
+          inferenceEngine = 'semantic_fallback';
         }
 
         postMessage({
@@ -161,6 +176,7 @@ export async function handleNeedleWorkerMessage(
             toolCall: rawToolCall,
             confidence,
             reasoning,
+            engine: inferenceEngine,
           },
         });
       } catch (inferErr: unknown) {

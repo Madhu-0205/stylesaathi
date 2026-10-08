@@ -5,16 +5,29 @@ import { BottomNav, NavTab } from './components/navigation/BottomNav';
 import { TopNav } from './components/navigation/TopNav';
 import { WardrobeScreen } from './screens/WardrobeScreen';
 import { DressMeScreen } from './screens/DressMeScreen';
-import { CalendarScreen } from './screens/CalendarScreen';
-import { GapsScreen } from './screens/GapsScreen';
-import { ProfileScreen } from './screens/ProfileScreen';
-import { OnboardingScreen } from './screens/OnboardingScreen';
-import { WardrobeSetupScreen } from './screens/WardrobeSetupScreen';
 import { AuthView } from './components/auth/AuthView';
 import { AddItemSheet } from './components/wardrobe/AddItemSheet';
 import { Toast } from './components/common/Toast';
 import { StyleSaathiLoadingOverlay } from './components/loading/StyleSaathiLoadingOverlay';
 import { NeedleCommandBar } from './components/needle/NeedleCommandBar';
+import { Skeleton } from './components/common/Skeleton';
+
+// Route-level code splitting for non-initial screens
+const CalendarScreen = React.lazy(() =>
+  import('./screens/CalendarScreen').then((m) => ({ default: m.CalendarScreen }))
+);
+const GapsScreen = React.lazy(() =>
+  import('./screens/GapsScreen').then((m) => ({ default: m.GapsScreen }))
+);
+const ProfileScreen = React.lazy(() =>
+  import('./screens/ProfileScreen').then((m) => ({ default: m.ProfileScreen }))
+);
+const OnboardingScreen = React.lazy(() =>
+  import('./screens/OnboardingScreen').then((m) => ({ default: m.OnboardingScreen }))
+);
+const WardrobeSetupScreen = React.lazy(() =>
+  import('./screens/WardrobeSetupScreen').then((m) => ({ default: m.WardrobeSetupScreen }))
+);
 
 export const App: React.FC = () => {
   const {
@@ -64,13 +77,17 @@ export const App: React.FC = () => {
 
       {/* 1. First-time users see the 3-step editorial onboarding */}
       {!onboarded ? (
-        <OnboardingScreen />
+        <React.Suspense fallback={<div className="min-h-dvh flex items-center justify-center p-6"><Skeleton className="h-48 w-full max-w-sm rounded-2xl" /></div>}>
+          <OnboardingScreen />
+        </React.Suspense>
       ) : status === 'unauthenticated' ? (
         /* 2. Post-onboarding Authentication / Guest selection */
         <AuthView />
       ) : !setupCompleted ? (
         /* 3. Post-login Progressive Wardrobe Setup & Style Preferences */
-        <WardrobeSetupScreen onComplete={() => setSetupCompleted(true)} />
+        <React.Suspense fallback={<div className="min-h-dvh flex items-center justify-center p-6"><Skeleton className="h-64 w-full max-w-md rounded-2xl" /></div>}>
+          <WardrobeSetupScreen onComplete={() => setSetupCompleted(true)} />
+        </React.Suspense>
       ) : (
         /* 4. Complete V4 Companion Workspace */
         <div className="min-h-dvh bg-background text-(--text) transition-colors">
@@ -99,10 +116,20 @@ export const App: React.FC = () => {
                 />
               )}
               {currentTab === 'Calendar' && (
-                <CalendarScreen onGoToDress={() => setCurrentTab('Dress')} />
+                <React.Suspense fallback={<div className="space-y-4 py-4"><Skeleton className="h-12 w-48 rounded-xl" /><Skeleton className="h-72 w-full rounded-2xl" /></div>}>
+                  <CalendarScreen onGoToDress={() => setCurrentTab('Dress')} />
+                </React.Suspense>
               )}
-              {currentTab === 'Insight' && <GapsScreen />}
-              {currentTab === 'You' && <ProfileScreen />}
+              {currentTab === 'Insight' && (
+                <React.Suspense fallback={<div className="space-y-4 py-4"><Skeleton className="h-12 w-48 rounded-xl" /><Skeleton className="h-64 w-full rounded-2xl" /></div>}>
+                  <GapsScreen />
+                </React.Suspense>
+              )}
+              {currentTab === 'You' && (
+                <React.Suspense fallback={<div className="space-y-4 py-4"><Skeleton className="h-12 w-48 rounded-xl" /><Skeleton className="h-64 w-full rounded-2xl" /></div>}>
+                  <ProfileScreen />
+                </React.Suspense>
+              )}
             </main>
 
             {/* Global sticky 5-tab bottom navigation (mobile only) */}

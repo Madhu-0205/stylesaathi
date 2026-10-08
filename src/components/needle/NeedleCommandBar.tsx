@@ -201,13 +201,26 @@ export const NeedleCommandBar: React.FC<NeedleCommandBarProps> = ({ onNavigateTa
                     </div>
 
                     {lastResult.toolCall && (
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-medium text-primary">
                           {lastResult.toolCall.name}
                         </span>
                         <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-mono text-secondary-foreground">
                           {Math.round(lastResult.toolCall.confidence * 100)}%
                         </span>
+                        {(lastResult.engine || lastResult.toolCall.engine) && (
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider ${
+                              (lastResult.engine || lastResult.toolCall.engine) === 'needle_wasm'
+                                ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                                : 'bg-amber-500/15 text-amber-700 dark:text-amber-300'
+                            }`}
+                          >
+                            {(lastResult.engine || lastResult.toolCall.engine) === 'needle_wasm'
+                              ? 'Needle 3 On-Device'
+                              : 'Semantic Fallback'}
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>

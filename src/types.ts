@@ -78,6 +78,73 @@ export type Occasion =
 
 export type Status = 'clean' | 'needs_washing' | 'in_laundry';
 
+// Phase 2: Wardrobe Intelligence 2.0 Fashion Domain Types
+export type FabricType =
+  | 'cotton'
+  | 'linen'
+  | 'khadi'
+  | 'silk'
+  | 'chiffon'
+  | 'georgette'
+  | 'denim'
+  | 'wool'
+  | 'rayon'
+  | 'viscose'
+  | 'organza'
+  | 'velvet'
+  | 'satin'
+  | 'crepe'
+  | 'chanderi'
+  | 'banarasi'
+  | 'mulmul'
+  | 'tussar'
+  | 'modal'
+  | 'polyblend'
+  | 'unknown';
+
+export type PatternType =
+  | 'solid'
+  | 'striped'
+  | 'checked'
+  | 'floral'
+  | 'ikat'
+  | 'bandhani'
+  | 'block_print'
+  | 'kalamkari'
+  | 'chikankari'
+  | 'embroidered'
+  | 'polka_dot'
+  | 'geometric'
+  | 'abstract'
+  | 'zari_brocade'
+  | 'unknown';
+
+export type SilhouetteFit =
+  | 'slim'
+  | 'regular'
+  | 'relaxed'
+  | 'oversized'
+  | 'straight'
+  | 'a_line'
+  | 'flared'
+  | 'anarkali'
+  | 'tailored';
+
+export type CulturalContext =
+  | 'traditional'
+  | 'contemporary'
+  | 'fusion'
+  | 'ceremonial'
+  | 'everyday_ethnic';
+
+export type ConfidenceLevel = 'UNKNOWN' | 'LOW' | 'MEDIUM' | 'HIGH' | 'VERIFIED';
+
+export interface AttributeProvenance {
+  source: 'user' | 'ai' | 'system' | 'imported';
+  confidence?: number;
+  verifiedAt?: number;
+}
+
 export interface WardrobeItem {
   id: string;
   userId?: string;
@@ -104,6 +171,17 @@ export interface WardrobeItem {
   deletedAt?: number;
   clientUpdatedAt?: number;
   serverUpdatedAt?: string;
+
+  // Phase 2: Wardrobe Intelligence 2.0 (Optional & backward-compatible)
+  fabric?: FabricType;
+  pattern?: PatternType;
+  fit?: SilhouetteFit;
+  purchasePrice?: number;
+  purchaseDate?: string;
+  culturalContext?: CulturalContext;
+  aiConfidence?: number;
+  userVerified?: boolean;
+  provenance?: Record<string, AttributeProvenance>;
 }
 
 // Backward-compatible alias for existing code
@@ -236,6 +314,104 @@ export interface WearEventsRepository {
   clear(): Promise<void>;
 }
 
+// ============================================================================
+// PHASE 3: PERSONAL STYLE BRAIN & BEHAVIORAL FEEDBACK ENGINE
+// ============================================================================
+
+export type StyleSignalType =
+  | 'worn'
+  | 'saved'
+  | 'favorited'
+  | 'planned'
+  | 'liked'
+  | 'skipped'
+  | 'dismissed'
+  | 'rejected'
+  | 'viewed';
+
+export type RejectionReason =
+  | 'too_hot'
+  | 'too_cold'
+  | 'too_formal'
+  | 'too_casual'
+  | 'wrong_color'
+  | 'wrong_pattern'
+  | 'wrong_fit'
+  | 'uncomfortable'
+  | 'not_my_style'
+  | 'occasion_mismatch'
+  | 'too_repetitive'
+  | 'too_bold'
+  | 'too_plain'
+  | 'dislike_combination'
+  | 'item_unavailable'
+  | 'other';
+
+export interface StyleSignalEvent {
+  id: string; // Stable client-generated UUIDv4
+  userId: string;
+  signalType: StyleSignalType;
+  outfitId?: string;
+  itemIds: string[];
+  occasion?: Occasion;
+  season?: Season;
+  rejectionReason?: RejectionReason;
+  note?: string;
+  createdAt: number; // Epoch timestamp (ms)
+}
+
+export interface AttributeAffinity {
+  score: number; // -1.0 to +1.0 normalized affinity
+  confidence: number; // 0.0 to 1.0 confidence based on sample count & consistency
+  sampleCount: number; // number of signals contributing
+  lastInteractedAt: number; // Epoch timestamp (ms)
+}
+
+export interface PersonalStyleProfile {
+  version: number;
+  userId: string;
+  updatedAt: number;
+  overallConfidence: number; // 0.0 to 1.0
+  totalSignalsCount: number;
+
+  // Granular preference dimensions:
+  colorAffinities: Record<string, AttributeAffinity>;
+  fabricAffinities: Record<FabricType, AttributeAffinity>;
+  patternAffinities: Record<PatternType, AttributeAffinity>;
+  fitAffinities: Record<SilhouetteFit, AttributeAffinity>;
+  culturalAffinities: Record<CulturalContext, AttributeAffinity>;
+  occasionAffinities: Record<Occasion, AttributeAffinity>;
+
+  // Item & Pairwise combination affinities:
+  itemAffinities: Record<string, AttributeAffinity>; // itemId -> affinity
+  combinationAffinities: Record<string, AttributeAffinity>; // 'itemA:itemB' sorted pair -> affinity
+
+  // Avoidance model:
+  avoidedColors: string[];
+  avoidedFabrics: FabricType[];
+  avoidedPatterns: PatternType[];
+  avoidedCombinations: string[]; // 'itemA:itemB'
+
+  // Style characteristics:
+  neutralPreferenceRatio: number; // 0 (bold colors) to 1 (all neutrals)
+  formalityBias: number; // -1 (casual preference) to +1 (formal preference)
+  noveltyTolerance: number; // 0 (repetition) to 1 (variety)
+
+  // Explainable insights (derived high-confidence points):
+  topColors: string[];
+  topFabrics: FabricType[];
+  topFits: SilhouetteFit[];
+  recentExplorations: string[];
+}
+
+export interface StyleSignalsRepository {
+  getSignals(): Promise<StyleSignalEvent[]>;
+  getSignalsForItem(itemId: string): Promise<StyleSignalEvent[]>;
+  addSignal(signal: StyleSignalEvent): Promise<void>;
+  addSignals(signals: StyleSignalEvent[]): Promise<void>;
+  clear(): Promise<void>;
+}
+
 export interface AuthRepository {
   getUser(): Promise<User | null>;
   signInWithGoogle(): Promise<User | { url?: string }>;
@@ -282,7 +458,8 @@ export type SyncOperation =
   | 'UPLOAD_IMAGE'
   | 'ACTIVATE_IMAGE'
   | 'DELETE_IMAGE'
-  | 'APPEND_WEAR';
+  | 'APPEND_WEAR'
+  | 'APPEND_SIGNAL';
 
 export interface BaseSyncMutation {
   id: string;
@@ -353,6 +530,13 @@ export interface WearEventMutation extends BaseSyncMutation {
   payload: WearEvent;
 }
 
+export interface StyleSignalMutation extends BaseSyncMutation {
+  entityType: 'style_signal';
+  entityId: string;
+  operation: 'APPEND_SIGNAL';
+  payload: StyleSignalEvent;
+}
+
 export interface ImageUploadMutation extends BaseSyncMutation {
   entityType: 'wardrobe_image';
   entityId: string; // photoId / imageVersionId
@@ -383,6 +567,7 @@ export type SyncMutation =
   | PlanDeleteMutation
   | PreferencesMutation
   | WearEventMutation
+  | StyleSignalMutation
   | ImageUploadMutation
   | ImageActivationMutation
   | ImageDeleteMutation;

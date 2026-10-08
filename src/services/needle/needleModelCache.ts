@@ -55,10 +55,18 @@ export async function getCachedModel(): Promise<ArrayBuffer | null> {
   }
 }
 
+export function isModelBufferValid(buffer: unknown): buffer is ArrayBuffer {
+  return buffer instanceof ArrayBuffer && buffer.byteLength > 0;
+}
+
 export async function setCachedModel(
   buffer: ArrayBuffer,
   meta?: Partial<CachedModelMetadata>
 ): Promise<void> {
+  if (!buffer || buffer.byteLength === 0) {
+    throw new Error('Cannot cache empty model buffer');
+  }
+
   const metadata: CachedModelMetadata = {
     version: 'needle3',
     size: buffer.byteLength,
@@ -156,6 +164,10 @@ export async function downloadAndCacheModel(
       }
     }
 
+    if (totalBytes > 0 && receivedBytes < totalBytes) {
+      throw new Error(`Download incomplete: received ${receivedBytes} of ${totalBytes} bytes`);
+    }
+
     const merged = new Uint8Array(receivedBytes);
     let offset = 0;
     for (const chunk of chunks) {
@@ -170,6 +182,9 @@ export async function downloadAndCacheModel(
   } else {
     // Fallback if streaming body reader is unavailable
     const arrayBuffer = await response.arrayBuffer();
+    if (arrayBuffer.byteLength === 0) {
+      throw new Error('Downloaded Needle model buffer is empty');
+    }
     await setCachedModel(arrayBuffer, { url, size: arrayBuffer.byteLength });
     onProgress?.(100);
     return arrayBuffer;

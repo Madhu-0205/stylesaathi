@@ -84,6 +84,15 @@ export class SupabaseWardrobeRepository implements WardrobeRepository {
         client_updated_at: item.clientUpdatedAt
           ? new Date(item.clientUpdatedAt).toISOString()
           : new Date().toISOString(),
+        fabric: item.fabric || null,
+        pattern: item.pattern || null,
+        fit: item.fit || null,
+        purchase_price: item.purchasePrice !== undefined ? item.purchasePrice : null,
+        purchase_date: item.purchaseDate || null,
+        cultural_context: item.culturalContext || null,
+        ai_confidence: item.aiConfidence !== undefined ? item.aiConfidence : null,
+        user_verified: item.userVerified || false,
+        provenance: item.provenance || {},
       },
       { onConflict: 'user_id, id' }
     );
@@ -126,6 +135,15 @@ export class SupabaseWardrobeRepository implements WardrobeRepository {
     if (patch.deletedAt !== undefined) {
       updateData.deleted_at = patch.deletedAt ? new Date(patch.deletedAt).toISOString() : null;
     }
+    if (patch.fabric !== undefined) updateData.fabric = patch.fabric;
+    if (patch.pattern !== undefined) updateData.pattern = patch.pattern;
+    if (patch.fit !== undefined) updateData.fit = patch.fit;
+    if (patch.purchasePrice !== undefined) updateData.purchase_price = patch.purchasePrice;
+    if (patch.purchaseDate !== undefined) updateData.purchase_date = patch.purchaseDate;
+    if (patch.culturalContext !== undefined) updateData.cultural_context = patch.culturalContext;
+    if (patch.aiConfidence !== undefined) updateData.ai_confidence = patch.aiConfidence;
+    if (patch.userVerified !== undefined) updateData.user_verified = patch.userVerified;
+    if (patch.provenance !== undefined) updateData.provenance = patch.provenance;
 
     const { error } = await this.client
       .from('wardrobe_items')
@@ -262,6 +280,15 @@ export class SupabaseWardrobeRepository implements WardrobeRepository {
       deletedAt: r.deleted_at ? new Date(r.deleted_at).getTime() : undefined,
       clientUpdatedAt: r.client_updated_at ? new Date(r.client_updated_at).getTime() : undefined,
       serverUpdatedAt: r.server_updated_at,
+      fabric: r.fabric || undefined,
+      pattern: r.pattern || undefined,
+      fit: r.fit || undefined,
+      purchasePrice: r.purchase_price !== null && r.purchase_price !== undefined ? Number(r.purchase_price) : undefined,
+      purchaseDate: r.purchase_date || undefined,
+      culturalContext: r.cultural_context || undefined,
+      aiConfidence: r.ai_confidence !== null && r.ai_confidence !== undefined ? Number(r.ai_confidence) : undefined,
+      userVerified: Boolean(r.user_verified),
+      provenance: r.provenance || undefined,
     };
   }
 

@@ -1,4 +1,4 @@
-import { WardrobeItem, Occasion, GeneratedOutfit, Season, StylePreferences } from '../types';
+import { WardrobeItem, Occasion, GeneratedOutfit, Season, StylePreferences, PersonalStyleProfile } from '../types';
 import { TEMPLATES } from './outfitTemplates';
 import { compatible, occasionFit, seasonFit } from './compatibility';
 import { calculateOutfitScore, generateOutfitWhy } from './scoring';
@@ -9,7 +9,8 @@ export function generateOutfits(
   season: Season,
   limit = 4,
   seed = Math.random(),
-  preferences?: StylePreferences
+  preferences?: StylePreferences,
+  styleProfile?: PersonalStyleProfile
 ): GeneratedOutfit[] {
   // Never suggest laundry items or items needing washing
   const eligible = items.filter(
@@ -88,8 +89,8 @@ export function generateOutfits(
       // Ensure no duplicate items across slots
       if (new Set(all.map((x) => x.id)).size !== all.length) continue;
 
-      const score = calculateOutfitScore(all, occasion, seed, preferences);
-      const why = generateOutfitWhy(all, occasion, score, preferences);
+      const score = calculateOutfitScore(all, occasion, seed, preferences, styleProfile);
+      const why = generateOutfitWhy(all, occasion, score, preferences, styleProfile);
 
       results.push({
         template: t.name,

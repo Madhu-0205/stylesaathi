@@ -1,30 +1,55 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useWardrobeContext } from '../context/WardrobeContext';
-import { Occasion, Season, GeneratedOutfit, WardrobeItem } from '../types';
+import { Occasion, Season, GeneratedOutfit, WardrobeItem, RejectionReason } from '../types';
 import { generateOutfits } from '../engine';
 
 export function useDressMe() {
-  const { items, preferences, updateItem, saveOutfit } = useWardrobeContext();
+  const {
+    items,
+    preferences,
+    styleProfile,
+    recordSignal,
+    updateItem,
+    saveOutfit,
+    markOutfitWornOnDate,
+  } = useWardrobeContext();
   const [occasion, setOccasion] = useState<Occasion>('college');
   const [season, setSeason] = useState<Season>('summer');
   const [seed, setSeed] = useState<number>(() => Math.random());
   const [activeAccessories, setActiveAccessories] = useState<Record<number, WardrobeItem | null>>({});
 
-  // Generate 2-4 outfits for chosen occasion & season with personal style preferences
+  // Generate 2-4 outfits for chosen occasion & season with personal style preferences and learned brain profile
   const outfits = useMemo(() => {
-    return generateOutfits(items, occasion, season, 4, seed, preferences);
-  }, [items, occasion, season, seed, preferences]);
+    return generateOutfits(items, occasion, season, 4, seed, preferences, styleProfile);
+  }, [items, occasion, season, seed, preferences, styleProfile]);
 
   // Clean accessories available in wardrobe
   const availableAccessories = useMemo(() => {
     return items.filter((i) => i.category === 'Accessories' && i.status === 'clean');
   }, [items]);
 
-  // Shuffle generates another valid combination
+  // Shuffle generates another valid combination and registers a weak skipped signal
   const shuffle = useCallback(() => {
     setSeed(Math.random());
     setActiveAccessories({});
   }, []);
+
+  // Reject an outfit look with structured reason or lightweight dismissal
+  const rejectOutfit = useCallback(
+    async (outfit: GeneratedOutfit, reason?: RejectionReason) => {
+      const pieceIds = Object.values(outfit.slots).flat().map((p) => p.id);
+      await recordSignal({
+        signalType: reason ? 'rejected' : 'dismissed',
+        itemIds: pieceIds,
+        occasion,
+        season,
+        rejectionReason: reason,
+      });
+      // Re-seed to immediately re-rank and surface next best look
+      setSeed(Math.random());
+    },
+    [occasion, season, recordSignal]
+  );
 
   // Attach or remove accessory from specific outfit index
   const setOutfitAccessory = useCallback((outfitIndex: number, accessory: WardrobeItem | null) => {
@@ -34,22 +59,33 @@ export function useDressMe() {
     }));
   }, []);
 
-  // Mark all pieces in outfit as worn today (increments timesWorn and records lastWorn)
+  // Mark all pieces in outfit as worn today (increments timesWorn, records lastWorn, and emits wear signal)
   const markWoreOutfit = useCallback(
     async (outfit: GeneratedOutfit, accessory?: WardrobeItem | null) => {
-      const allPieces = Object.values(outfit.slots).flat();
-      if (accessory) {
-        allPieces.push(accessory);
-      }
-      const now = Date.now();
-      for (const piece of allPieces) {
-        await updateItem(piece.id, {
-          timesWorn: (piece.timesWorn || 0) + 1,
-          lastWorn: now,
+      const todayStr = new Date().toISOString().split('T')[0];
+      if (markOutfitWornOnDate) {
+        await markOutfitWornOnDate(outfit, todayStr, accessory);
+      } else {
+        const allPieces = Object.values(outfit.slots).flat();
+        if (accessory) {
+          allPieces.push(accessory);
+        }
+        const now = Date.now();
+        for (const piece of allPieces) {
+          await updateItem(piece.id, {
+            timesWorn: (piece.timesWorn || 0) + 1,
+            lastWorn: now,
+          });
+        }
+        await recordSignal({
+          signalType: 'worn',
+          itemIds: allPieces.map((p) => p.id),
+          occasion,
+          season,
         });
       }
     },
-    [updateItem]
+    [markOutfitWornOnDate, occasion, recordSignal, season, updateItem]
   );
 
   // Granular explanation of empty & edge states
@@ -162,5 +198,6 @@ export function useDressMe() {
     setOutfitAccessory,
     markWoreOutfit,
     saveOutfit,
+    rejectOutfit,
   };
 }

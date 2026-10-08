@@ -10,6 +10,7 @@ import { wardrobeRepository } from '../../repositories/LocalStorageWardrobeRepos
 import { calendarRepository } from '../../repositories/LocalStorageCalendarRepository';
 import { preferencesRepository } from '../../repositories/LocalStoragePreferencesRepository';
 import { wearEventsRepository } from '../../repositories/LocalStorageWearEventsRepository';
+import { styleSignalsRepository } from '../../repositories/LocalStorageStyleSignalsRepository';
 import { getImage } from '../../services/imageStore';
 import {
   SyncMutation,
@@ -19,6 +20,7 @@ import {
   StylePreferences,
   SavedOutfit,
   WearEvent,
+  StyleSignalEvent,
 } from '../../types';
 
 export type SyncStatus = 'offline' | 'idle' | 'syncing' | 'synced' | 'error';
@@ -343,6 +345,27 @@ class SyncService {
         break;
       }
 
+      case 'style_signal': {
+        const signal = mutation.payload;
+        const { error } = await supabase.from('style_signals').upsert(
+          {
+            id: signal.id,
+            user_id: user.id,
+            signal_type: signal.signalType,
+            outfit_id: signal.outfitId || null,
+            item_ids: signal.itemIds || [],
+            occasion: signal.occasion || null,
+            season: signal.season || null,
+            rejection_reason: signal.rejectionReason || null,
+            note: signal.note || null,
+            created_at: new Date(signal.createdAt).toISOString(),
+          },
+          { onConflict: 'user_id, id', ignoreDuplicates: true }
+        );
+        if (error) throw error;
+        break;
+      }
+
       case 'wardrobe_image': {
         if (mutation.operation === 'UPLOAD_IMAGE') {
           const { itemId, photoId, storagePath } = mutation.payload;
@@ -632,6 +655,28 @@ class SyncService {
         await wearEventsRepository.addEvents(events);
       }
 
+      // Sync style signals
+      const { data: remoteSignals, error: signalsErr } = await supabase
+        .from('style_signals')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (!signalsErr && remoteSignals && remoteSignals.length > 0) {
+        const signals: StyleSignalEvent[] = remoteSignals.map((s: any) => ({
+          id: s.id,
+          userId: s.user_id,
+          signalType: s.signal_type,
+          outfitId: s.outfit_id || undefined,
+          itemIds: s.item_ids || [],
+          occasion: s.occasion || undefined,
+          season: s.season || undefined,
+          rejectionReason: s.rejection_reason || undefined,
+          note: s.note || undefined,
+          createdAt: new Date(s.created_at).getTime(),
+        }));
+        await styleSignalsRepository.addSignals(signals);
+      }
+
       this.setStorageItem(this.lastSyncKey, new Date().toISOString());
     } catch (err: any) {
       console.warn('Delta pull failed:', err);
@@ -679,6 +724,7 @@ class SyncService {
       const localPlans = (await calendarRepository.getAllPlansRaw?.()) || (await calendarRepository.getPlans());
       const localPrefs = await preferencesRepository.getPreferences();
       const localWear = await wearEventsRepository.getEvents();
+      const localSignals = await styleSignalsRepository.getSignals();
 
       // Step 2: Upload local images
       if (!state.completedSteps.includes('IMAGES')) {
@@ -828,7 +874,30 @@ class SyncService {
         saveState({ completedSteps: state.completedSteps });
       }
 
-      // Step 8: Update local user IDs without wiping data
+      // Step 8: Upsert style signals
+      if (!state.completedSteps.includes('STYLE_SIGNALS')) {
+        for (const signal of localSignals) {
+          await supabase.from('style_signals').upsert(
+            {
+              id: signal.id,
+              user_id: user.id,
+              signal_type: signal.signalType,
+              outfit_id: signal.outfitId || null,
+              item_ids: signal.itemIds || [],
+              occasion: signal.occasion || null,
+              season: signal.season || null,
+              rejection_reason: signal.rejectionReason || null,
+              note: signal.note || null,
+              created_at: new Date(signal.createdAt).toISOString(),
+            },
+            { onConflict: 'user_id, id', ignoreDuplicates: true }
+          );
+        }
+        state.completedSteps.push('STYLE_SIGNALS');
+        saveState({ completedSteps: state.completedSteps });
+      }
+
+      // Step 9: Update local user IDs without wiping data
       saveState({ status: 'VERIFYING' });
       for (const item of localItems) {
         if (!item.userId || item.userId !== user.id) {

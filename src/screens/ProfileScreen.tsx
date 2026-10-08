@@ -66,6 +66,8 @@ export const ProfileScreen: React.FC = () => {
     toggleTheme,
     preferences,
     updatePreferences,
+    styleProfile,
+    resetLearnedStyle,
     loadSample,
     resetWardrobe,
     resetAll,
@@ -74,7 +76,7 @@ export const ProfileScreen: React.FC = () => {
 
   const { user, isGuest, isAuthenticated, signOut } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [alertAction, setAlertAction] = useState<'clear' | 'reset' | null>(null);
+  const [alertAction, setAlertAction] = useState<'clear' | 'reset' | 'reset_style' | null>(null);
   const { statusLabel, isOnline, status: syncStatus, pendingCount } = useSyncStatus();
 
   // Metrics
@@ -108,6 +110,9 @@ export const ProfileScreen: React.FC = () => {
     } else if (alertAction === 'reset') {
       await resetAll();
       showToast('All data reset');
+    } else if (alertAction === 'reset_style') {
+      await resetLearnedStyle();
+      showToast('Learned style memory reset');
     }
     setAlertAction(null);
   };
@@ -324,6 +329,118 @@ export const ProfileScreen: React.FC = () => {
               </div>
             </div>
           </section>
+
+          {/* Learned Style Brain Section */}
+          <section className="rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-2xs space-y-4">
+            <div className="flex items-baseline justify-between border-b border-border pb-3">
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-(--burnished-gold)" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
+                  LEARNED STYLE BRAIN
+                </span>
+              </div>
+              <span className="text-[10px] text-muted">
+                {styleProfile.totalSignalsCount >= 3
+                  ? `${Math.round(styleProfile.overallConfidence * 100)}% Confidence · ${styleProfile.totalSignalsCount} Signals`
+                  : 'Observing Habits'}
+              </span>
+            </div>
+
+            {styleProfile.totalSignalsCount < 3 ? (
+              <div className="rounded-xl border border-dashed border-border bg-(--ivory)/60 p-3.5 text-center">
+                <p className="text-xs text-(--ink) font-medium">Style intuition is taking shape</p>
+                <p className="text-[11px] text-muted mt-1 leading-relaxed">
+                  As you wear, plan, save, or pass on outfits in Dress Me, StyleSaathi privately learns which colors, fabrics, and fits you naturally reach for.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3.5 text-xs">
+                {/* Top Colors */}
+                {styleProfile.topColors.length > 0 && (
+                  <div>
+                    <span className="block text-[9.5px] font-bold uppercase tracking-wider text-muted mb-1.5">
+                      Colors You Gravitate Toward
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {styleProfile.topColors.map((color) => (
+                        <span
+                          key={color}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-(--ivory) px-2.5 py-1 text-xs font-semibold capitalize text-(--ink)"
+                        >
+                          <span className="h-2 w-2 rounded-full border border-black/10" style={{ backgroundColor: color }} />
+                          <span>{color}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Preferred Fabrics */}
+                {styleProfile.topFabrics.length > 0 && (
+                  <div>
+                    <span className="block text-[9.5px] font-bold uppercase tracking-wider text-muted mb-1.5">
+                      Go-To Fabrics &amp; Textures
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {styleProfile.topFabrics.map((fabric) => (
+                        <span
+                          key={fabric}
+                          className="rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-medium capitalize text-(--ink)"
+                        >
+                          {fabric.replace(/_/g, ' ')}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Preferred Silhouettes */}
+                {styleProfile.topFits.length > 0 && (
+                  <div>
+                    <span className="block text-[9.5px] font-bold uppercase tracking-wider text-muted mb-1.5">
+                      Preferred Silhouettes &amp; Fits
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {styleProfile.topFits.map((fit) => (
+                        <span
+                          key={fit}
+                          className="rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-medium capitalize text-(--ink)"
+                        >
+                          {fit.replace(/_/g, ' ')} fit
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Recent Style Phase Exploration */}
+                {styleProfile.recentExplorations.length > 0 && (
+                  <div className="rounded-xl border border-(--burnished-gold)/40 bg-(--ivory) p-2.5">
+                    <span className="block text-[9px] font-bold uppercase tracking-wider text-(--burnished-gold) mb-0.5">
+                      RECENT EXPLORATION
+                    </span>
+                    <span className="text-[11.5px] text-(--ink)">
+                      You&apos;ve recently been exploring {styleProfile.recentExplorations.join(', ')}.
+                    </span>
+                  </div>
+                )}
+
+                {/* Reset Learned Memory Button (User Control Principle) */}
+                <div className="pt-2 border-t border-(--border)/60 flex justify-between items-center">
+                  <span className="text-[10px] text-muted">
+                    Explicit preferences above always override learned memory.
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setAlertAction('reset_style')}
+                    className="text-[11px] font-semibold text-(--kumkum) hover:underline"
+                  >
+                    Reset Style Memory
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
         </div>
 
         {/* Right Column: Appearance & Archive Management */}
@@ -427,18 +544,28 @@ export const ProfileScreen: React.FC = () => {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {alertAction === 'clear' ? 'Clear Wardrobe?' : 'Reset All StyleSaathi Data?'}
+              {alertAction === 'clear'
+                ? 'Clear Wardrobe?'
+                : alertAction === 'reset_style'
+                ? 'Reset Learned Style Memory?'
+                : 'Reset All StyleSaathi Data?'}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {alertAction === 'clear'
                 ? 'This will clear all clothing pieces from your wardrobe archive. This action cannot be undone.'
+                : alertAction === 'reset_style'
+                ? 'This clears your behavioral feedback signals (wears, saves, passes) and returns recommendations to baseline preferences. Your wardrobe garments and calendar plans will not be affected.'
                 : 'This will reset all your wardrobe garments, styling preferences, and calendar plans, returning you to the beginning.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction variant="destructive" onClick={handleConfirmAction}>
-              {alertAction === 'clear' ? 'Clear Wardrobe' : 'Reset Everything'}
+              {alertAction === 'clear'
+                ? 'Clear Wardrobe'
+                : alertAction === 'reset_style'
+                ? 'Reset Style Memory'
+                : 'Reset Everything'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

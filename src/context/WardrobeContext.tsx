@@ -7,11 +7,15 @@ import {
   OutfitPlan,
   PlanStatus,
   WearEvent,
+  StyleSignalEvent,
+  PersonalStyleProfile,
 } from '../types';
 import { wardrobeRepository } from '../repositories/LocalStorageWardrobeRepository';
 import { preferencesRepository, DEFAULT_STYLE_PREFERENCES } from '../repositories/LocalStoragePreferencesRepository';
 import { calendarRepository } from '../repositories/LocalStorageCalendarRepository';
 import { wearEventsRepository } from '../repositories/LocalStorageWearEventsRepository';
+import { styleSignalsRepository } from '../repositories/LocalStorageStyleSignalsRepository';
+import { derivePersonalStyleProfile } from '../engine/styleBrain';
 import { sampleWardrobe } from '../data/sampleWardrobe';
 import { clearImages, deleteImage } from '../services/imageStore';
 import { migrateLegacyPhotos } from '../services/migration';
@@ -37,6 +41,8 @@ interface WardrobeContextValue {
   savedOutfits: SavedOutfit[];
   preferences: StylePreferences;
   plans: OutfitPlan[];
+  styleSignals: StyleSignalEvent[];
+  styleProfile: PersonalStyleProfile;
   toast: string | null;
   showToast: (msg: string) => void;
   clearToast: () => void;
@@ -57,6 +63,8 @@ interface WardrobeContextValue {
   markOutfitWornOnDate: (outfit: GeneratedOutfit, dateStr: string, accessory?: WardrobeItem | null) => Promise<void>;
   saveOutfit: (outfit: GeneratedOutfit, name?: string) => Promise<SavedOutfit>;
   deleteSavedOutfit: (id: string) => Promise<void>;
+  recordSignal: (signal: Omit<StyleSignalEvent, 'id' | 'userId' | 'createdAt'> | StyleSignalEvent) => Promise<void>;
+  resetLearnedStyle: () => Promise<void>;
   refreshData: () => Promise<void>;
 }
 
@@ -67,8 +75,14 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [savedOutfits, setSavedOutfits] = useState<SavedOutfit[]>([]);
   const [preferences, setPreferences] = useState<StylePreferences>(DEFAULT_STYLE_PREFERENCES);
   const [plans, setPlans] = useState<OutfitPlan[]>([]);
+  const [wearEvents, setWearEvents] = useState<WearEvent[]>([]);
+  const [styleSignals, setStyleSignals] = useState<StyleSignalEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
+
+  const styleProfile = useMemo(() => {
+    return derivePersonalStyleProfile(styleSignals, wearEvents, items, preferences);
+  }, [styleSignals, wearEvents, items, preferences]);
 
   const [settings, setSettings] = useState<SettingsData>(() => {
     try {
@@ -114,11 +128,13 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const refreshData = useCallback(async () => {
     try {
-      const [loadedItems, loadedOutfits, loadedPrefs, loadedPlans] = await Promise.all([
+      const [loadedItems, loadedOutfits, loadedPrefs, loadedPlans, loadedWear, loadedSignals] = await Promise.all([
         wardrobeRepository.getItems(),
         wardrobeRepository.getSavedOutfits(),
         preferencesRepository.getPreferences(),
         calendarRepository.getPlans(),
+        wearEventsRepository.getEvents(),
+        styleSignalsRepository.getSignals(),
       ]);
 
       // Run safe idempotent migration from base64 photos to IndexedDB
@@ -135,6 +151,8 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setSavedOutfits(loadedOutfits);
       if (loadedPrefs) setPreferences(loadedPrefs);
       if (loadedPlans) setPlans(loadedPlans);
+      setWearEvents(loadedWear || []);
+      setStyleSignals(loadedSignals || []);
     } catch (err) {
       console.warn('Error refreshing wardrobe data:', err);
     } finally {
@@ -267,10 +285,13 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     await wardrobeRepository.clear();
     await preferencesRepository.clear();
     await calendarRepository.clear();
+    await styleSignalsRepository.clear();
     setItems([]);
     setSavedOutfits([]);
     setPreferences(DEFAULT_STYLE_PREFERENCES);
     setPlans([]);
+    setWearEvents([]);
+    setStyleSignals([]);
     setSettings({ theme: 'light', onboarded: false, styleVibes: [], setupCompleted: false });
   }, []);
 
@@ -403,6 +424,51 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     [plans]
   );
 
+  const recordSignal = useCallback(
+    async (signalInput: Omit<StyleSignalEvent, 'id' | 'userId' | 'createdAt'> | StyleSignalEvent) => {
+      const user = syncService.getCurrentUser();
+      const userId = user?.id || 'local';
+      const now = Date.now();
+      const eventId =
+        'id' in signalInput && signalInput.id
+          ? signalInput.id
+          : typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `signal-${now}-${Math.random().toString(36).slice(2, 9)}`;
+
+      const fullSignal: StyleSignalEvent = {
+        ...signalInput,
+        id: eventId,
+        userId,
+        createdAt: 'createdAt' in signalInput && signalInput.createdAt ? signalInput.createdAt : now,
+      };
+
+      await styleSignalsRepository.addSignal(fullSignal);
+      setStyleSignals((prev) => {
+        if (prev.some((s) => s.id === fullSignal.id)) return prev;
+        return [...prev, fullSignal];
+      });
+
+      try {
+        await syncQueue.enqueue({
+          entityType: 'style_signal',
+          entityId: eventId,
+          operation: 'APPEND_SIGNAL',
+          payload: fullSignal,
+        });
+        syncService.processQueue();
+      } catch (err) {
+        console.warn('Sync enqueue failed for recordSignal:', err);
+      }
+    },
+    []
+  );
+
+  const resetLearnedStyle = useCallback(async () => {
+    await styleSignalsRepository.clear();
+    setStyleSignals([]);
+  }, []);
+
   const markOutfitWornOnDate = useCallback(
     async (outfit: GeneratedOutfit, dateStr: string, accessory?: WardrobeItem | null) => {
       const allPieces = Object.values(outfit.slots).flat();
@@ -412,6 +478,7 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const now = Date.now();
       const user = syncService.getCurrentUser();
       const userId = user?.id || 'local';
+      const newWearEvents: WearEvent[] = [];
 
       for (const piece of allPieces) {
         const nextTimesWorn = (piece.timesWorn || 0) + 1;
@@ -436,6 +503,8 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           createdAt: now,
         };
 
+        newWearEvents.push(wearEvent);
+
         try {
           await wearEventsRepository.addEvent(wearEvent);
           await syncQueue.enqueue({
@@ -448,6 +517,8 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           console.warn('Failed to record wear event:', err);
         }
       }
+
+      setWearEvents((prev) => [...prev, ...newWearEvents]);
 
       // If a plan exists for this date, update its status to 'worn'
       const existingPlan = plans.find((p) => p.date === dateStr);
@@ -464,14 +535,29 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         });
       }
 
+      // Record behavioral style signal
+      await recordSignal({
+        signalType: 'worn',
+        itemIds: allPieces.map((p) => p.id),
+        occasion: existingPlan?.occasion || 'everyday',
+      });
+
       syncService.processQueue();
     },
-    [plans, savePlan, updateItem, updatePlanStatus]
+    [plans, recordSignal, savePlan, updateItem, updatePlanStatus]
   );
 
   const saveOutfit = useCallback(async (outfit: GeneratedOutfit, name?: string) => {
     const saved = await wardrobeRepository.saveOutfit(outfit, name);
     setSavedOutfits((prev) => [saved, ...prev]);
+
+    // Record behavioral style signal
+    const pieceIds = Object.values(outfit.slots).flat().map((p) => p.id);
+    await recordSignal({
+      signalType: 'saved',
+      outfitId: saved.id,
+      itemIds: pieceIds,
+    });
 
     try {
       await syncQueue.enqueue({
@@ -485,7 +571,7 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       console.warn('Sync enqueue failed for saveOutfit:', err);
     }
     return saved;
-  }, []);
+  }, [recordSignal]);
 
   const deleteSavedOutfit = useCallback(async (id: string) => {
     await wardrobeRepository.deleteSavedOutfit(id);
@@ -515,6 +601,8 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       savedOutfits,
       preferences,
       plans,
+      styleSignals,
+      styleProfile,
       toast,
       showToast,
       clearToast,
@@ -535,6 +623,8 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       markOutfitWornOnDate,
       saveOutfit,
       deleteSavedOutfit,
+      recordSignal,
+      resetLearnedStyle,
       refreshData,
     }),
     [
@@ -547,6 +637,8 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       savedOutfits,
       preferences,
       plans,
+      styleSignals,
+      styleProfile,
       toast,
       showToast,
       clearToast,
@@ -567,6 +659,8 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       markOutfitWornOnDate,
       saveOutfit,
       deleteSavedOutfit,
+      recordSignal,
+      resetLearnedStyle,
       refreshData,
     ]
   );

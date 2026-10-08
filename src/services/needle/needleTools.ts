@@ -8,6 +8,7 @@ import {
   NeedleToolName,
   RawNeedleToolCall,
   ValidatedToolCall,
+  NeedleEngineSource,
   isNeedleToolName,
   getConfidenceTier,
 } from './needleTypes';
@@ -228,7 +229,9 @@ export type ValidationResult =
 export function validateAndNormalizeToolCall(
   raw: RawNeedleToolCall,
   confidence: number,
-  originalQuery?: string
+  originalQuery?: string,
+  engine?: NeedleEngineSource,
+  reasoning?: string
 ): ValidationResult {
   if (!isNeedleToolName(raw.name)) {
     return {
@@ -390,6 +393,8 @@ export function validateAndNormalizeToolCall(
     isDestructive,
     requiresConfirmation,
     explanation,
+    engine,
+    reasoning,
   };
 
   return {

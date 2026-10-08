@@ -75,6 +75,16 @@
   --warning-foreground: #784C0F;
   --error: #FBF0F3;
   --error-foreground: #9D173F;
+
+  /* Motion tokens */
+  --motion-fast: 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-normal: 250ms cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-slow: 400ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Editorial elevation tokens */
+  --shadow-subtle: 0 1px 2px 0 rgba(23, 21, 20, 0.04);
+  --shadow-card: 0 1px 3px 0 rgba(23, 21, 20, 0.06), 0 1px 2px -1px rgba(23, 21, 20, 0.06);
+  --shadow-sheet: 0 10px 25px -5px rgba(23, 21, 20, 0.1), 0 8px 10px -6px rgba(23, 21, 20, 0.1);
 }
 
 .dark {
@@ -277,6 +287,35 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 
 .animate-reveal {
   animation: garmentReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* 44px Minimum Touch Target Standard */
+.touch-target-44 {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Editorial Focus Ring */
+.focus-editorial:focus-visible {
+  outline: 2px solid var(--kumkum);
+  outline-offset: 2px;
+}
+
+/* Skeleton Pulse Animation */
+@keyframes skeletonPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.skeleton-shimmer {
+  animation: skeletonPulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 /* StyleSaathi Official Wardrobe Animation Keyframes */

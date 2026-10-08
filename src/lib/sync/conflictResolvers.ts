@@ -98,12 +98,49 @@ export function resolveWardrobeItemConflict(
     photoUrl = winner.photoUrl || local.photoUrl || remote.photoUrl;
   }
 
+  // 4. Attribute Provenance & Verification Authority:
+  // User-verified attributes must NEVER be overwritten by unverified AI guesses.
+  const isWinnerVerified = Boolean(winner.userVerified);
+  const isLocalVerified = Boolean(local.userVerified);
+  const isRemoteVerified = Boolean(remote.userVerified);
+
+  let fabric = winner.fabric;
+  let pattern = winner.pattern;
+  let fit = winner.fit;
+  let purchasePrice = winner.purchasePrice;
+  let culturalContext = winner.culturalContext;
+  let userVerified = isWinnerVerified;
+
+  if (!isWinnerVerified) {
+    if (isLocalVerified) {
+      fabric = local.fabric ?? fabric;
+      pattern = local.pattern ?? pattern;
+      fit = local.fit ?? fit;
+      purchasePrice = local.purchasePrice ?? purchasePrice;
+      culturalContext = local.culturalContext ?? culturalContext;
+      userVerified = true;
+    } else if (isRemoteVerified) {
+      fabric = remote.fabric ?? fabric;
+      pattern = remote.pattern ?? pattern;
+      fit = remote.fit ?? fit;
+      purchasePrice = remote.purchasePrice ?? purchasePrice;
+      culturalContext = remote.culturalContext ?? culturalContext;
+      userVerified = true;
+    }
+  }
+
   return {
     ...winner,
     activeImageVersionId: activeImageId,
     photoId: activeImageId,
     storagePath: storagePath,
     photoUrl: photoUrl,
+    fabric,
+    pattern,
+    fit,
+    purchasePrice,
+    culturalContext,
+    userVerified,
   };
 }
 
