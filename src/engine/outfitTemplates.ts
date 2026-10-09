@@ -4,6 +4,8 @@ export interface Template {
   optional: Record<string, string[]>;
 }
 
+export type OutfitTemplate = Template;
+
 export const TEMPLATES: Template[] = [
   {
     name: 'Western',

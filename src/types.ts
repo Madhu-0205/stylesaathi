@@ -193,6 +193,9 @@ export interface GeneratedOutfit {
   slots: Record<string, WardrobeItem[]>;
   score: number;
   why: string;
+  role?: RecommendationRole;
+  scoreBreakdown?: ScoreBreakdown;
+  explanation?: RecommendationExplanation;
 }
 
 // Backward-compatible alias for existing code
@@ -681,6 +684,94 @@ export interface WeatherProvider {
   readonly name: string;
   getCurrentWeather(location: WeatherLocation): Promise<WeatherSnapshot>;
   getForecast?(location: WeatherLocation): Promise<WeatherForecast>;
+}
+
+// ============================================================================
+// PHASE 5: RECOMMENDATION ENGINE 2.0
+// ============================================================================
+
+export type RecommendationRole = 'best_match' | 'alternative' | 'explore';
+
+export interface ScoreBreakdown {
+  baseCompatibility: number;
+  personalStyle: number;
+  contextFit: number;
+  culturalFit: number;
+  noveltyBonus: number;
+  penalty: number;
+  total: number;
+}
+
+export type ExplanationEvidenceSource =
+  | 'weather'
+  | 'personal_style'
+  | 'cultural'
+  | 'compatibility'
+  | 'exploration'
+  | 'baseline';
+
+export interface RecommendationExplanation {
+  headline: string;
+  reasons: string[];
+  evidenceSources: ExplanationEvidenceSource[];
+}
+
+export interface RecommendedOutfit extends GeneratedOutfit {
+  id: string; // Deterministic canonical outfit ID: outfit_<hash>
+  role: RecommendationRole;
+  scoreBreakdown: ScoreBreakdown;
+  explanation: RecommendationExplanation;
+}
+
+export interface CulturalContextSignals {
+  declaredModestyLevel?: 'standard' | 'high';
+  regionalTradition?: string;
+  festivalContext?: string;
+  customOccasionNotes?: string;
+}
+
+export interface RecommendationRequest {
+  items: WardrobeItem[];
+  occasion: Occasion;
+  season: Season;
+  localDate: string; // YYYY-MM-DD
+  explorationSeedOffset?: number; // Integer offset, default 0
+  preferences?: StylePreferences;
+  styleProfile?: PersonalStyleProfile;
+  context?: ContextSnapshot;
+  culturalSignals?: CulturalContextSignals;
+  limit?: number; // Default 3
+}
+
+export interface RecommendationSet {
+  outfits: RecommendedOutfit[];
+  roles: RecommendationRole[];
+  generatedAt: string;
+  algorithmVersion: string;
+  requestContext: {
+    occasion: Occasion;
+    season: Season;
+    localDate: string;
+    explorationSeedOffset: number;
+  };
+}
+
+export interface RecommendationPipelineTelemetry {
+  candidateCount: number;
+  validCandidateCount: number;
+  timings: {
+    candidateGenerationMs: number;
+    hardFilteringMs: number;
+    compatibilityMs: number;
+    scoringMs: number;
+    diversificationMs: number;
+    totalMs: number;
+  };
+}
+
+export interface RecommendationResultWithTelemetry {
+  set: RecommendationSet;
+  telemetry: RecommendationPipelineTelemetry;
 }
 
 

@@ -561,7 +561,7 @@ export function calculatePersonalStyleScore(
       colorMatches++;
     }
     // Avoidance penalty
-    if (profile.avoidedColors.includes(c)) {
+    if (profile.avoidedColors?.includes(c)) {
       delta -= 1.4 * confidenceScalar;
     }
   }
@@ -573,11 +573,11 @@ export function calculatePersonalStyleScore(
   let fabricScoreSum = 0;
   let fabricMatches = 0;
   for (const p of pieces) {
-    if (p.fabric && profile.fabricAffinities[p.fabric]) {
+    if (p.fabric && profile.fabricAffinities?.[p.fabric]) {
       fabricScoreSum += profile.fabricAffinities[p.fabric].score;
       fabricMatches++;
     }
-    if (p.fabric && profile.avoidedFabrics.includes(p.fabric)) {
+    if (p.fabric && profile.avoidedFabrics?.includes(p.fabric)) {
       delta -= 1.5 * confidenceScalar;
     }
   }
@@ -589,11 +589,11 @@ export function calculatePersonalStyleScore(
   let patternScoreSum = 0;
   let patternMatches = 0;
   for (const p of pieces) {
-    if (p.pattern && profile.patternAffinities[p.pattern]) {
+    if (p.pattern && profile.patternAffinities?.[p.pattern]) {
       patternScoreSum += profile.patternAffinities[p.pattern].score;
       patternMatches++;
     }
-    if (p.pattern && profile.avoidedPatterns.includes(p.pattern)) {
+    if (p.pattern && profile.avoidedPatterns?.includes(p.pattern)) {
       delta -= 1.2 * confidenceScalar;
     }
   }
@@ -605,7 +605,7 @@ export function calculatePersonalStyleScore(
   let fitScoreSum = 0;
   let fitMatches = 0;
   for (const p of pieces) {
-    if (p.fit && profile.fitAffinities[p.fit]) {
+    if (p.fit && profile.fitAffinities?.[p.fit]) {
       fitScoreSum += profile.fitAffinities[p.fit].score;
       fitMatches++;
     }
@@ -616,7 +616,7 @@ export function calculatePersonalStyleScore(
 
   // 5. Item-Level Affinity
   for (const p of pieces) {
-    const aff = profile.itemAffinities[p.id];
+    const aff = profile.itemAffinities?.[p.id];
     if (aff && aff.confidence >= 0.4) {
       delta += aff.score * 0.6 * confidenceScalar;
     }
@@ -627,11 +627,11 @@ export function calculatePersonalStyleScore(
     for (let i = 0; i < pieces.length; i++) {
       for (let j = i + 1; j < pieces.length; j++) {
         const key = getCombinationKey(pieces[i].id, pieces[j].id);
-        const comboAff = profile.combinationAffinities[key];
+        const comboAff = profile.combinationAffinities?.[key];
         if (comboAff) {
           delta += comboAff.score * 1.0 * confidenceScalar;
         }
-        if (profile.avoidedCombinations.includes(key)) {
+        if (profile.avoidedCombinations?.includes(key)) {
           delta -= 2.0 * confidenceScalar;
         }
       }

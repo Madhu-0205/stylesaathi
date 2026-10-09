@@ -64,7 +64,9 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
   const pieceSummary = pieceNames.join(' · ');
 
   // Get 2-3 concise editorial why reasons, informed by Personal Style Brain and Climate Context
-  const whyReasons = getOutfitWhyReasons(allPieces, occasion, outfit.score, preferences, styleProfile, context);
+  const whyReasons = outfit.explanation?.reasons?.length
+    ? outfit.explanation.reasons
+    : getOutfitWhyReasons(allPieces, occasion, outfit.score, preferences, styleProfile, context);
 
   const handleWoreClick = async () => {
     if (wornToday) return;
@@ -93,14 +95,27 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
   ];
   const lookTitle = editorialTitles[index % editorialTitles.length];
 
+  const roleBadges: Record<string, { label: string; className: string }> = {
+    best_match: { label: 'Best Match', className: 'text-(--burnished-gold) border-(--burnished-gold)/40 bg-(--paper)/90' },
+    alternative: { label: 'Alternative', className: 'text-(--ink)/80 border-(--border) bg-(--card)' },
+    explore: { label: 'Explore', className: 'text-(--kumkum) border-(--kumkum)/30 bg-(--kumkum)/5' },
+  };
+
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-border bg-card p-4 sm:p-5 transition-all duration-300 animate-fade-in shadow-2xs">
       {/* Top Editorial Header */}
       <div className="mb-3 flex items-baseline justify-between border-b border-border pb-2.5">
         <div>
-          <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
-            LOOK 0{index + 1} · {occasion}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
+              LOOK 0{index + 1} · {occasion}
+            </span>
+            {outfit.role && roleBadges[outfit.role] && (
+              <span className={`text-[8.5px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded border ${roleBadges[outfit.role].className}`}>
+                {roleBadges[outfit.role].label}
+              </span>
+            )}
+          </div>
           <h3 className="mt-0.5 font-serif text-xl sm:text-2xl font-normal text-(--ink) tracking-tight">
             {lookTitle}
           </h3>

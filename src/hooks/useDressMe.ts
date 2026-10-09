@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { useWardrobeContext } from '../context/WardrobeContext';
 import { useWeather } from '../context/WeatherContext';
 import { Occasion, Season, GeneratedOutfit, WardrobeItem, RejectionReason, ContextSnapshot } from '../types';
-import { generateOutfits, deriveSeasonalContext } from '../engine';
+import { generateOutfits, recommendOutfits, deriveSeasonalContext } from '../engine';
 
 export function useDressMe(providedContext?: ContextSnapshot) {
   const {
@@ -26,7 +26,7 @@ export function useDressMe(providedContext?: ContextSnapshot) {
   const [season, setSeason] = useState<Season>(() => {
     return deriveSeasonalContext(new Date(), weatherContext?.weather);
   });
-  const [seed, setSeed] = useState<number>(() => Math.random());
+  const [explorationSeedOffset, setExplorationSeedOffset] = useState<number>(0);
   const [activeAccessories, setActiveAccessories] = useState<Record<number, WardrobeItem | null>>({});
 
   const contextSnapshot = useMemo(() => {
@@ -37,19 +37,33 @@ export function useDressMe(providedContext?: ContextSnapshot) {
     return undefined;
   }, [providedContext, weatherContext, occasion]);
 
-  // Generate 2-4 outfits for chosen occasion & season with personal style preferences, learned brain profile, and climate context
+  const localDate = useMemo(() => {
+    return contextSnapshot?.date || new Date().toISOString().split('T')[0];
+  }, [contextSnapshot]);
+
+  // Generate top-3 curated recommendations for chosen occasion & season with Recommendation Engine 2.0
   const outfits = useMemo(() => {
-    return generateOutfits(items, occasion, season, 4, seed, preferences, styleProfile, contextSnapshot);
-  }, [items, occasion, season, seed, preferences, styleProfile, contextSnapshot]);
+    return recommendOutfits({
+      items,
+      occasion,
+      season,
+      localDate,
+      explorationSeedOffset,
+      preferences,
+      styleProfile,
+      context: contextSnapshot,
+      limit: 3,
+    });
+  }, [items, occasion, season, localDate, explorationSeedOffset, preferences, styleProfile, contextSnapshot]);
 
   // Clean accessories available in wardrobe
   const availableAccessories = useMemo(() => {
     return items.filter((i) => i.category === 'Accessories' && i.status === 'clean');
   }, [items]);
 
-  // Shuffle generates another valid combination and registers a weak skipped signal
+  // Shuffle increments deterministic exploration seed offset and registers a weak skipped signal
   const shuffle = useCallback(() => {
-    setSeed(Math.random());
+    setExplorationSeedOffset((prev) => prev + 1);
     setActiveAccessories({});
   }, []);
 
@@ -64,8 +78,8 @@ export function useDressMe(providedContext?: ContextSnapshot) {
         season,
         rejectionReason: reason,
       });
-      // Re-seed to immediately re-rank and surface next best look
-      setSeed(Math.random());
+      // Increment seed offset to deterministically cycle to next alternative/explore look
+      setExplorationSeedOffset((prev) => prev + 1);
     },
     [occasion, season, recordSignal]
   );

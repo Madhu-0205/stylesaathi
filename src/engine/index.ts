@@ -7,3 +7,8 @@ export * from './fabricIntelligence';
 export * from './patternIntelligence';
 export * from './contextEngine';
 export * from './contextScoring';
+export * from './hardConstraints';
+export * from './candidatePreRank';
+export * from './diversification';
+export * from './explorationModel';
+export * from './recommendationEngine';
