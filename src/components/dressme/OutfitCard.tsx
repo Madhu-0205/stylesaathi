@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Bookmark, Check, RefreshCw, Plus, Calendar, ThumbsDown } from 'lucide-react';
-import { GeneratedOutfit, WardrobeItem, Occasion, RejectionReason } from '../../types';
+import { GeneratedOutfit, WardrobeItem, Occasion, RejectionReason, ContextSnapshot } from '../../types';
 import { ItemImage } from '../common/ItemImage';
 import { getOutfitWhyReasons } from '../../engine/scoring';
 import { useWardrobeContext } from '../../context/WardrobeContext';
@@ -23,6 +23,7 @@ interface OutfitCardProps {
   index: number;
   occasion: Occasion;
   accessory: WardrobeItem | null;
+  context?: ContextSnapshot;
   onOpenAccessoryDrawer: () => void;
   onMarkWorn: (outfit: GeneratedOutfit, accessory: WardrobeItem | null) => Promise<void>;
   onSaveOutfit: (outfit: GeneratedOutfit) => Promise<any>;
@@ -36,6 +37,7 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
   index,
   occasion,
   accessory,
+  context,
   onOpenAccessoryDrawer,
   onMarkWorn,
   onSaveOutfit,
@@ -61,8 +63,8 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
   if (accessory) pieceNames.push(accessory.name);
   const pieceSummary = pieceNames.join(' · ');
 
-  // Get 2-3 concise editorial why reasons, informed by Personal Style Brain
-  const whyReasons = getOutfitWhyReasons(allPieces, occasion, outfit.score, preferences, styleProfile);
+  // Get 2-3 concise editorial why reasons, informed by Personal Style Brain and Climate Context
+  const whyReasons = getOutfitWhyReasons(allPieces, occasion, outfit.score, preferences, styleProfile, context);
 
   const handleWoreClick = async () => {
     if (wornToday) return;

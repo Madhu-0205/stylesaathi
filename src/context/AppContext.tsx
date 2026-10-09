@@ -1,12 +1,17 @@
 import React from 'react';
 import { WardrobeProvider, useWardrobeContext } from './WardrobeContext';
+import { WeatherProvider } from './WeatherContext';
 import { WardrobeItem } from '../types';
 
-export { WardrobeProvider, useWardrobeContext };
+export { WardrobeProvider, useWardrobeContext, WeatherProvider };
 
 // Backward-compatible AppProvider and useApp aliases
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return <WardrobeProvider>{children}</WardrobeProvider>;
+  return (
+    <WardrobeProvider>
+      <WeatherProvider>{children}</WeatherProvider>
+    </WardrobeProvider>
+  );
 };
 
 export const useApp = () => {

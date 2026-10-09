@@ -1,4 +1,4 @@
-import { WardrobeItem, Occasion, GeneratedOutfit, Season, StylePreferences, PersonalStyleProfile } from '../types';
+import { WardrobeItem, Occasion, GeneratedOutfit, Season, StylePreferences, PersonalStyleProfile, ContextSnapshot } from '../types';
 import { TEMPLATES } from './outfitTemplates';
 import { compatible, occasionFit, seasonFit } from './compatibility';
 import { calculateOutfitScore, generateOutfitWhy } from './scoring';
@@ -8,9 +8,10 @@ export function generateOutfits(
   occasion: Occasion,
   season: Season,
   limit = 4,
-  seed = Math.random(),
+  _seed = 0,
   preferences?: StylePreferences,
-  styleProfile?: PersonalStyleProfile
+  styleProfile?: PersonalStyleProfile,
+  context?: ContextSnapshot
 ): GeneratedOutfit[] {
   // Never suggest laundry items or items needing washing
   const eligible = items.filter(
@@ -89,8 +90,8 @@ export function generateOutfits(
       // Ensure no duplicate items across slots
       if (new Set(all.map((x) => x.id)).size !== all.length) continue;
 
-      const score = calculateOutfitScore(all, occasion, seed, preferences, styleProfile);
-      const why = generateOutfitWhy(all, occasion, score, preferences, styleProfile);
+      const score = calculateOutfitScore(all, occasion, _seed, preferences, styleProfile, context);
+      const why = generateOutfitWhy(all, occasion, score, preferences, styleProfile, context);
 
       results.push({
         template: t.name,
@@ -101,7 +102,12 @@ export function generateOutfits(
     }
   }
 
-  const sorted = results.sort((a, b) => b.score - a.score);
+  const sorted = results.sort((a, b) => {
+    if (Math.abs(b.score - a.score) > 0.0001) {
+      return b.score - a.score;
+    }
+    return signature(a).localeCompare(signature(b));
+  });
   const out: GeneratedOutfit[] = [];
   const main = (o: GeneratedOutfit) => Object.values(o.slots)[0]?.[0]?.id;
 

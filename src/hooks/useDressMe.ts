@@ -1,9 +1,10 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useWardrobeContext } from '../context/WardrobeContext';
-import { Occasion, Season, GeneratedOutfit, WardrobeItem, RejectionReason } from '../types';
-import { generateOutfits } from '../engine';
+import { useWeather } from '../context/WeatherContext';
+import { Occasion, Season, GeneratedOutfit, WardrobeItem, RejectionReason, ContextSnapshot } from '../types';
+import { generateOutfits, deriveSeasonalContext } from '../engine';
 
-export function useDressMe() {
+export function useDressMe(providedContext?: ContextSnapshot) {
   const {
     items,
     preferences,
@@ -13,15 +14,33 @@ export function useDressMe() {
     saveOutfit,
     markOutfitWornOnDate,
   } = useWardrobeContext();
+
+  let weatherContext: ReturnType<typeof useWeather> | null = null;
+  try {
+    weatherContext = useWeather();
+  } catch {
+    // Graceful fallback if called outside WeatherProvider
+  }
+
   const [occasion, setOccasion] = useState<Occasion>('college');
-  const [season, setSeason] = useState<Season>('summer');
+  const [season, setSeason] = useState<Season>(() => {
+    return deriveSeasonalContext(new Date(), weatherContext?.weather);
+  });
   const [seed, setSeed] = useState<number>(() => Math.random());
   const [activeAccessories, setActiveAccessories] = useState<Record<number, WardrobeItem | null>>({});
 
-  // Generate 2-4 outfits for chosen occasion & season with personal style preferences and learned brain profile
+  const contextSnapshot = useMemo(() => {
+    if (providedContext) return providedContext;
+    if (weatherContext) {
+      return weatherContext.getContextForOccasion(occasion);
+    }
+    return undefined;
+  }, [providedContext, weatherContext, occasion]);
+
+  // Generate 2-4 outfits for chosen occasion & season with personal style preferences, learned brain profile, and climate context
   const outfits = useMemo(() => {
-    return generateOutfits(items, occasion, season, 4, seed, preferences, styleProfile);
-  }, [items, occasion, season, seed, preferences, styleProfile]);
+    return generateOutfits(items, occasion, season, 4, seed, preferences, styleProfile, contextSnapshot);
+  }, [items, occasion, season, seed, preferences, styleProfile, contextSnapshot]);
 
   // Clean accessories available in wardrobe
   const availableAccessories = useMemo(() => {
@@ -199,5 +218,6 @@ export function useDressMe() {
     markWoreOutfit,
     saveOutfit,
     rejectOutfit,
+    contextSnapshot,
   };
 }

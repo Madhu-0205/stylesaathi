@@ -1,6 +1,7 @@
-import { WardrobeItem, Occasion, StylePreferences, PersonalStyleProfile } from '../types';
+import { WardrobeItem, Occasion, StylePreferences, PersonalStyleProfile, ContextSnapshot } from '../types';
 import { getPatternCompatibilityScore } from './patternIntelligence';
 import { calculatePersonalStyleScore, getPersonalStyleExplanations } from './styleBrain';
+import { calculateWeatherComfortScore, getContextWhyReasons } from './contextScoring';
 
 export const harmony = (a: string[], b: string[]): number => {
   const neutral = [
@@ -78,9 +79,10 @@ const OCCASION_FORMALITY_TARGETS: Record<string, number> = {
 export const calculateOutfitScore = (
   pieces: WardrobeItem[],
   occasion: Occasion,
-  seed = 0.5,
+  _seed = 0.5,
   preferences?: StylePreferences,
-  styleProfile?: PersonalStyleProfile
+  styleProfile?: PersonalStyleProfile,
+  context?: ContextSnapshot
 ): number => {
   let score = 0;
 
@@ -298,9 +300,13 @@ export const calculateOutfitScore = (
     score += calculatePersonalStyleScore(pieces, occasion, styleProfile, preferences);
   }
 
-  // Controlled seed randomness
-  score += (seed - 0.5) * 0.5;
+  // Phase 4: Weather & Climate Context adjustment (deterministic comfort score)
+  if (context && context.weather) {
+    const comfort = calculateWeatherComfortScore(pieces, context);
+    score += comfort.scoreDelta;
+  }
 
+  // 100% Deterministic Domain Scoring: zero random jitter or unseeded noise
   return score;
 };
 
@@ -309,9 +315,18 @@ export const getOutfitWhyReasons = (
   occasion: Occasion,
   _score = 3,
   preferences?: StylePreferences,
-  styleProfile?: PersonalStyleProfile
+  styleProfile?: PersonalStyleProfile,
+  context?: ContextSnapshot
 ): string[] => {
   const reasons: string[] = [];
+
+  // Phase 4: High-confidence evidence-based Weather & Climate context insights
+  if (context && context.weather) {
+    const contextReasons = getContextWhyReasons(pieces, context);
+    if (contextReasons.length > 0) {
+      reasons.push(contextReasons[0]);
+    }
+  }
 
   // Phase 3: High-confidence evidence-based Personal Style insights
   if (styleProfile) {
@@ -385,12 +400,13 @@ export const generateOutfitWhy = (
   occasionOrScore?: Occasion | number,
   scoreMaybe?: number,
   preferences?: StylePreferences,
-  styleProfile?: PersonalStyleProfile
+  styleProfile?: PersonalStyleProfile,
+  context?: ContextSnapshot
 ): string => {
   if (Array.isArray(scoreOrPieces)) {
     const occ = (typeof occasionOrScore === 'string' ? occasionOrScore : 'casual outing') as Occasion;
     const score = typeof scoreMaybe === 'number' ? scoreMaybe : 3;
-    const reasons = getOutfitWhyReasons(scoreOrPieces, occ, score, preferences, styleProfile);
+    const reasons = getOutfitWhyReasons(scoreOrPieces, occ, score, preferences, styleProfile, context);
     return reasons.join(' · ');
   }
   const score = typeof scoreOrPieces === 'number' ? scoreOrPieces : 3;

@@ -10,9 +10,11 @@ import {
   ArrowRight,
   Shirt,
   UserPlus,
+  CloudSun,
 } from 'lucide-react';
 import { useWardrobeContext } from '../context/WardrobeContext';
 import { useAuth } from '../context/AuthContext';
+import { useWeather } from '../context/WeatherContext';
 import { ItemImage } from '../components/common/ItemImage';
 import { AuthView } from '../components/auth/AuthView';
 import { WardrobeItem, OutfitPlan } from '../types';
@@ -79,6 +81,15 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
   const selectedPlan = useMemo(() => {
     return plans.find((p) => p.date === selectedDateStr);
   }, [plans, selectedDateStr]);
+
+  let weatherCtx: ReturnType<typeof useWeather> | null = null;
+  try {
+    weatherCtx = useWeather();
+  } catch {}
+
+  const matchingForecast = useMemo(() => {
+    return weatherCtx?.forecast?.periods.find((p) => p.date === selectedDateStr);
+  }, [weatherCtx?.forecast, selectedDateStr]);
 
   // Map of plans by date for fast calendar cell lookup
   const plansByDate = useMemo(() => {
@@ -351,6 +362,20 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
             {/* Plan Display OR Empty Day State */}
             {selectedPlan ? (
               <div className="space-y-4">
+                {/* Weather Forecast Preview for planned date */}
+                {matchingForecast && (
+                  <div className="rounded-xl border border-blue-200/70 bg-blue-50/60 dark:border-blue-900/40 dark:bg-blue-950/20 p-2.5 flex items-center justify-between text-xs text-blue-950 dark:text-blue-200 shadow-2xs">
+                    <div className="flex items-center gap-2">
+                      <CloudSun className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                      <span className="font-medium">Forecast: {matchingForecast.summary}</span>
+                    </div>
+                    {matchingForecast.precipitationProbability >= 40 && (
+                      <span className="text-[10px] font-bold text-(--kumkum) bg-white dark:bg-zinc-900 px-1.5 py-0.5 rounded border border-(--border)/60">
+                        Rain {matchingForecast.precipitationProbability}%
+                      </span>
+                    )}
+                  </div>
+                )}
                 {/* Fashion-First Integrity Notice if pieces are unavailable */}
                 {planIntegrity?.isStale && (
                   <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-950/30 p-3 flex items-start gap-2.5 text-xs text-red-800 dark:text-red-300">

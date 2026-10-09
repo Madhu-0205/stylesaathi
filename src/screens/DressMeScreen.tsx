@@ -8,6 +8,7 @@ import { AccessoryDrawer } from '../components/dressme/AccessoryDrawer';
 import { EmptyState } from '../components/common/EmptyState';
 import { OutfitCardSkeleton } from '../components/common/Skeleton';
 import { PlanLookModal } from '../components/calendar/PlanLookModal';
+import { WeatherStatusBar } from '../components/weather/WeatherStatusBar';
 import { Occasion, Season, GeneratedOutfit } from '../types';
 import { OCCASIONS, SEASONS } from '../data/taxonomy';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,7 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
     markWoreOutfit,
     saveOutfit,
     rejectOutfit,
+    contextSnapshot,
   } = useDressMe();
 
   const [activeDrawerOutfitIndex, setActiveDrawerOutfitIndex] = useState<number | null>(null);
@@ -92,6 +94,9 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
           </Button>
         </div>
       </header>
+
+      {/* India-First Weather & Climate Context Bar */}
+      <WeatherStatusBar />
 
       {/* Tomorrow Shortcut Bar */}
       {tomorrowPlan ? (
@@ -217,6 +222,7 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
               index={index}
               occasion={occasion}
               accessory={activeAccessories[index] || null}
+              context={contextSnapshot}
               onOpenAccessoryDrawer={() => setActiveDrawerOutfitIndex(index)}
               onMarkWorn={markWoreOutfit}
               onSaveOutfit={saveOutfit}

@@ -59,9 +59,22 @@ Deploy easily to Vercel or Netlify:
 - **No external integrations:** There are currently no real-time weather feeds, live shopping links, or social trend scrapers.
 - **DPDP Act compliance:** Not yet reviewed for compliance with India's Digital Personal Data Protection (DPDP) Act; do not open this application to under-18 users without implementing a verified parental consent flow.
 
-## Roadmap
-- Cloud synchronization and user accounts with end-to-end data encryption.
-- Integration with multimodal vision APIs (e.g., Gemini Vision) for automatic color palette and fabric extraction.
-- India DPDP Act-compliant parental consent verification flow.
-- Direct e-commerce links and price tracking for Smart Buy candidate recommendations.
-- Weather and festival-based intelligent morning outfit suggestions.
+## Approved StyleSaathi Roadmap
+
+See [ROADMAP.md](file:///Users/madhu/Downloads/stylesaathi/ROADMAP.md) for the complete phase documentation.
+
+| Phase | Name | Status |
+| :--- | :--- | :--- |
+| **Phase 1** | Professional Design System & UX Foundation | **COMPLETE** |
+| **Phase 2** | Wardrobe Intelligence 2.0 | **COMPLETE** |
+| **Phase 3** | Personal Style Brain & Behavioral Learning | **COMPLETE** |
+| **Phase 4** | India-First Weather & Context Engine | **COMPLETE AFTER THIS CORRECTION GATE** |
+| **Phase 5** | Recommendation Engine 2.0 | Upcoming |
+| **Phase 6** | Indian Fashion Knowledge Graph | Upcoming |
+| **Phase 7** | Style This Item | Upcoming |
+| **Phase 8** | Wear Analytics & Style Evolution | Upcoming |
+| **Phase 9** | Smart Buy 2.0 | Upcoming |
+| **Phase 10** | AI Saathi Multi-Turn Orchestration | Upcoming |
+| **Phase 11** | Trend Intelligence & Discovery | Upcoming |
+| **Phase 12** | Production Hardening & Android / Google Play | Upcoming |
+

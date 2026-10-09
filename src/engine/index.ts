@@ -3,3 +3,7 @@ export * from './compatibility';
 export * from './scoring';
 export * from './outfitEngine';
 export * from './styleBrain';
+export * from './fabricIntelligence';
+export * from './patternIntelligence';
+export * from './contextEngine';
+export * from './contextScoring';

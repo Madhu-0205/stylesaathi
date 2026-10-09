@@ -571,3 +571,116 @@ export type SyncMutation =
   | ImageUploadMutation
   | ImageActivationMutation
   | ImageDeleteMutation;
+
+// ============================================================================
+// PHASE 4: INDIA-FIRST WEATHER & CONTEXT ENGINE
+// ============================================================================
+
+export type WeatherCondition =
+  | 'clear'
+  | 'partly_cloudy'
+  | 'cloudy'
+  | 'rain'
+  | 'heavy_rain'
+  | 'thunderstorm'
+  | 'drizzle'
+  | 'fog'
+  | 'hot'
+  | 'cold'
+  | 'windy'
+  | 'unknown';
+
+export interface WeatherLocation {
+  city: string;
+  region?: string;
+  country: string;
+  latitude?: number;
+  longitude?: number;
+  timezone?: string;
+  source: 'manual' | 'geolocation' | 'ip' | 'cached';
+}
+
+export type WeatherDataSource = 'live' | 'cached' | 'simulated' | 'unavailable';
+
+export interface WeatherSnapshot {
+  temperature: number; // Celsius
+  feelsLike: number; // Celsius
+  humidity: number; // 0-100%
+  precipitationProbability: number; // 0-100%
+  precipitationAmount?: number; // mm
+  windSpeed: number; // km/h
+  windDirection?: string;
+  uvIndex?: number; // 0-12+
+  visibility?: number; // km
+  cloudCover?: number; // %
+  condition: WeatherCondition;
+  conditionText?: string;
+  observedAt: number; // Epoch timestamp (ms)
+  expiresAt: number; // Epoch timestamp (ms)
+  source: WeatherDataSource | string;
+  location: WeatherLocation;
+}
+
+export interface WeatherForecastPeriod {
+  period: 'today' | 'tonight' | 'tomorrow';
+  date: string; // YYYY-MM-DD
+  temperatureMin: number;
+  temperatureMax: number;
+  condition: WeatherCondition;
+  precipitationProbability: number;
+  summary: string;
+}
+
+export interface WeatherForecast {
+  location: WeatherLocation;
+  periods: WeatherForecastPeriod[];
+  generatedAt: number; // Epoch timestamp (ms)
+}
+
+export type WeatherFreshness = 'fresh' | 'stale' | 'expired' | 'unavailable';
+
+export type ThermalContext =
+  | 'very_hot'
+  | 'hot'
+  | 'warm'
+  | 'mild'
+  | 'cool'
+  | 'cold'
+  | 'very_cold';
+
+export type RainContext = 'none' | 'low_risk' | 'high_risk' | 'active_rain';
+
+export type TimeOfDay = 'morning' | 'afternoon' | 'evening' | 'night';
+
+export type ActivityContext =
+  | 'indoor'
+  | 'outdoor'
+  | 'commute'
+  | 'walking'
+  | 'travel'
+  | 'stationary'
+  | 'event';
+
+export interface ContextSnapshot {
+  weather: WeatherSnapshot | null;
+  forecast?: WeatherForecast | null;
+  freshness: WeatherFreshness;
+  location: WeatherLocation;
+  date: string; // YYYY-MM-DD
+  timeOfDay: TimeOfDay;
+  thermalContext: ThermalContext;
+  rainContext: RainContext;
+  occasion: Occasion;
+  activity?: ActivityContext;
+  confidence: number; // 0.0 to 1.0
+  source: WeatherDataSource;
+}
+
+export interface WeatherProvider {
+  readonly id: string;
+  readonly name: string;
+  getCurrentWeather(location: WeatherLocation): Promise<WeatherSnapshot>;
+  getForecast?(location: WeatherLocation): Promise<WeatherForecast>;
+}
+
+
