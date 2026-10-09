@@ -731,6 +731,26 @@ export interface CulturalContextSignals {
   customOccasionNotes?: string;
 }
 
+export type OutfitSlotRole =
+  | 'top'
+  | 'bottom'
+  | 'dress'
+  | 'shoes'
+  | 'footwear'
+  | 'layer'
+  | 'outerwear'
+  | 'dupatta'
+  | 'accessory';
+
+export interface MissingOutfitRequirement {
+  templateId: string;
+  templateName: string;
+  missingRole: OutfitSlotRole;
+  expectedCategory: Category;
+  compatibleSubcategories: Subcategory[];
+  explanation: string;
+}
+
 export interface RecommendationRequest {
   items: WardrobeItem[];
   occasion: Occasion;
@@ -742,6 +762,7 @@ export interface RecommendationRequest {
   context?: ContextSnapshot;
   culturalSignals?: CulturalContextSignals;
   limit?: number; // Default 3
+  anchorItemId?: string; // Phase 7: Explicit anchor constraint
 }
 
 export interface RecommendationSet {
@@ -754,7 +775,9 @@ export interface RecommendationSet {
     season: Season;
     localDate: string;
     explorationSeedOffset: number;
+    anchorItemId?: string;
   };
+  missingRequirements?: MissingOutfitRequirement[];
 }
 
 export interface RecommendationPipelineTelemetry {

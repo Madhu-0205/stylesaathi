@@ -16,6 +16,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
+import { StyleItemSheet } from './StyleItemSheet';
 
 interface ItemDetailSheetProps {
   item: WardrobeItem | null;
@@ -47,6 +48,7 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
   );
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showStyleSheet, setShowStyleSheet] = useState(false);
 
   // Cost-per-wear calculation
   const priceNum = purchasePrice.trim() ? parseFloat(purchasePrice) : item.purchasePrice;
@@ -299,8 +301,18 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
           />
         </div>
 
+        {/* Style This Item Primary Action */}
+        <Button
+          type="button"
+          onClick={() => setShowStyleSheet(true)}
+          className="w-full min-h-12 flex items-center justify-center gap-2 bg-(--ink) text-(--paper) hover:bg-(--ink)/90 font-semibold tracking-wider uppercase rounded-xl focus-editorial shadow-sm active:scale-98 transition-transform"
+        >
+          <Sparkles className="h-4 w-4 text-(--burnished-gold)" />
+          <span>Style This Item</span>
+        </Button>
+
         {/* Actions */}
-        <div className="flex gap-2.5 pt-2">
+        <div className="flex gap-2.5 pt-1">
           <button
             type="button"
             onClick={() => setShowDeleteConfirm(true)}
@@ -339,6 +351,15 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Style This Item BottomSheet */}
+        {showStyleSheet && (
+          <StyleItemSheet
+            anchorItem={item}
+            isOpen={showStyleSheet}
+            onClose={() => setShowStyleSheet(false)}
+          />
+        )}
       </div>
     </BottomSheet>
   );

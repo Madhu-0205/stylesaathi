@@ -1,5 +1,7 @@
 import {
   WardrobeItem,
+  Category,
+  Subcategory,
   Occasion,
   Season,
   GeneratedOutfit,
@@ -10,6 +12,8 @@ import {
   ScoreBreakdown,
   RecommendationExplanation,
   ExplanationEvidenceSource,
+  OutfitSlotRole,
+  MissingOutfitRequirement,
 } from '../types';
 import { TEMPLATES } from './outfitTemplates';
 import { compatible, seasonFit } from './compatibility';
@@ -57,6 +61,77 @@ const OCCASION_FORMALITY_TARGETS: Record<string, number> = {
 
 export const MAX_RECOMMENDATION_CANDIDATES = 350;
 
+function isDrapedAccessory(item: WardrobeItem): boolean {
+  const s = (item.subcategory || '').toLowerCase();
+  const n = item.name.toLowerCase();
+  const drapedKeywords = ['dupatta', 'shawl', 'scarf', 'stole', 'chunni', 'dupatto', 'muffler'];
+  return drapedKeywords.some((kw) => s.includes(kw) || n.includes(kw));
+}
+
+function isOuterwearItem(item: WardrobeItem): boolean {
+  if (item.category === 'Outerwear') return true;
+  const subcategories = ['blazer', 'jacket', 'shrug', 'nehru jacket', 'trench coat', 'cardigan', 'coat'];
+  return subcategories.includes((item.subcategory || '').toLowerCase());
+}
+
+function buildMissingRequirement(
+  anchorItem: WardrobeItem,
+  template: (typeof TEMPLATES)[0],
+  missingSlot: string
+): MissingOutfitRequirement {
+  let missingRole: OutfitSlotRole = 'bottom';
+  let expectedCategory: Category = 'Bottoms';
+  let compatibleSubcategories: Subcategory[] = ['trousers', 'jeans', 'palazzo', 'churidar'];
+  let explanation = `Your ${anchorItem.name} needs a compatible bottom. Add trousers, jeans, or a skirt to your wardrobe to create a complete look.`;
+
+  if (missingSlot === 'bottom') {
+    missingRole = 'bottom';
+    expectedCategory = 'Bottoms';
+    compatibleSubcategories = ['trousers', 'jeans', 'palazzo', 'churidar', 'salwar', 'skirt'];
+    explanation = `Your ${anchorItem.name} needs a compatible bottom. Add trousers, jeans, or a skirt to your wardrobe to create a complete look.`;
+  } else if (missingSlot === 'top' || missingSlot === 'blouse') {
+    missingRole = 'top';
+    if (anchorItem.subcategory === 'saree' || anchorItem.subcategory === 'lehenga') {
+      expectedCategory = 'Ethnic';
+      compatibleSubcategories = ['blouse', 'crop top'];
+      explanation = `Your ${anchorItem.name} needs a compatible blouse. Add a blouse or fitted crop top to your wardrobe to create a complete look.`;
+    } else {
+      expectedCategory = 'Tops';
+      compatibleSubcategories = ['shirt', 't-shirt', 'top', 'kurta'];
+      explanation = `Your outfit needs a compatible top. Add a shirt, top, or kurta to your wardrobe to create a complete look.`;
+    }
+  } else if (missingSlot === 'footwear' || missingSlot === 'shoes') {
+    missingRole = 'footwear';
+    expectedCategory = 'Footwear';
+    compatibleSubcategories = ['sneakers', 'loafers', 'flats', 'juttis', 'formal shoes'];
+    explanation = `Your outfit needs compatible footwear. Add shoes or juttis to your wardrobe to complete this look.`;
+  } else if (missingSlot === 'outerwear' || missingSlot === 'jacket') {
+    missingRole = 'layer';
+    expectedCategory = 'Outerwear';
+    compatibleSubcategories = ['blazer', 'jacket', 'nehru jacket'];
+    explanation = `Your outfit needs a compatible layer. Add a blazer or jacket to your wardrobe to complete this look.`;
+  } else if (missingSlot === 'dupatta') {
+    missingRole = 'dupatta';
+    expectedCategory = 'Ethnic';
+    compatibleSubcategories = ['dupatta', 'scarf'];
+    explanation = `Your ${anchorItem.name} look needs a compatible dupatta or scarf to complete the ensemble.`;
+  } else if (missingSlot === 'dress') {
+    missingRole = 'dress';
+    expectedCategory = 'Dresses';
+    compatibleSubcategories = ['dress', 'western dress'];
+    explanation = `Your outfit requires a dress to complete the look.`;
+  }
+
+  return {
+    templateId: template.name.toLowerCase().replace(/\s+/g, '_'),
+    templateName: template.name,
+    missingRole,
+    expectedCategory,
+    compatibleSubcategories,
+    explanation,
+  };
+}
+
 export class RecommendationEngine {
   readonly version = '2.0.0';
 
@@ -73,6 +148,7 @@ export class RecommendationEngine {
       context,
       culturalSignals,
       limit = 3,
+      anchorItemId,
     } = request;
 
     // Filter templates for occasion
@@ -117,10 +193,94 @@ export class RecommendationEngine {
     const tGen0 = typeof performance !== 'undefined' ? performance.now() : 0;
     let totalGeneratedCount = 0;
 
-    // Filter available pieces (season fit & basic clean availability)
-    const eligiblePool = items.filter(
-      (i) => i.status === 'clean' && seasonFit(i, season)
-    );
+    const anchorItem = anchorItemId ? items.find((i) => i.id === anchorItemId) : undefined;
+
+    // If anchor was specified but does not exist or has an un-plannable status (e.g. archived/donated)
+    if (
+      anchorItemId &&
+      (!anchorItem ||
+        (anchorItem.status !== 'clean' &&
+          anchorItem.status !== 'needs_washing' &&
+          anchorItem.status !== 'in_laundry'))
+    ) {
+      const tEnd = typeof performance !== 'undefined' ? performance.now() : 0;
+      return {
+        set: {
+          outfits: [],
+          roles: [],
+          generatedAt: localDate,
+          algorithmVersion: this.version,
+          requestContext: {
+            occasion,
+            season,
+            localDate,
+            explorationSeedOffset,
+            anchorItemId,
+          },
+          missingRequirements: [],
+        },
+        telemetry: {
+          candidateCount: 0,
+          validCandidateCount: 0,
+          timings: {
+            candidateGenerationMs: 0,
+            hardFilteringMs: 0,
+            compatibilityMs: 0,
+            scoringMs: 0,
+            diversificationMs: 0,
+            totalMs: tEnd - t0,
+          },
+        },
+      };
+    }
+
+    // Micro-accessory anchor handling: graceful explanatory state without fabricating unnatural templates
+    if (anchorItem && anchorItem.category === 'Accessories' && !isDrapedAccessory(anchorItem)) {
+      const missingReq: MissingOutfitRequirement = {
+        templateId: 'accessory_anchor_unsupported',
+        templateName: 'Accessory Styling Guidance',
+        missingRole: 'top',
+        expectedCategory: 'Tops',
+        compatibleSubcategories: ['shirt', 'kurta', 't-shirt'],
+        explanation:
+          'Pieces like watches, jewellery, and bags complement finished outfits rather than defining garment structure. Select a top, bottom, dress, outerwear piece, or footwear to anchor your outfit.',
+      };
+      const tEnd = typeof performance !== 'undefined' ? performance.now() : 0;
+      return {
+        set: {
+          outfits: [],
+          roles: [],
+          generatedAt: localDate,
+          algorithmVersion: this.version,
+          requestContext: {
+            occasion,
+            season,
+            localDate,
+            explorationSeedOffset,
+            anchorItemId,
+          },
+          missingRequirements: [missingReq],
+        },
+        telemetry: {
+          candidateCount: 0,
+          validCandidateCount: 0,
+          timings: {
+            candidateGenerationMs: 0,
+            hardFilteringMs: 0,
+            compatibilityMs: 0,
+            scoringMs: 0,
+            diversificationMs: 0,
+            totalMs: tEnd - t0,
+          },
+        },
+      };
+    }
+
+    // Filter available pieces (companions must be strictly clean and season-appropriate)
+    const eligiblePool = items.filter((i) => {
+      if (anchorItemId && i.id === anchorItemId) return false;
+      return i.status === 'clean' && seasonFit(i, season);
+    });
 
     interface RawCandidate {
       template: (typeof TEMPLATES)[0];
@@ -137,32 +297,102 @@ export class RecommendationEngine {
     }
 
     const viableTemplates: ViableTemplate[] = [];
+    interface UnmetTemplateRecord {
+      template: (typeof TEMPLATES)[0];
+      missingSlot: string;
+    }
+    const unmetTemplates: UnmetTemplateRecord[] = [];
 
     for (const t of occasionTemplates) {
-      const slotCandidates: Record<string, WardrobeItem[]> = {};
-      let hasAllRequired = true;
+      let effectiveTemplate = t;
+      let anchorSlot: string | null = null;
 
-      for (const [slot] of Object.entries(t.required)) {
-        const matching = eligiblePool.filter((i) => compatible(slot, i, t));
-        const ranked = preRankSlotCandidates(
-          matching,
-          slot,
-          occasion,
-          season,
-          preferences,
-          styleProfile
-        );
-        if (ranked.length === 0) {
-          hasAllRequired = false;
-          break;
+      if (anchorItem) {
+        // 1. Check if anchor matches a required slot
+        for (const reqSlot of Object.keys(t.required)) {
+          if (compatible(reqSlot, anchorItem, t)) {
+            anchorSlot = reqSlot;
+            break;
+          }
         }
-        slotCandidates[slot] = ranked;
+
+        // 2. Outerwear anchor: promote optional layer/outerwear slot to required
+        if (!anchorSlot && isOuterwearItem(anchorItem)) {
+          for (const optSlot of Object.keys(t.optional)) {
+            if (
+              (optSlot === 'outerwear' || optSlot === 'jacket') &&
+              compatible(optSlot, anchorItem, t)
+            ) {
+              anchorSlot = optSlot;
+              effectiveTemplate = {
+                name: t.name,
+                required: { ...t.required, [optSlot]: t.optional[optSlot] },
+                optional: { ...t.optional },
+              };
+              delete (effectiveTemplate.optional as Record<string, string[]>)[optSlot];
+              break;
+            }
+          }
+        }
+
+        // 3. Draped accessory anchor: promote optional dupatta/accessory slot to required
+        if (!anchorSlot && isDrapedAccessory(anchorItem)) {
+          for (const optSlot of Object.keys(t.optional)) {
+            if (
+              (optSlot === 'dupatta' || optSlot === 'accessory') &&
+              compatible(optSlot, anchorItem, t)
+            ) {
+              anchorSlot = optSlot;
+              effectiveTemplate = {
+                name: t.name,
+                required: { ...t.required, [optSlot]: t.optional[optSlot] },
+                optional: { ...t.optional },
+              };
+              delete (effectiveTemplate.optional as Record<string, string[]>)[optSlot];
+              break;
+            }
+          }
+        }
+
+        // If template cannot structurally accommodate this anchor, skip it
+        if (!anchorSlot) continue;
       }
 
-      if (!hasAllRequired) continue;
+      const slotCandidates: Record<string, WardrobeItem[]> = {};
+      let hasAllRequired = true;
+      let firstMissingSlot: string | null = null;
 
-      for (const [slot] of Object.entries(t.optional)) {
-        const matching = eligiblePool.filter((i) => compatible(slot, i, t));
+      for (const [slot] of Object.entries(effectiveTemplate.required)) {
+        if (anchorItem && slot === anchorSlot) {
+          slotCandidates[anchorSlot] = [anchorItem];
+        } else {
+          const matching = eligiblePool.filter((i) => compatible(slot, i, effectiveTemplate));
+          const ranked = preRankSlotCandidates(
+            matching,
+            slot,
+            occasion,
+            season,
+            preferences,
+            styleProfile
+          );
+          if (ranked.length === 0) {
+            hasAllRequired = false;
+            if (!firstMissingSlot) firstMissingSlot = slot;
+            break;
+          }
+          slotCandidates[slot] = ranked;
+        }
+      }
+
+      if (!hasAllRequired) {
+        if (firstMissingSlot) {
+          unmetTemplates.push({ template: effectiveTemplate, missingSlot: firstMissingSlot });
+        }
+        continue;
+      }
+
+      for (const [slot] of Object.entries(effectiveTemplate.optional)) {
+        const matching = eligiblePool.filter((i) => compatible(slot, i, effectiveTemplate));
         slotCandidates[slot] = preRankSlotCandidates(
           matching,
           slot,
@@ -174,10 +404,61 @@ export class RecommendationEngine {
       }
 
       viableTemplates.push({
-        template: t,
+        template: effectiveTemplate,
         slotCandidates,
-        requiredKeys: Object.keys(t.required),
+        requiredKeys: Object.keys(effectiveTemplate.required),
       });
+    }
+
+    // Handle sparse wardrobe around anchor item when no complete outfit can be formed
+    if (anchorItem && viableTemplates.length === 0) {
+      let missingRequirements: MissingOutfitRequirement[] = [];
+      if (unmetTemplates.length > 0) {
+        const bestUnmet = unmetTemplates[0];
+        missingRequirements = [
+          buildMissingRequirement(anchorItem, bestUnmet.template, bestUnmet.missingSlot),
+        ];
+      } else {
+        missingRequirements = [
+          {
+            templateId: 'unsupported_anchor_occasion',
+            templateName: 'Wardrobe Complementarity',
+            missingRole: 'top',
+            expectedCategory: 'Tops',
+            compatibleSubcategories: ['shirt', 'kurta', 't-shirt'],
+            explanation: `Unable to form complete looks around ${anchorItem.name} for ${occasion}. Add complementary wardrobe essentials to style this piece.`,
+          },
+        ];
+      }
+      const tGen1 = typeof performance !== 'undefined' ? performance.now() : 0;
+      return {
+        set: {
+          outfits: [],
+          roles: [],
+          generatedAt: localDate,
+          algorithmVersion: this.version,
+          requestContext: {
+            occasion,
+            season,
+            localDate,
+            explorationSeedOffset,
+            anchorItemId,
+          },
+          missingRequirements,
+        },
+        telemetry: {
+          candidateCount: 0,
+          validCandidateCount: 0,
+          timings: {
+            candidateGenerationMs: tGen1 - tGen0,
+            hardFilteringMs: 0,
+            compatibilityMs: 0,
+            scoringMs: 0,
+            diversificationMs: 0,
+            totalMs: tGen1 - t0,
+          },
+        },
+      };
     }
 
     // Fair allocation of combination budget across all viable occasion templates
@@ -291,7 +572,25 @@ export class RecommendationEngine {
     const seenOutfitIds = new Set<string>();
 
     for (const cand of rawCandidates) {
-      const hardCheck = evaluateTier1HardConstraints(cand, context);
+      let hardCheck;
+      if (
+        anchorItem &&
+        (anchorItem.status === 'needs_washing' || anchorItem.status === 'in_laundry')
+      ) {
+        // Planning/inspiration mode: anchor item permitted while companions must be strictly clean
+        const proxySlots: Record<string, WardrobeItem[]> = {};
+        for (const [k, v] of Object.entries(cand.slots)) {
+          proxySlots[k] = v.map((item) =>
+            item.id === anchorItem.id ? { ...item, status: 'clean' as const } : item
+          );
+        }
+        hardCheck = evaluateTier1HardConstraints(
+          { template: cand.template, slots: proxySlots },
+          context
+        );
+      } else {
+        hardCheck = evaluateTier1HardConstraints(cand, context);
+      }
       if (!hardCheck.passed) continue;
 
       const outfitId = computeCanonicalOutfitId({
@@ -509,7 +808,8 @@ export class RecommendationEngine {
           occasion,
           preferences,
           styleProfile,
-          context
+          context,
+          anchorItem
         ),
         why: '',
         knowledgeSignals: best.knowledgeSignals,
@@ -543,7 +843,8 @@ export class RecommendationEngine {
             occasion,
             preferences,
             styleProfile,
-            context
+            context,
+            anchorItem
           ),
           why: '',
           knowledgeSignals: alternativeCandidate.knowledgeSignals,
@@ -554,7 +855,7 @@ export class RecommendationEngine {
 
       // Role 3: EXPLORE (Controlled novelty inside safe preference boundary)
       const wardrobeFingerprint = computeWardrobeFingerprint(items.map((i) => i.id));
-      const deterministicSeedKey = `${localDate}|${occasion}|${wardrobeFingerprint}|v2|${explorationSeedOffset}`;
+      const deterministicSeedKey = `${localDate}|${occasion}|${wardrobeFingerprint}|v2|${explorationSeedOffset}|${anchorItemId || ''}`;
 
       const exploreCandidate = selectDeterministicExploreCandidate<ScoredCandidate>(
         scoredPool,
@@ -581,7 +882,8 @@ export class RecommendationEngine {
             occasion,
             preferences,
             styleProfile,
-            context
+            context,
+            anchorItem
           ),
           why: '',
           knowledgeSignals: exploreCandidate.knowledgeSignals,
@@ -604,6 +906,7 @@ export class RecommendationEngine {
         season,
         localDate,
         explorationSeedOffset,
+        anchorItemId,
       },
     };
 
@@ -638,10 +941,17 @@ export class RecommendationEngine {
     occasion: Occasion,
     preferences?: any,
     styleProfile?: any,
-    context?: any
+    context?: any,
+    anchorItem?: WardrobeItem
   ): RecommendationExplanation {
     const evidenceSources: ExplanationEvidenceSource[] = [];
     const reasons: string[] = [];
+
+    // 0. Anchor Piece Synergy (evidence-backed pairing)
+    if (anchorItem) {
+      evidenceSources.push('compatibility');
+      reasons.push(`Anchored around your ${anchorItem.name} with harmonious companion pieces`);
+    }
 
     // 1. Weather evidence (ONLY when live or cached genuine weather)
     const hasGenuineWeather =
@@ -718,9 +1028,9 @@ export class RecommendationEngine {
     }
 
     let headline = 'Curated Daily Ensemble';
-    if (role === 'best_match') headline = 'Best Match · Highest Styling Affinity';
-    else if (role === 'alternative') headline = 'Alternative · Varied Silhouette';
-    else if (role === 'explore') headline = 'Explore · Safe Wardrobe Discovery';
+    if (role === 'best_match') headline = anchorItem ? 'Best Match · Anchored Ensemble' : 'Best Match · Highest Styling Affinity';
+    else if (role === 'alternative') headline = anchorItem ? 'Alternative · Varied Silhouette' : 'Alternative · Varied Silhouette';
+    else if (role === 'explore') headline = anchorItem ? 'Explore · Fresh Wardrobe Pairing' : 'Explore · Safe Wardrobe Discovery';
 
     return {
       headline,
@@ -736,4 +1046,14 @@ export class RecommendationEngine {
 export function recommendOutfits(request: RecommendationRequest): RecommendedOutfit[] {
   const engine = new RecommendationEngine();
   return engine.recommend(request).set.outfits;
+}
+
+/**
+ * Functional wrapper returning full recommendation set with pipeline telemetry.
+ */
+export function recommendOutfitsWithTelemetry(
+  request: RecommendationRequest
+): RecommendationResultWithTelemetry {
+  const engine = new RecommendationEngine();
+  return engine.recommend(request);
 }
