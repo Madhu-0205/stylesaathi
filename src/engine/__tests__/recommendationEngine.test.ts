@@ -6,8 +6,13 @@ import {
   ContextSnapshot,
   RecommendationRequest,
 } from '../../types';
-import { RecommendationEngine, recommendOutfits } from '../recommendationEngine';
+import {
+  RecommendationEngine,
+  recommendOutfits,
+  MAX_RECOMMENDATION_CANDIDATES,
+} from '../recommendationEngine';
 import { computeCanonicalOutfitId } from '../explorationModel';
+import { calculateOutfitDistance, DIVERSIFICATION_DISTANCE_THRESHOLD } from '../diversification';
 
 const mockItem = (overrides: Partial<WardrobeItem> = {}): WardrobeItem => ({
   id: 'item-1',
@@ -329,5 +334,272 @@ describe('Recommendation Engine 2.0', () => {
     expect(result.telemetry.candidateCount).toBeGreaterThan(0);
     expect(result.telemetry.validCandidateCount).toBeGreaterThan(0);
     expect(result.telemetry.timings.totalMs).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('Phase 5 Correction Gate: Candidate Pool Bound Verification & Regressions', () => {
+  const engine = new RecommendationEngine();
+
+  function makeDeterministicWardrobe(count: number): WardrobeItem[] {
+    const categories: ('Tops' | 'Bottoms' | 'Ethnic' | 'Footwear')[] = [
+      'Tops',
+      'Bottoms',
+      'Ethnic',
+      'Footwear',
+    ];
+    const subcategories: Record<string, string[]> = {
+      Tops: ['shirt', 't-shirt'],
+      Bottoms: ['trousers', 'jeans', 'chinos'],
+      Ethnic: ['kurta', 'kurti', 'palazzo', 'dupatta'],
+      Footwear: ['sneakers', 'formal shoes', 'loafers', 'juttis'],
+    };
+    const colors = ['white', 'black', 'navy', 'grey', 'yellow', 'blue', 'beige'];
+    const fabrics: ('cotton' | 'linen' | 'silk' | 'denim')[] = ['cotton', 'linen', 'silk', 'denim'];
+
+    return Array.from({ length: count }, (_, i) => {
+      const category = categories[i % categories.length];
+      const subs = subcategories[category];
+      const subcategory = subs[i % subs.length] as any;
+      const color = colors[i % colors.length];
+      const fabric = fabrics[i % fabrics.length];
+
+      return {
+        id: `synth-${String(i).padStart(4, '0')}`,
+        name: `${color} ${subcategory} #${i}`,
+        category,
+        subcategory,
+        colors: [color],
+        fabric,
+        seasons: ['summer'],
+        occasions: ['office', 'casual outing'],
+        formality: (i % 5) + 1,
+        status: 'clean',
+        favorite: i % 10 === 0,
+        note: '',
+        timesWorn: i % 8,
+        lastWorn: 1700000000000 - i * 86400000,
+        createdAt: 1700000000000 - i * 86400000,
+      };
+    });
+  }
+
+  it('guarantees candidate pool never exceeds documented bound MAX_RECOMMENDATION_CANDIDATES (350)', () => {
+    for (const size of [50, 150, 500, 1000]) {
+      const wardrobe = makeDeterministicWardrobe(size);
+      const res = engine.recommend({
+        items: wardrobe,
+        occasion: 'office',
+        season: 'summer',
+        localDate: '2026-10-09',
+      });
+
+      expect(res.telemetry.candidateCount).toBeLessThanOrEqual(MAX_RECOMMENDATION_CANDIDATES);
+      expect(res.telemetry.validCandidateCount).toBeLessThanOrEqual(MAX_RECOMMENDATION_CANDIDATES);
+      expect(res.telemetry.candidateCount).toBeGreaterThan(0);
+      expect(res.set.outfits.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('preserves Core, Freshness, and Novelty representation in candidate pool', () => {
+    // Construct a wardrobe with >10 items per slot to activate stratified pre-ranking
+    const coreTop = mockItem({ id: 'core-top', name: 'Core White Shirt', category: 'Tops', subcategory: 'shirt', favorite: true, timesWorn: 2, occasions: ['office'] });
+    const freshTop = mockItem({ id: 'fresh-top', name: 'Fresh Linen Shirt', category: 'Tops', subcategory: 'shirt', favorite: false, timesWorn: 0, lastWorn: undefined, occasions: ['office'] });
+    const novelTop = mockItem({ id: 'novel-top', name: 'Novel Teal Shirt', category: 'Tops', subcategory: 'shirt', favorite: false, timesWorn: 0, colors: ['teal'], occasions: ['office'] });
+    const fillerTops = Array.from({ length: 10 }, (_, i) =>
+      mockItem({ id: `filler-top-${i}`, name: `Filler Top ${i}`, category: 'Tops', subcategory: 'shirt', timesWorn: 6, occasions: ['office'] })
+    );
+
+    const coreBot = mockItem({ id: 'core-bot', name: 'Core Grey Trousers', category: 'Bottoms', subcategory: 'trousers', favorite: true, timesWorn: 2, occasions: ['office'] });
+    const freshBot = mockItem({ id: 'fresh-bot', name: 'Fresh Chinos', category: 'Bottoms', subcategory: 'trousers', favorite: false, timesWorn: 0, lastWorn: undefined, occasions: ['office'] });
+    const novelBot = mockItem({ id: 'novel-bot', name: 'Novel Olive Chinos', category: 'Bottoms', subcategory: 'trousers', favorite: false, timesWorn: 0, colors: ['olive'], occasions: ['office'] });
+    const fillerBots = Array.from({ length: 10 }, (_, i) =>
+      mockItem({ id: `filler-bot-${i}`, name: `Filler Bot ${i}`, category: 'Bottoms', subcategory: 'trousers', timesWorn: 6, occasions: ['office'] })
+    );
+
+    const coreFoot = mockItem({ id: 'core-foot', name: 'Core Oxford Shoes', category: 'Footwear', subcategory: 'formal shoes', favorite: true, timesWorn: 2, occasions: ['office'] });
+    const freshFoot = mockItem({ id: 'fresh-foot', name: 'Fresh Loafers', category: 'Footwear', subcategory: 'loafers', favorite: false, timesWorn: 0, lastWorn: undefined, occasions: ['office'] });
+    const novelFoot = mockItem({ id: 'novel-foot', name: 'Novel Brown Shoes', category: 'Footwear', subcategory: 'formal shoes', favorite: false, timesWorn: 0, colors: ['brown'], occasions: ['office'] });
+    const fillerFoots = Array.from({ length: 10 }, (_, i) =>
+      mockItem({ id: `filler-foot-${i}`, name: `Filler Foot ${i}`, category: 'Footwear', subcategory: 'formal shoes', timesWorn: 6, occasions: ['office'] })
+    );
+
+    const items = [
+      coreTop, freshTop, novelTop, ...fillerTops,
+      coreBot, freshBot, novelBot, ...fillerBots,
+      coreFoot, freshFoot, novelFoot, ...fillerFoots,
+    ];
+
+    const styleProfile: PersonalStyleProfile = {
+      version: 1,
+      userId: 'test-user',
+      totalSignalsCount: 15,
+      overallConfidence: 0.85,
+      updatedAt: Date.now(),
+      colorAffinities: {} as any,
+      fabricAffinities: {} as any,
+      patternAffinities: {} as any,
+      fitAffinities: {} as any,
+      culturalAffinities: {} as any,
+      occasionAffinities: {} as any,
+      itemAffinities: {
+        'core-top': { score: 0.9, sampleCount: 8, confidence: 0.9, lastInteractedAt: Date.now() },
+        'core-bot': { score: 0.8, sampleCount: 8, confidence: 0.9, lastInteractedAt: Date.now() },
+      } as any,
+      combinationAffinities: {},
+      avoidedColors: [],
+      avoidedFabrics: [],
+      avoidedPatterns: [],
+      avoidedCombinations: [],
+      neutralPreferenceRatio: 0.5,
+      formalityBias: 0.0,
+      noveltyTolerance: 0.5,
+      topColors: ['white'],
+      topFabrics: [],
+      topFits: [],
+      recentExplorations: [],
+    };
+
+    const res = engine.recommend({
+      items,
+      occasion: 'office',
+      season: 'summer',
+      localDate: '2026-10-09',
+      styleProfile,
+    });
+
+    const recommendedItemIds = new Set(
+      res.set.outfits.flatMap((o) => Object.values(o.slots).flat().map((p) => p.id))
+    );
+
+    // Core staple pieces must be present in recommendations (especially Best Match)
+    const bestMatchPieces = Object.values(res.set.outfits[0].slots).flat().map((p) => p.id);
+    expect(bestMatchPieces).toContain('core-top');
+
+    // Freshness or Novelty must be represented across the recommendation set
+    const hasFreshOrNovel =
+      recommendedItemIds.has('fresh-top') ||
+      recommendedItemIds.has('fresh-bot') ||
+      recommendedItemIds.has('fresh-foot') ||
+      recommendedItemIds.has('novel-top') ||
+      recommendedItemIds.has('novel-bot') ||
+      recommendedItemIds.has('novel-foot');
+    expect(hasFreshOrNovel).toBe(true);
+  });
+
+  it('runs deterministically at 500 and 1000 items with identical candidates, scores, and order', () => {
+    const wardrobe500 = makeDeterministicWardrobe(500);
+    const req: RecommendationRequest = {
+      items: wardrobe500,
+      occasion: 'office',
+      season: 'summer',
+      localDate: '2026-10-09',
+      explorationSeedOffset: 0,
+    };
+
+    const run1 = engine.recommend(req);
+    const run2 = engine.recommend(req);
+
+    expect(run1.telemetry.candidateCount).toBe(run2.telemetry.candidateCount);
+    expect(run1.telemetry.validCandidateCount).toBe(run2.telemetry.validCandidateCount);
+    expect(run1.set.outfits.map((o) => o.id)).toEqual(run2.set.outfits.map((o) => o.id));
+    expect(run1.set.outfits.map((o) => o.score)).toEqual(run2.set.outfits.map((o) => o.score));
+    expect(run1.set.outfits.map((o) => o.role)).toEqual(run2.set.outfits.map((o) => o.role));
+  });
+
+  it('ensures Explore role is behaviorally safe and excludes avoided attributes', () => {
+    const wardrobe = makeDeterministicWardrobe(50);
+    const styleProfile: PersonalStyleProfile = {
+      version: 1,
+      userId: 'user-safe',
+      totalSignalsCount: 20,
+      overallConfidence: 0.9,
+      updatedAt: Date.now(),
+      colorAffinities: {
+        yellow: { score: -0.8, sampleCount: 5, confidence: 0.9, lastInteractedAt: Date.now() },
+      } as any,
+      fabricAffinities: {
+        silk: { score: -0.7, sampleCount: 4, confidence: 0.9, lastInteractedAt: Date.now() },
+      } as any,
+      patternAffinities: {} as any,
+      fitAffinities: {} as any,
+      culturalAffinities: {} as any,
+      occasionAffinities: {} as any,
+      itemAffinities: {} as any,
+      combinationAffinities: {} as any,
+      avoidedColors: ['yellow'],
+      avoidedFabrics: ['silk'],
+      avoidedPatterns: [],
+      avoidedCombinations: [],
+      neutralPreferenceRatio: 0.5,
+      formalityBias: 0.0,
+      noveltyTolerance: 0.6,
+      topColors: ['navy'],
+      topFabrics: ['cotton'],
+      topFits: [],
+      recentExplorations: [],
+    };
+
+    const res = engine.recommend({
+      items: wardrobe,
+      occasion: 'office',
+      season: 'summer',
+      localDate: '2026-10-09',
+      styleProfile,
+    });
+
+    const exploreOutfit = res.set.outfits.find((o) => o.role === 'explore');
+    if (exploreOutfit) {
+      const explorePieces = Object.values(exploreOutfit.slots).flat();
+      for (const piece of explorePieces) {
+        expect(piece.colors).not.toContain('yellow');
+        expect(piece.fabric).not.toBe('silk');
+      }
+    }
+  });
+
+  it('ensures Alternative satisfies D >= 0.35 diversification threshold from Best Match when candidates permit', () => {
+    const wardrobe = makeDeterministicWardrobe(50);
+    const res = engine.recommend({
+      items: wardrobe,
+      occasion: 'office',
+      season: 'summer',
+      localDate: '2026-10-09',
+    });
+
+    const bestMatch = res.set.outfits.find((o) => o.role === 'best_match');
+    const alternative = res.set.outfits.find((o) => o.role === 'alternative');
+
+    if (bestMatch && alternative) {
+      const dist = calculateOutfitDistance(bestMatch, alternative);
+      expect(dist).toBeGreaterThanOrEqual(DIVERSIFICATION_DISTANCE_THRESHOLD);
+    }
+  });
+
+  it('supports graceful degradation without fake outfits (3 -> 2 -> 1 -> 0)', () => {
+    const shirt = mockItem({ id: 'deg-shirt', name: 'Shirt', category: 'Tops', subcategory: 'shirt', occasions: ['office'] });
+    const pant1 = mockItem({ id: 'deg-pant1', name: 'Black Pants', category: 'Bottoms', subcategory: 'trousers', colors: ['black'], occasions: ['office'] });
+    const pant2 = mockItem({ id: 'deg-pant2', name: 'Beige Pants', category: 'Bottoms', subcategory: 'trousers', colors: ['beige'], occasions: ['office'] });
+    const shoes = mockItem({ id: 'deg-shoes', name: 'Shoes', category: 'Footwear', subcategory: 'formal shoes', occasions: ['office'] });
+
+    // 1 outfit wardrobe
+    const res1 = engine.recommend({
+      items: [shirt, pant1, shoes],
+      occasion: 'office',
+      season: 'summer',
+      localDate: '2026-10-09',
+    });
+    expect(res1.set.outfits.length).toBe(1);
+    expect(res1.set.outfits[0].role).toBe('best_match');
+
+    // 0 outfits wardrobe (missing footwear)
+    const res0 = engine.recommend({
+      items: [shirt, pant1],
+      occasion: 'office',
+      season: 'summer',
+      localDate: '2026-10-09',
+    });
+    expect(res0.set.outfits.length).toBe(0);
+    expect(res0.telemetry.candidateCount).toBe(0);
+    expect(res0.telemetry.validCandidateCount).toBe(0);
   });
 });

@@ -52,6 +52,8 @@ const OCCASION_FORMALITY_TARGETS: Record<string, number> = {
   'wedding guest': 4.8,
 };
 
+export const MAX_RECOMMENDATION_CANDIDATES = 350;
+
 export class RecommendationEngine {
   readonly version = '2.0.0';
 
@@ -124,12 +126,22 @@ export class RecommendationEngine {
 
     const rawCandidates: RawCandidate[] = [];
 
+    // Identify viable occasion templates and pre-rank slot candidates
+    interface ViableTemplate {
+      template: (typeof TEMPLATES)[0];
+      slotCandidates: Record<string, WardrobeItem[]>;
+      requiredKeys: string[];
+    }
+
+    const viableTemplates: ViableTemplate[] = [];
+
     for (const t of occasionTemplates) {
       const slotCandidates: Record<string, WardrobeItem[]> = {};
+      let hasAllRequired = true;
 
       for (const [slot] of Object.entries(t.required)) {
         const matching = eligiblePool.filter((i) => compatible(slot, i, t));
-        slotCandidates[slot] = preRankSlotCandidates(
+        const ranked = preRankSlotCandidates(
           matching,
           slot,
           occasion,
@@ -137,7 +149,14 @@ export class RecommendationEngine {
           preferences,
           styleProfile
         );
+        if (ranked.length === 0) {
+          hasAllRequired = false;
+          break;
+        }
+        slotCandidates[slot] = ranked;
       }
+
+      if (!hasAllRequired) continue;
 
       for (const [slot] of Object.entries(t.optional)) {
         const matching = eligiblePool.filter((i) => compatible(slot, i, t));
@@ -151,24 +170,112 @@ export class RecommendationEngine {
         );
       }
 
-      // Required slot cannot be empty
-      if (Object.keys(t.required).some((k) => (slotCandidates[k]?.length ?? 0) === 0)) {
-        continue;
-      }
+      viableTemplates.push({
+        template: t,
+        slotCandidates,
+        requiredKeys: Object.keys(t.required),
+      });
+    }
 
-      const keys = Object.keys(t.required);
-      const combos = (
-        idx: number,
-        chosen: Record<string, WardrobeItem[]>
-      ): Record<string, WardrobeItem[]>[] => {
-        if (idx === keys.length) return [chosen];
-        const k = keys[idx];
-        return (slotCandidates[k] || [])
-          .slice(0, 8)
-          .flatMap((i) => combos(idx + 1, { ...chosen, [k]: [i] }));
+    // Fair allocation of combination budget across all viable occasion templates
+    const perTemplateBudget = viableTemplates.length > 0
+      ? Math.max(20, Math.floor(MAX_RECOMMENDATION_CANDIDATES / viableTemplates.length))
+      : 0;
+
+    const generateGridCombos = (
+      keys: string[],
+      grid: WardrobeItem[][],
+      idx: number,
+      current: Record<string, WardrobeItem[]>
+    ): Record<string, WardrobeItem[]>[] => {
+      if (idx === keys.length) return [current];
+      const k = keys[idx];
+      const items = grid[idx] || [];
+      return items.flatMap((item) =>
+        generateGridCombos(keys, grid, idx + 1, { ...current, [k]: [item] })
+      );
+    };
+
+    for (const vt of viableTemplates) {
+      if (rawCandidates.length >= MAX_RECOMMENDATION_CANDIDATES) break;
+
+      const { template: t, slotCandidates, requiredKeys } = vt;
+      const templateCombos: Record<string, WardrobeItem[]>[] = [];
+      const seenComboKeys = new Set<string>();
+
+      const tryAddCombo = (c: Record<string, WardrobeItem[]>): boolean => {
+        if (templateCombos.length >= perTemplateBudget) return false;
+        if (rawCandidates.length + templateCombos.length >= MAX_RECOMMENDATION_CANDIDATES) return false;
+
+        const comboKey = requiredKeys.map((k) => `${k}:${c[k]?.[0]?.id}`).join('|');
+        if (seenComboKeys.has(comboKey)) return true;
+        seenComboKeys.add(comboKey);
+        templateCombos.push(c);
+        return true;
       };
 
-      for (const c of combos(0, {})) {
+      // Strata 1: Pure Core Combinations (Staples / Favorites / Highest Styling Affinity)
+      const coreGrid = requiredKeys.map((k) => (slotCandidates[k] || []).slice(0, 2));
+      for (const c of generateGridCombos(requiredKeys, coreGrid, 0, {})) {
+        if (!tryAddCombo(c)) break;
+      }
+
+      // Strata 2: Freshness / Rotation Combinations (Unworn or Longest Since Worn)
+      for (let sIdx = 0; sIdx < requiredKeys.length; sIdx++) {
+        if (templateCombos.length >= perTemplateBudget) break;
+        const targetKey = requiredKeys[sIdx];
+        const freshItems = (slotCandidates[targetKey] || []).slice(4, 7);
+        if (freshItems.length === 0) continue;
+
+        const freshGrid = requiredKeys.map((k, idx) => {
+          if (idx === sIdx) return freshItems;
+          return (slotCandidates[k] || []).slice(0, 1);
+        });
+
+        for (const c of generateGridCombos(requiredKeys, freshGrid, 0, {})) {
+          if (!tryAddCombo(c)) break;
+        }
+      }
+
+      // Strata 3: Novelty / Exploration Combinations (Under-Explored / Low Sample Count)
+      for (let sIdx = 0; sIdx < requiredKeys.length; sIdx++) {
+        if (templateCombos.length >= perTemplateBudget) break;
+        const targetKey = requiredKeys[sIdx];
+        const novelItems = (slotCandidates[targetKey] || []).slice(7, 10);
+        if (novelItems.length === 0) continue;
+
+        const novelGrid = requiredKeys.map((k, idx) => {
+          if (idx === sIdx) return novelItems;
+          return (slotCandidates[k] || []).slice(0, 1);
+        });
+
+        for (const c of generateGridCombos(requiredKeys, novelGrid, 0, {})) {
+          if (!tryAddCombo(c)) break;
+        }
+      }
+
+      // Strata 4: Stratified Breadth Combinations up to perTemplateBudget
+      if (
+        templateCombos.length < perTemplateBudget &&
+        rawCandidates.length + templateCombos.length < MAX_RECOMMENDATION_CANDIDATES
+      ) {
+        const breadthGrid = requiredKeys.map((k) => (slotCandidates[k] || []).slice(0, 5));
+        for (const c of generateGridCombos(requiredKeys, breadthGrid, 0, {})) {
+          if (!tryAddCombo(c)) break;
+        }
+      }
+
+      if (
+        templateCombos.length < perTemplateBudget &&
+        rawCandidates.length + templateCombos.length < MAX_RECOMMENDATION_CANDIDATES
+      ) {
+        const fullGrid = requiredKeys.map((k) => (slotCandidates[k] || []).slice(0, 8));
+        for (const c of generateGridCombos(requiredKeys, fullGrid, 0, {})) {
+          if (!tryAddCombo(c)) break;
+        }
+      }
+
+      for (const c of templateCombos) {
         totalGeneratedCount++;
         rawCandidates.push({ template: t, slots: c });
       }
