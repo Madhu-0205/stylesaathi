@@ -721,6 +721,7 @@ export interface RecommendedOutfit extends GeneratedOutfit {
   role: RecommendationRole;
   scoreBreakdown: ScoreBreakdown;
   explanation: RecommendationExplanation;
+  knowledgeSignals?: import('./engine/knowledge/types').FashionKnowledgeSignal[];
 }
 
 export interface CulturalContextSignals {

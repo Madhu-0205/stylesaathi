@@ -31,6 +31,9 @@ import {
   computeWardrobeFingerprint,
   selectDeterministicExploreCandidate,
 } from './explorationModel';
+import { fashionKnowledgeEngine } from './knowledge/fashionKnowledgeEngine';
+import { FashionKnowledgeContext, FashionKnowledgeSignal } from './knowledge/types';
+import { getExplanationForSignal } from './knowledge/explanations';
 
 const OCCASION_FORMALITY_TARGETS: Record<string, number> = {
   college: 1.8,
@@ -316,6 +319,7 @@ export class RecommendationEngine {
       scoreBreakdown: ScoreBreakdown;
       pieces: WardrobeItem[];
       culturalEvalReasons: string[];
+      knowledgeSignals?: FashionKnowledgeSignal[];
     }
 
     const scoredPool: ScoredCandidate[] = [];
@@ -358,7 +362,33 @@ export class RecommendationEngine {
         }
       }
 
-      const baseCompatibility = colorHarmonyScore + formalityDeltaScore + patternScore;
+      // Knowledge Graph Context & Structured Domain Signals
+      const knowledgeContext: FashionKnowledgeContext = {
+        occasion,
+        season,
+        regionalPreference: culturalSignals?.regionalTradition,
+        festivalContext: culturalSignals?.festivalContext,
+        declaredModestyLevel: culturalSignals?.declaredModestyLevel,
+        userAesthetics: preferences?.preferredAesthetics,
+      };
+      const knowledgeSignals = fashionKnowledgeEngine.getSignals(pieces, knowledgeContext);
+
+      let ifkgCompatibilityDelta = 0;
+      for (const s of knowledgeSignals) {
+        if (
+          s.type === 'fabric_compatibility' ||
+          s.type === 'silhouette_balance' ||
+          s.type === 'garment_compatibility' ||
+          s.type === 'footwear_compatibility' ||
+          s.type === 'accessory_compatibility' ||
+          s.type === 'layering_compatibility'
+        ) {
+          ifkgCompatibilityDelta += s.strength * s.confidence * 0.35;
+        }
+      }
+      ifkgCompatibilityDelta = Math.max(-1.5, Math.min(1.5, ifkgCompatibilityDelta));
+
+      const baseCompatibility = colorHarmonyScore + formalityDeltaScore + patternScore + ifkgCompatibilityDelta;
 
       // B. Personal Style Brain Behavioral Scoring
       let personalStyle = 0;
@@ -385,7 +415,26 @@ export class RecommendationEngine {
 
       // D. Cultural Hierarchy (Tier 2 Soft Penalty & Tier 3 Soft Signals)
       const culturalEval = evaluateCulturalTierScore(pieces, occasion, preferences, culturalSignals);
-      const culturalFit = culturalEval.bonus - culturalEval.penalty;
+      let ifkgCulturalBonus = 0;
+      for (const s of knowledgeSignals) {
+        if (s.type === 'cultural_resonance' || s.type === 'regional_resonance') {
+          if (s.strength > 0) {
+            ifkgCulturalBonus += s.strength * s.confidence * 0.4;
+          }
+        }
+      }
+      ifkgCulturalBonus = Math.min(1.0, ifkgCulturalBonus);
+      const culturalFit = (culturalEval.bonus + ifkgCulturalBonus) - culturalEval.penalty;
+
+      const combinedCulturalReasons = [...culturalEval.reasons];
+      for (const s of knowledgeSignals) {
+        if ((s.type === 'cultural_resonance' || s.type === 'regional_resonance') && s.explanationKey) {
+          const exp = getExplanationForSignal(s);
+          if (exp && !combinedCulturalReasons.includes(exp)) {
+            combinedCulturalReasons.push(exp);
+          }
+        }
+      }
 
       // E. Novelty Bonus
       const hasNovelty = pieces.some(
@@ -426,7 +475,8 @@ export class RecommendationEngine {
           total: totalScore,
         },
         pieces,
-        culturalEvalReasons: culturalEval.reasons,
+        culturalEvalReasons: combinedCulturalReasons,
+        knowledgeSignals,
       });
     }
 
@@ -462,6 +512,7 @@ export class RecommendationEngine {
           context
         ),
         why: '',
+        knowledgeSignals: best.knowledgeSignals,
       };
       bestMatchOutfit.why = bestMatchOutfit.explanation.reasons.join(' · ');
       curatedOutfits.push(bestMatchOutfit);
@@ -495,6 +546,7 @@ export class RecommendationEngine {
             context
           ),
           why: '',
+          knowledgeSignals: alternativeCandidate.knowledgeSignals,
         };
         alternativeOutfit.why = alternativeOutfit.explanation.reasons.join(' · ');
         curatedOutfits.push(alternativeOutfit);
@@ -532,6 +584,7 @@ export class RecommendationEngine {
             context
           ),
           why: '',
+          knowledgeSignals: exploreCandidate.knowledgeSignals,
         };
         exploreOutfit.why = exploreOutfit.explanation.reasons.join(' · ');
         curatedOutfits.push(exploreOutfit);
@@ -579,6 +632,7 @@ export class RecommendationEngine {
       scoreBreakdown: ScoreBreakdown;
       pieces: WardrobeItem[];
       culturalEvalReasons?: string[];
+      knowledgeSignals?: FashionKnowledgeSignal[];
     },
     role: 'best_match' | 'alternative' | 'explore',
     occasion: Occasion,
@@ -627,7 +681,20 @@ export class RecommendationEngine {
       reasons.push(`Distinct silhouette variation using your ${cand.template.toLowerCase()}`);
     }
 
-    // 5. Baseline / Compatibility Fallback
+    // 5. IFKG Domain Compatibility Rationale
+    if (reasons.length < 2 && cand.knowledgeSignals) {
+      for (const s of cand.knowledgeSignals) {
+        if (s.explanationKey && s.confidence >= 0.8 && s.strength > 0.5) {
+          const domainExp = getExplanationForSignal(s);
+          if (domainExp && !reasons.includes(domainExp) && reasons.length < 3) {
+            evidenceSources.push('compatibility');
+            reasons.push(domainExp);
+          }
+        }
+      }
+    }
+
+    // 6. Baseline / Compatibility Fallback
     if (reasons.length < 2) {
       evidenceSources.push('compatibility');
       const standardReasons = getOutfitWhyReasons(

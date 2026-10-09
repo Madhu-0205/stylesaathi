@@ -12,3 +12,4 @@ export * from './candidatePreRank';
 export * from './diversification';
 export * from './explorationModel';
 export * from './recommendationEngine';
+export * from './knowledge';
