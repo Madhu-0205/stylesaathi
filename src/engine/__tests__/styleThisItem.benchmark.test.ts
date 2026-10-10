@@ -71,11 +71,11 @@ describe('Phase 7: Style This Item Performance Benchmark', () => {
 
   const BENCHMARK_SIZES = [15, 50, 150, 500, 1000];
   const TARGETS: Record<number, { e2eMax: number; candidateLimit: number }> = {
-    15: { e2eMax: 4.0, candidateLimit: 350 },
-    50: { e2eMax: 5.0, candidateLimit: 350 },
-    150: { e2eMax: 6.0, candidateLimit: 350 },
-    500: { e2eMax: 8.0, candidateLimit: 350 },
-    1000: { e2eMax: 10.0, candidateLimit: 350 },
+    15: { e2eMax: 2.0, candidateLimit: 350 },
+    50: { e2eMax: 3.0, candidateLimit: 350 },
+    150: { e2eMax: 4.0, candidateLimit: 350 },
+    500: { e2eMax: 5.0, candidateLimit: 350 },
+    1000: { e2eMax: 6.0, candidateLimit: 350 },
   };
 
   const resultsTable: {

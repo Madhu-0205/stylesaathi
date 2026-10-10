@@ -698,4 +698,167 @@ describe('Phase 7: Style This Item Engine Invariants & Anchor Constraints', () =
       expect(result.telemetry.candidateCount).toBeLessThanOrEqual(MAX_RECOMMENDATION_CANDIDATES);
     });
   });
+
+  // ==========================================================================
+  // 9. FINAL VERIFICATION GATE AUDITS
+  // ==========================================================================
+  describe('Phase 7 Final Verification Gate Audits', () => {
+    it('SURROGATE SAFETY: dirty anchor proxy changes ONLY availability and preserves all original attributes in output', () => {
+      const dirtyAnchor = createMockItem({
+        id: 'item_vintage_linen_olive',
+        name: 'Vintage Olive Linen Shirt',
+        category: 'Tops',
+        subcategory: 'shirt',
+        colors: ['olive'],
+        seasons: ['summer'],
+        occasions: ['college', 'casual outing'],
+        formality: 3,
+        status: 'needs_washing',
+        timesWorn: 7,
+        favorite: true,
+        note: 'Special vintage piece',
+        fabric: 'linen',
+        pattern: 'striped',
+        fit: 'slim',
+      });
+
+      const wardrobe = [dirtyAnchor, blueJeans, whiteSneakers];
+
+      const result = engine.recommend({
+        items: wardrobe,
+        occasion: 'college',
+        season: 'summer',
+        localDate: '2026-10-09',
+        anchorItemId: dirtyAnchor.id,
+      });
+
+      expect(result.set.outfits.length).toBeGreaterThan(0);
+      const outfit = result.set.outfits[0];
+      const returnedAnchor = outfit.slots.top[0];
+
+      // Exact ID match
+      expect(returnedAnchor.id).toBe(dirtyAnchor.id);
+      // Status strictly preserved as original dirty status
+      expect(returnedAnchor.status).toBe('needs_washing');
+      // Every other scoring and compatibility attribute strictly preserved
+      expect(returnedAnchor.name).toBe('Vintage Olive Linen Shirt');
+      expect(returnedAnchor.category).toBe('Tops');
+      expect(returnedAnchor.subcategory).toBe('shirt');
+      expect(returnedAnchor.colors).toEqual(['olive']);
+      expect(returnedAnchor.fabric).toBe('linen');
+      expect(returnedAnchor.pattern).toBe('striped');
+      expect(returnedAnchor.fit).toBe('slim');
+      expect(returnedAnchor.formality).toBe(3);
+      expect(returnedAnchor.timesWorn).toBe(7);
+      expect(returnedAnchor.favorite).toBe(true);
+      expect(returnedAnchor.note).toBe('Special vintage piece');
+
+      // Canonical referential equality
+      expect(returnedAnchor).toBe(dirtyAnchor);
+    });
+
+    it('CANONICAL RESOLUTION: anchorItemId resolves exclusively from request.items with strict referential identity', () => {
+      const canonicalItem = standardWardrobe.find((i) => i.id === whiteShirt.id)!;
+      expect(canonicalItem).toBeDefined();
+
+      const result = engine.recommend({
+        items: standardWardrobe,
+        occasion: 'college',
+        season: 'summer',
+        localDate: '2026-10-09',
+        anchorItemId: canonicalItem.id,
+      });
+
+      expect(result.set.outfits.length).toBeGreaterThan(0);
+      for (const outfit of result.set.outfits) {
+        expect(outfit.slots.top[0]).toBe(canonicalItem);
+      }
+    });
+
+    it('DIVERSITY AUDIT: verifies 68-candidate ceiling provides meaningful diversity across dimensions for 150, 500, 1000 items', () => {
+      // Helper to generate wardrobe of given size
+      const buildWardrobe = (count: number) => {
+        const anchor = createMockItem({
+          id: 'core_anchor_shirt',
+          name: 'Core Anchor Shirt',
+          category: 'Tops',
+          subcategory: 'shirt',
+          colors: ['white'],
+          seasons: ['summer'],
+          occasions: ['college', 'casual outing'],
+          formality: 3,
+        });
+
+        const items: WardrobeItem[] = [anchor];
+        const bottomSubcats = ['jeans', 'trousers', 'palazzo', 'churidar'] as const;
+        const shoeSubcats = ['sneakers', 'loafers', 'flats', 'juttis'] as const;
+        const colorPalette = ['blue', 'black', 'beige', 'grey', 'olive', 'brown', 'maroon', 'navy'];
+        const fabrics = ['cotton', 'linen', 'denim', 'silk'] as const;
+
+        for (let i = 1; i < count; i++) {
+          if (i % 2 === 0) {
+            items.push(
+              createMockItem({
+                id: `bottom_${i}`,
+                name: `Synthetic Bottom ${i}`,
+                category: 'Bottoms',
+                subcategory: bottomSubcats[i % bottomSubcats.length],
+                colors: [colorPalette[i % colorPalette.length]],
+                fabric: fabrics[i % fabrics.length],
+                seasons: ['summer'],
+                occasions: ['college', 'casual outing'],
+                formality: (i % 5) + 1,
+              })
+            );
+          } else {
+            items.push(
+              createMockItem({
+                id: `shoes_${i}`,
+                name: `Synthetic Shoes ${i}`,
+                category: 'Footwear',
+                subcategory: shoeSubcats[i % shoeSubcats.length],
+                colors: [colorPalette[i % colorPalette.length]],
+                seasons: ['summer'],
+                occasions: ['college', 'casual outing'],
+                formality: (i % 5) + 1,
+              })
+            );
+          }
+        }
+        return { items, anchor };
+      };
+
+      for (const size of [150, 500, 1000]) {
+        const { items, anchor } = buildWardrobe(size);
+        const res = engine.recommend({
+          items,
+          occasion: 'college',
+          season: 'summer',
+          localDate: '2026-10-09',
+          anchorItemId: anchor.id,
+        });
+
+        // 1. Natural ceiling <= 350
+        expect(res.telemetry.candidateCount).toBeLessThanOrEqual(350);
+        // Candidate pool naturally ceilinged at exactly 68 candidates across stratified strata
+        expect(res.telemetry.candidateCount).toBe(68);
+
+        // 2. Diversity verification: curated looks have distinct companions
+        expect(res.set.outfits.length).toBeGreaterThanOrEqual(2);
+        const best = res.set.outfits.find((o) => o.role === 'best_match');
+        const alt = res.set.outfits.find((o) => o.role === 'alternative');
+        expect(best).toBeDefined();
+        expect(alt).toBeDefined();
+
+        // Best match and alternative must have distinct bottom or footwear
+        const bestBottomId = best!.slots.bottom[0].id;
+        const altBottomId = alt!.slots.bottom[0].id;
+        const bestShoeId = best!.slots.footwear[0].id;
+        const altShoeId = alt!.slots.footwear[0].id;
+
+        expect(bestBottomId !== altBottomId || bestShoeId !== altShoeId).toBe(true);
+      }
+    });
+  });
 });
+
