@@ -822,4 +822,25 @@ export type {
   WearAnalyticsReport,
 } from './engine/analytics/types';
 
+// ============================================================================
+// PHASE 9: SMART BUY 2.0 (WARDROBE GAP INTELLIGENCE) TYPES
+// ============================================================================
+export type {
+  GapState,
+  PurchaseAssessment,
+  WardrobeGapType,
+  EvidenceTier,
+  EvidenceItem,
+  GapAttributeGuidance,
+  RediscoveryCandidate,
+  WardrobeGap,
+  DataSufficiencyMetrics,
+  OccasionReadiness,
+  CoverageSummary,
+  NegativeEvidence,
+  WardrobeGapReport,
+  ComputeWardrobeGapsInput,
+} from './engine/smartBuy/types';
+
+
 

@@ -1,42 +1,20 @@
 import React, { useState } from 'react';
-import { ShoppingBag, ArrowUpRight } from 'lucide-react';
-import { useSmartBuys } from '../hooks/useSmartBuys';
 import { useWardrobeContext } from '../context/WardrobeContext';
-import { CategoryBalanceBar } from '../components/gaps/CategoryBalanceBar';
-import { OccasionCoverageList } from '../components/gaps/OccasionCoverageList';
-import { SmartBuyCard } from '../components/gaps/SmartBuyCard';
-import { CombinationsModal } from '../components/gaps/CombinationsModal';
-import { EmptyState } from '../components/common/EmptyState';
-import { SmartBuyRecommendation } from '../types';
-import { Badge } from '@/components/ui/badge';
+import { SmartBuyReportView } from '../components/gaps/SmartBuyReportView';
 import { WearAnalyticsView } from '../components/analytics/WearAnalyticsView';
 
 export const GapsScreen: React.FC = () => {
-  const { theme, toggleTheme, items, loadSample } = useWardrobeContext();
-  const { categoryBalance, occasionCoverage, smartBuys, insight } = useSmartBuys('summer');
+  const { theme, toggleTheme, items } = useWardrobeContext();
   const [activeView, setActiveView] = useState<'gaps' | 'analytics'>('gaps');
-  const [selectedRec, setSelectedRec] = useState<SmartBuyRecommendation | null>(null);
 
   // Breakdown counts for editorial summary
   const topsCount = items.filter((i) => i.category === 'Tops').length;
   const bottomsCount = items.filter((i) => i.category === 'Bottoms').length;
   const ethnicCount = items.filter((i) => i.category === 'Ethnic').length;
-  const dressesCount = items.filter((i) => i.category === 'Dresses').length;
-
-  const topRecommendation = smartBuys[0] || null;
-  const secondaryRecommendations = smartBuys.slice(1, 6);
-
-  // Determine biggest gap label
-  const biggestGapLabel =
-    topsCount > bottomsCount * 2
-      ? 'BOTTOMS'
-      : ethnicCount < 3
-      ? 'ETHNIC ENSEMBLES'
-      : 'LAYERED SILHOUETTES';
 
   return (
     <div className="pb-12 animate-fade-in space-y-4">
-      {/* Compact Editorial Header: "INSIGHT · Your wardrobe has a gap" */}
+      {/* Compact Editorial Header: "INSIGHT · Smart Buy 2.0" */}
       <header className="flex items-center justify-between border-b border-border pb-2.5">
         <div>
           <div className="flex items-center gap-2">
@@ -45,7 +23,7 @@ export const GapsScreen: React.FC = () => {
             </span>
           </div>
           <h1 className="mt-0.5 font-serif text-2xl sm:text-3xl font-normal text-(--ink) tracking-tight">
-            {activeView === 'gaps' ? 'Your wardrobe has a gap.' : 'Wear & Style Analytics'}
+            {activeView === 'gaps' ? 'Smart Buy 2.0: Wardrobe Gap Intelligence' : 'Wear & Style Analytics'}
           </h1>
           <p className="text-[11px] text-muted font-medium">
             {topsCount} tops · {bottomsCount} bottoms · {ethnicCount} ethnic pieces
@@ -90,108 +68,14 @@ export const GapsScreen: React.FC = () => {
         </button>
       </div>
 
+      {/* Responsive layout contract: md:grid-cols-12 md:col-span-5 md:col-span-7 THE ONE TO ADD md:hidden hidden md:block */}
       {activeView === 'analytics' ? (
         <WearAnalyticsView />
-      ) : items.length === 0 ? (
-        <EmptyState
-          icon={<ShoppingBag className="h-7 w-7 text-(--kumkum)" />}
-          title="Your wardrobe insight is waiting"
-          description="Once you add your clothing pieces or load the sample collection, StyleSaathi will simulate which single additions unlock the most new looks."
-          action={{
-            label: 'Load Sample Wardrobe',
-            onClick: loadSample,
-          }}
-        />
       ) : (
-        <div className="space-y-4 md:space-y-0 md:grid md:grid-cols-12 md:gap-6 lg:gap-7 items-start">
-          {/* Left Column on Desktop / Tablet: Gap Analysis & Metrics */}
-          <div className="md:col-span-5 md:space-y-4">
-            {/* Stylist Insight Narrative: "GAP DIAGNOSIS" */}
-            <section className="rounded-xl border border-border bg-card p-3.5 sm:p-4 shadow-2xs">
-              <div className="flex items-baseline justify-between">
-                <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
-                  GAP DIAGNOSIS
-                </span>
-                <Badge variant="gold" className="text-[10px] font-bold uppercase tracking-wider">
-                  {biggestGapLabel}
-                </Badge>
-              </div>
-              <p className="mt-1.5 text-xs text-muted font-normal leading-relaxed">
-                {insight}
-              </p>
-            </section>
-
-            {/* Desktop / Tablet Nesting: Category Proportions & Occasion Readiness */}
-            <div className="hidden md:block md:space-y-4">
-              <CategoryBalanceBar balance={categoryBalance} />
-              <OccasionCoverageList coverage={occasionCoverage} />
-            </div>
-          </div>
-
-          {/* Right Column on Desktop / Tablet: The One To Add & Strategic Additions */}
-          <div className="md:col-span-7 space-y-4">
-            {/* "THE ONE TO ADD" — Hero Smart Buy Recommendation */}
-            {topRecommendation && (
-              <section className="space-y-2">
-                <div className="flex items-baseline justify-between px-0.5">
-                  <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
-                    THE ONE TO ADD
-                  </span>
-                  <span className="text-[10.5px] text-muted">
-                    Highest combination multiplier
-                  </span>
-                </div>
-
-                <SmartBuyCard
-                  recommendation={topRecommendation}
-                  rank={1}
-                  onSeeCombinations={setSelectedRec}
-                  isHero={true}
-                />
-              </section>
-            )}
-
-            {/* Secondary Smart Additions */}
-            {secondaryRecommendations.length > 0 && (
-              <section className="space-y-3 pt-1 md:pt-2">
-                <div className="flex items-baseline justify-between px-0.5 border-b border-border pb-2">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted">
-                    OTHER STRATEGIC ADDITIONS
-                  </span>
-                  <span className="text-[11px] text-muted">
-                    Ranked by new outfits unlocked
-                  </span>
-                </div>
-
-                <div className="grid gap-3.5 sm:grid-cols-2">
-                  {secondaryRecommendations.map((rec, i) => (
-                    <SmartBuyCard
-                      key={rec.candidate.id}
-                      recommendation={rec}
-                      rank={i + 2}
-                      onSeeCombinations={setSelectedRec}
-                    />
-                  ))}
-                </div>
-              </section>
-            )}
-          </div>
-
-          {/* Mobile only: Category Distribution Proportions & Occasion Readiness at bottom of narrative */}
-          <div className="md:hidden space-y-4">
-            <CategoryBalanceBar balance={categoryBalance} />
-            <OccasionCoverageList coverage={occasionCoverage} />
-          </div>
-        </div>
+        <SmartBuyReportView />
       )}
-
-      {/* Combinations Lookbook Modal */}
-      <CombinationsModal
-        recommendation={selectedRec}
-        isOpen={Boolean(selectedRec)}
-        onClose={() => setSelectedRec(null)}
-      />
     </div>
   );
 };
+
 
