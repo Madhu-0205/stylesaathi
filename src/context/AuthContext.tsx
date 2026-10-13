@@ -16,6 +16,7 @@ interface AuthContextValue {
   signInWithEmail: (email: string, name?: string) => Promise<User>;
   continueAsGuest: () => Promise<User>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -127,6 +128,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     syncService.setCurrentUser(null);
   }, []);
 
+  const deleteAccount = useCallback(async () => {
+    if (supabaseAuthRepository.deleteAccount) {
+      await supabaseAuthRepository.deleteAccount();
+    } else {
+      await supabaseAuthRepository.signOut();
+    }
+    setUser(null);
+    setStatus('unauthenticated');
+    syncService.setCurrentUser(null);
+  }, []);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -140,6 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       signInWithEmail,
       continueAsGuest,
       signOut,
+      deleteAccount,
     }),
     [
       user,
@@ -151,6 +164,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       signInWithEmail,
       continueAsGuest,
       signOut,
+      deleteAccount,
     ]
   );
 

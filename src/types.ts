@@ -423,6 +423,7 @@ export interface AuthRepository {
   verifyEmailOtp?(email: string, token: string): Promise<User>;
   continueAsGuest(): Promise<User>;
   signOut(): Promise<void>;
+  deleteAccount?(): Promise<void>;
   clear(): Promise<void>;
   onAuthStateChange?(callback: (user: User | null) => void): () => void;
 }

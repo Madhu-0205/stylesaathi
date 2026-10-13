@@ -74,9 +74,9 @@ export const ProfileScreen: React.FC = () => {
     showToast,
   } = useWardrobeContext();
 
-  const { user, isGuest, isAuthenticated, signOut } = useAuth();
+  const { user, isGuest, isAuthenticated, signOut, deleteAccount } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [alertAction, setAlertAction] = useState<'clear' | 'reset' | 'reset_style' | null>(null);
+  const [alertAction, setAlertAction] = useState<'clear' | 'reset' | 'reset_style' | 'delete_account' | null>(null);
   const { statusLabel, isOnline, status: syncStatus, pendingCount } = useSyncStatus();
 
   // Metrics
@@ -113,6 +113,13 @@ export const ProfileScreen: React.FC = () => {
     } else if (alertAction === 'reset_style') {
       await resetLearnedStyle();
       showToast('Learned style memory reset');
+    } else if (alertAction === 'delete_account') {
+      try {
+        await deleteAccount();
+        showToast('Your account and all associated data have been permanently erased.');
+      } catch (err: any) {
+        showToast(err?.message || 'Failed to delete account. Please try again.');
+      }
     }
     setAlertAction(null);
   };
@@ -521,6 +528,16 @@ export const ProfileScreen: React.FC = () => {
                 <Trash2 className="h-3.5 w-3.5" />
                 <span>Reset All</span>
               </Button>
+
+              <Button
+                variant="outline"
+                size="default"
+                onClick={() => setAlertAction('delete_account')}
+                className="col-span-2 min-h-11 border-red-300 text-red-700 hover:bg-red-50 hover:border-red-500 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/30 transition-colors"
+              >
+                <Trash2 className="h-3.5 w-3.5 text-(--kumkum)" />
+                <span>Permanently Delete Account &amp; Data</span>
+              </Button>
             </div>
           </section>
 
@@ -533,7 +550,7 @@ export const ProfileScreen: React.FC = () => {
             <p className="text-xs text-muted leading-relaxed">
               Your wardrobe photos, calendar outfit plans, and style preferences stay strictly on this device.
               Clothing images are stored in your browser&apos;s IndexedDB and metadata in local storage.
-              No images are ever sent to external cloud servers.
+              No images are ever sent to external cloud servers without your explicit account sync.
             </p>
           </section>
         </div>
@@ -548,6 +565,8 @@ export const ProfileScreen: React.FC = () => {
                 ? 'Clear Wardrobe?'
                 : alertAction === 'reset_style'
                 ? 'Reset Learned Style Memory?'
+                : alertAction === 'delete_account'
+                ? 'Permanently Delete Account?'
                 : 'Reset All StyleSaathi Data?'}
             </AlertDialogTitle>
             <AlertDialogDescription>
@@ -555,6 +574,8 @@ export const ProfileScreen: React.FC = () => {
                 ? 'This will clear all clothing pieces from your wardrobe archive. This action cannot be undone.'
                 : alertAction === 'reset_style'
                 ? 'This clears your behavioral feedback signals (wears, saves, passes) and returns recommendations to baseline preferences. Your wardrobe garments and calendar plans will not be affected.'
+                : alertAction === 'delete_account'
+                ? 'This will permanently erase your StyleSaathi account, all wardrobe garments, photos, style history, and calendar plans from the cloud and this device. This action is irreversible and cannot be undone.'
                 : 'This will reset all your wardrobe garments, styling preferences, and calendar plans, returning you to the beginning.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -565,6 +586,8 @@ export const ProfileScreen: React.FC = () => {
                 ? 'Clear Wardrobe'
                 : alertAction === 'reset_style'
                 ? 'Reset Style Memory'
+                : alertAction === 'delete_account'
+                ? 'Permanently Delete Account'
                 : 'Reset Everything'}
             </AlertDialogAction>
           </AlertDialogFooter>

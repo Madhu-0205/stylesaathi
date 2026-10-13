@@ -230,6 +230,20 @@ export class SupabaseAuthRepository implements AuthRepository {
   }
 
   /**
+   * Securely deletes the authenticated user account and cascades all associated records.
+   */
+  async deleteAccount(): Promise<void> {
+    const user = await this.getUser();
+    const { accountDeletionService } = await import('../services/accountDeletionService');
+    const result = await accountDeletionService.executeAccountDeletion(user);
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to delete account.');
+    }
+    this.removeRaw(GUEST_SESSION_KEY);
+    this.memStorage.clear();
+  }
+
+  /**
    * Subscribes to Supabase authentication state changes.
    */
   onAuthStateChange(callback: (user: User | null) => void): () => void {
