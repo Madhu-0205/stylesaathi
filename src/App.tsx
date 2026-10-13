@@ -124,7 +124,7 @@ export const App: React.FC = () => {
           </div>
 
           {/* Universal Responsive Application Container */}
-          <div className="app-container safe-bottom px-3.5 sm:px-6 md:px-8 pt-3 sm:pt-4 md:pt-6">
+          <div className="app-container safe-top safe-bottom px-3.5 sm:px-6 md:px-8">
             <main className="w-full">
               {currentTab === 'Wardrobe' && (
                 <WardrobeScreen onOpenAddItem={() => setIsAddOpen(true)} />

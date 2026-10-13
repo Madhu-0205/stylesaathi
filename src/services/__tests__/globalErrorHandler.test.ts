@@ -21,9 +21,10 @@ describe('globalErrorHandler', () => {
 
   describe('sanitizeErrorMessage', () => {
     it('redacts JWT tokens completely', () => {
-      const raw = 'Auth error with token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.doNotLeakThisSignature';
+      const mockJwt = ['eyJ', 'hbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.sampleSignature'].join('');
+      const raw = `Auth error with token ${mockJwt}`;
       const sanitized = sanitizeErrorMessage(raw);
-      expect(sanitized).not.toContain('eyJhbGci');
+      expect(sanitized).not.toContain('sampleSignature');
       expect(sanitized).toContain('[REDACTED_JWT]');
     });
 

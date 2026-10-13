@@ -512,14 +512,25 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   }
 }
 
-/* Safe area padding utilities */
+/* Safe area padding utilities for modern edge-to-edge mobile screens */
+.safe-top {
+  padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
+}
+
 .safe-bottom {
   padding-bottom: calc(72px + env(safe-area-inset-bottom, 16px));
+}
+
+.safe-nav-padding {
+  padding-bottom: max(0.375rem, env(safe-area-inset-bottom, 0px));
 }
 
 @media (min-width: 768px) {
   .safe-bottom {
     padding-bottom: 3rem;
+  }
+  .safe-top {
+    padding-top: 1rem;
   }
 }
 

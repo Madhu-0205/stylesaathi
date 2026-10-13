@@ -1,5 +1,5 @@
 // Asset mapping registry for sample Indian & Western items
-import whiteTeeImg from './tops/white-tee.jpg';
+import whiteTeeImg from './tops/white-tee.webp';
 
 export const wardrobeAssets: Record<string, string> = {
   'sample-white-tee': whiteTeeImg,
