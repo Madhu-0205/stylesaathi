@@ -9,10 +9,12 @@ import { CombinationsModal } from '../components/gaps/CombinationsModal';
 import { EmptyState } from '../components/common/EmptyState';
 import { SmartBuyRecommendation } from '../types';
 import { Badge } from '@/components/ui/badge';
+import { WearAnalyticsView } from '../components/analytics/WearAnalyticsView';
 
 export const GapsScreen: React.FC = () => {
   const { theme, toggleTheme, items, loadSample } = useWardrobeContext();
   const { categoryBalance, occasionCoverage, smartBuys, insight } = useSmartBuys('summer');
+  const [activeView, setActiveView] = useState<'gaps' | 'analytics'>('gaps');
   const [selectedRec, setSelectedRec] = useState<SmartBuyRecommendation | null>(null);
 
   // Breakdown counts for editorial summary
@@ -43,7 +45,7 @@ export const GapsScreen: React.FC = () => {
             </span>
           </div>
           <h1 className="mt-0.5 font-serif text-2xl sm:text-3xl font-normal text-(--ink) tracking-tight">
-            Your wardrobe has a gap.
+            {activeView === 'gaps' ? 'Your wardrobe has a gap.' : 'Wear & Style Analytics'}
           </h1>
           <p className="text-[11px] text-muted font-medium">
             {topsCount} tops · {bottomsCount} bottoms · {ethnicCount} ethnic pieces
@@ -60,7 +62,37 @@ export const GapsScreen: React.FC = () => {
         </button>
       </header>
 
-      {items.length === 0 ? (
+      {/* Segmented Sub-navigation Toggle: [ WARDROBE GAPS ] [ WEAR & STYLE ANALYTICS ] */}
+      <div className="flex items-center gap-1.5 p-1 bg-(--border-light)/70 rounded-full border border-(--border)/60 w-fit max-w-full overflow-x-auto no-scrollbar">
+        <button
+          type="button"
+          onClick={() => setActiveView('gaps')}
+          className={`min-h-[44px] px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-full transition-all ${
+            activeView === 'gaps'
+              ? 'bg-card text-(--ink) shadow-2xs'
+              : 'text-muted hover:text-(--ink)'
+          }`}
+          aria-pressed={activeView === 'gaps'}
+        >
+          Wardrobe Gaps
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveView('analytics')}
+          className={`min-h-[44px] px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-full transition-all ${
+            activeView === 'analytics'
+              ? 'bg-card text-(--ink) shadow-2xs'
+              : 'text-muted hover:text-(--ink)'
+          }`}
+          aria-pressed={activeView === 'analytics'}
+        >
+          Wear &amp; Style Analytics
+        </button>
+      </div>
+
+      {activeView === 'analytics' ? (
+        <WearAnalyticsView />
+      ) : items.length === 0 ? (
         <EmptyState
           icon={<ShoppingBag className="h-7 w-7 text-(--kumkum)" />}
           title="Your wardrobe insight is waiting"

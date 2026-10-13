@@ -798,4 +798,28 @@ export interface RecommendationResultWithTelemetry {
   telemetry: RecommendationPipelineTelemetry;
 }
 
+// ============================================================================
+// PHASE 8: WEAR ANALYTICS & STYLE EVOLUTION TYPES
+// ============================================================================
+export type {
+  RotationState,
+  ReconciliationCase,
+  ReconciledItemWears,
+  CostPerWearAnalysis,
+  NormalizedFabricGroup,
+  NormalizedPatternGroup,
+  NormalizedSilhouetteGroup,
+  AttributeDistribution,
+  SnapshotWindowId,
+  StyleSnapshot,
+  EvolutionDimension,
+  EvolutionDimensionDelta,
+  StyleEvolutionReport,
+  ItemRotationAnalysis,
+  RotationHealthMetrics,
+  ParetoConcentrationMetrics,
+  OrphanWearMetrics,
+  WearAnalyticsReport,
+} from './engine/analytics/types';
+
 
