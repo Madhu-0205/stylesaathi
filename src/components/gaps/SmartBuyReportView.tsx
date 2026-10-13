@@ -106,7 +106,12 @@ export const SmartBuyReportView: React.FC<SmartBuyReportViewProps> = ({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-1">
-          {coverageSummary.occasionReadiness.map((readiness: OccasionReadiness) => (
+          {coverageSummary.occasionReadiness.length === 0 ? (
+            <div className="col-span-full py-2 text-xs text-muted">
+              No active occasions declared. Add calendar plans or set preferred occasions in Style Preferences to audit routine coverage.
+            </div>
+          ) : (
+            coverageSummary.occasionReadiness.map((readiness: OccasionReadiness) => (
             <div
               key={readiness.occasion}
               className={`p-3 rounded-xl border flex items-center justify-between gap-2 text-xs transition-colors ${
@@ -132,8 +137,9 @@ export const SmartBuyReportView: React.FC<SmartBuyReportViewProps> = ({
                 <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" aria-label="Coverage shortage" />
               )}
             </div>
-          ))}
-        </div>
+          ))
+        )}
+      </div>
       </section>
 
       {/* 4. No Purchase Needed Banner (if applicable) */}

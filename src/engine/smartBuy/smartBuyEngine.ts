@@ -22,7 +22,7 @@ export function calculateDataSufficiency(
   // Confidence heuristic formula: 0.40 * volume + 0.35 * wardrobe + 0.25 * occasion coverage
   const volumeFactor = Math.min(1.0, wearCount / 25);
   const wardrobeFactor = Math.min(1.0, itemCount / 15);
-  const occasionFactor = Math.min(1.0, Math.max(1, activeOccasionsCount) / 4);
+  const occasionFactor = Math.min(1.0, activeOccasionsCount / 4);
 
   const rawConfidence = 0.4 * volumeFactor + 0.35 * wardrobeFactor + 0.25 * occasionFactor;
   const confidenceScore = Math.round(Math.min(1.0, Math.max(0.0, rawConfidence)) * 100) / 100;

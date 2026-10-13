@@ -464,4 +464,30 @@ describe('Phase 9 — Smart Buy 2.0: Gap Detection Engine', () => {
     expect(typeof delta).toBe('number');
     expect(delta).toBeGreaterThanOrEqual(0);
   });
+
+  // Regression Test — Zero demand
+  it('Regression — Zero demand: wardrobe has no declared occasion + no calendar plans = no occasion gap + no purchase justification', () => {
+    const wardrobe: WardrobeItem[] = [
+      createMockItem({ id: 'top1', category: 'Tops', subcategory: 'shirt', status: 'clean' }),
+      createMockItem({ id: 'top2', category: 'Tops', subcategory: 't-shirt', status: 'clean' }),
+      createMockItem({ id: 'bot1', category: 'Bottoms', subcategory: 'jeans', status: 'clean' }),
+      createMockItem({ id: 'bot2', category: 'Bottoms', subcategory: 'trousers', status: 'clean' }),
+      createMockItem({ id: 'shoe1', category: 'Footwear', subcategory: 'sneakers', status: 'clean' }),
+    ];
+
+    const report = computeWardrobeGaps({
+      wardrobe,
+      outfitPlans: [], // Zero calendar plans
+      stylePreferences: { preferredContexts: [] } as any, // Zero declared preferred contexts
+      referenceTimestamp: FIXED_TIMESTAMP,
+    });
+
+    expect(report.dataSufficiency.isSufficient).toBe(true);
+    expect(report.coverageSummary.occasionReadiness.length).toBe(0);
+    expect(report.coverageSummary.unsupportedActiveOccasionsCount).toBe(0);
+    const occasionGaps = report.gaps.filter((g) => g.activeOccasions.length > 0);
+    expect(occasionGaps.length).toBe(0);
+    expect(report.purchaseAssessment).toBe('NO_PURCHASE_NEEDED');
+    expect(report.negativeEvidence.hasNoPurchaseNeeded).toBe(true);
+  });
 });

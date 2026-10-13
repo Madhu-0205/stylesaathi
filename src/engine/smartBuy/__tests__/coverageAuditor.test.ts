@@ -119,10 +119,11 @@ describe('Phase 9 — Coverage Auditor', () => {
       expect(active.has('wedding guest')).toBe(false);
     });
 
-    it('falls back to everyday and casual outing when zero demand is declared', () => {
+    it('returns empty active occasions when zero demand is declared', () => {
       const active = extractActiveOccasions([], { occasions: [] } as any);
-      expect(active.has('everyday')).toBe(true);
-      expect(active.has('casual outing')).toBe(true);
+      expect(active.size).toBe(0);
+      expect(active.has('everyday')).toBe(false);
+      expect(active.has('casual outing')).toBe(false);
       expect(active.has('wedding guest')).toBe(false);
     });
   });

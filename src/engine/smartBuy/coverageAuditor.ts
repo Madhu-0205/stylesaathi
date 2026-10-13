@@ -222,12 +222,6 @@ export function extractActiveOccasions(
     }
   }
 
-  // Baseline active routines if zero demand is declared anywhere
-  if (active.size === 0) {
-    active.add('everyday');
-    active.add('casual outing');
-  }
-
   return active;
 }
 
