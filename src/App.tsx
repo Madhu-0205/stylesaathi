@@ -31,6 +31,9 @@ const WardrobeSetupScreen = React.lazy(() =>
   import('./screens/WardrobeSetupScreen').then((m) => ({ default: m.WardrobeSetupScreen }))
 );
 
+import { useBackButton } from './hooks/useBackButton';
+import { BackButtonPriority } from './services/backButtonManager';
+
 export const App: React.FC = () => {
   const {
     onboarded,
@@ -50,6 +53,37 @@ export const App: React.FC = () => {
   const [isSaathiOpen, setIsSaathiOpen] = useState(false);
   const [isBooting, setIsBooting] = useState(true);
   const [isFadingOut, setIsFadingOut] = useState(false);
+
+  // Wire back button hierarchy for root overlays and tab state
+  useBackButton(
+    BackButtonPriority.AI_SAATHI,
+    () => {
+      setIsSaathiOpen(false);
+      return true;
+    },
+    isSaathiOpen,
+    'AI Saathi Drawer'
+  );
+
+  useBackButton(
+    BackButtonPriority.GLOBAL_SHEET,
+    () => {
+      setIsAddOpen(false);
+      return true;
+    },
+    isAddOpen,
+    'Add Item Sheet'
+  );
+
+  useBackButton(
+    BackButtonPriority.PRIMARY_TAB,
+    () => {
+      setCurrentTab('Wardrobe');
+      return true;
+    },
+    currentTab !== 'Wardrobe',
+    'Return to Wardrobe Tab'
+  );
 
   const isContextLoading = loading || status === 'loading';
 

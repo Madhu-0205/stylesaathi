@@ -3,10 +3,22 @@ import { useWardrobeContext } from '../context/WardrobeContext';
 import { SmartBuyReportView } from '../components/gaps/SmartBuyReportView';
 import { WearAnalyticsView } from '../components/analytics/WearAnalyticsView';
 import { TrendDiscoveryScreen } from './TrendDiscoveryScreen';
+import { useBackButton } from '../hooks/useBackButton';
+import { BackButtonPriority } from '../services/backButtonManager';
 
 export const GapsScreen: React.FC = () => {
   const { theme, toggleTheme, items } = useWardrobeContext();
   const [activeView, setActiveView] = useState<'gaps' | 'analytics' | 'trends'>('gaps');
+
+  useBackButton(
+    BackButtonPriority.SUB_NAVIGATION,
+    () => {
+      setActiveView('gaps');
+      return true;
+    },
+    activeView !== 'gaps',
+    'Insight Sub-navigation to Gaps'
+  );
 
   // Breakdown counts for editorial summary
   const topsCount = items.filter((i) => i.category === 'Tops').length;

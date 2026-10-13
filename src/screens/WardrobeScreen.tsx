@@ -11,6 +11,9 @@ import { WardrobeItem, Category, Status } from '../types';
 import { StyleSaathiLogo } from '../components/brand/StyleSaathiLogo';
 import { Button } from '@/components/ui/button';
 
+import { useBackButton } from '../hooks/useBackButton';
+import { BackButtonPriority } from '../services/backButtonManager';
+
 interface WardrobeScreenProps {
   onOpenAddItem: () => void;
 }
@@ -37,6 +40,16 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
   } = useWardrobe();
 
   const [selectedItem, setSelectedItem] = useState<WardrobeItem | null>(null);
+
+  useBackButton(
+    BackButtonPriority.SCREEN_MODAL,
+    () => {
+      setSelectedItem(null);
+      return true;
+    },
+    selectedItem !== null,
+    'Item Detail Sheet'
+  );
 
   const handleToggleFavorite = async (e: React.MouseEvent, item: WardrobeItem) => {
     e.stopPropagation();
