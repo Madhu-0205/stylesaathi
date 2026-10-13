@@ -117,8 +117,8 @@ describe('Phase 10: AI Saathi Tool Registry', () => {
   };
 
   describe('Registry Structure & Security Boundaries', () => {
-    it('contains all 12 typed internal domain tools', () => {
-      expect(saathiToolRegistry.size).toBe(12);
+    it('contains all 15 typed internal domain tools (including Phase 11 trend tools)', () => {
+      expect(saathiToolRegistry.size).toBe(15);
       expect(saathiToolRegistry.has('getWardrobe')).toBe(true);
       expect(saathiToolRegistry.has('getCurrentWeather')).toBe(true);
       expect(saathiToolRegistry.has('recommendOutfits')).toBe(true);
@@ -130,6 +130,9 @@ describe('Phase 10: AI Saathi Tool Registry', () => {
       expect(saathiToolRegistry.has('explainFashionKnowledge')).toBe(true);
       expect(saathiToolRegistry.has('createPlan')).toBe(true);
       expect(saathiToolRegistry.has('recordWear')).toBe(true);
+      expect(saathiToolRegistry.has('getRelevantTrends')).toBe(true);
+      expect(saathiToolRegistry.has('exploreTrendWithWardrobe')).toBe(true);
+      expect(saathiToolRegistry.has('explainTrend')).toBe(true);
     });
 
     it('marks read-only tools as safe (requiresConfirmation: false)', () => {

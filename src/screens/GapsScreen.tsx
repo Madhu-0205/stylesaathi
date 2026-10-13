@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { useWardrobeContext } from '../context/WardrobeContext';
 import { SmartBuyReportView } from '../components/gaps/SmartBuyReportView';
 import { WearAnalyticsView } from '../components/analytics/WearAnalyticsView';
+import { TrendDiscoveryScreen } from './TrendDiscoveryScreen';
 
 export const GapsScreen: React.FC = () => {
   const { theme, toggleTheme, items } = useWardrobeContext();
-  const [activeView, setActiveView] = useState<'gaps' | 'analytics'>('gaps');
+  const [activeView, setActiveView] = useState<'gaps' | 'analytics' | 'trends'>('gaps');
 
   // Breakdown counts for editorial summary
   const topsCount = items.filter((i) => i.category === 'Tops').length;
@@ -14,7 +15,7 @@ export const GapsScreen: React.FC = () => {
 
   return (
     <div className="pb-12 animate-fade-in space-y-4">
-      {/* Compact Editorial Header: "INSIGHT · Smart Buy 2.0" */}
+      {/* Compact Editorial Header: "INSIGHT · Smart Buy 2.0 / Analytics / Trends" */}
       <header className="flex items-center justify-between border-b border-border pb-2.5">
         <div>
           <div className="flex items-center gap-2">
@@ -23,7 +24,11 @@ export const GapsScreen: React.FC = () => {
             </span>
           </div>
           <h1 className="mt-0.5 font-serif text-2xl sm:text-3xl font-normal text-(--ink) tracking-tight">
-            {activeView === 'gaps' ? 'Smart Buy 2.0: Wardrobe Gap Intelligence' : 'Wear & Style Analytics'}
+            {activeView === 'gaps'
+              ? 'Smart Buy 2.0: Wardrobe Gap Intelligence'
+              : activeView === 'analytics'
+              ? 'Wear & Style Analytics'
+              : 'Trend Intelligence & Discovery'}
           </h1>
           <p className="text-[11px] text-muted font-medium">
             {topsCount} tops · {bottomsCount} bottoms · {ethnicCount} ethnic pieces
@@ -40,7 +45,7 @@ export const GapsScreen: React.FC = () => {
         </button>
       </header>
 
-      {/* Segmented Sub-navigation Toggle: [ WARDROBE GAPS ] [ WEAR & STYLE ANALYTICS ] */}
+      {/* Segmented Sub-navigation Toggle: [ WARDROBE GAPS ] [ WEAR & STYLE ANALYTICS ] [ TREND DISCOVERY ] */}
       <div className="flex items-center gap-1.5 p-1 bg-(--border-light)/70 rounded-full border border-(--border)/60 w-fit max-w-full overflow-x-auto no-scrollbar">
         <button
           type="button"
@@ -66,11 +71,25 @@ export const GapsScreen: React.FC = () => {
         >
           Wear &amp; Style Analytics
         </button>
+        <button
+          type="button"
+          onClick={() => setActiveView('trends')}
+          className={`min-h-[44px] px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-full transition-all ${
+            activeView === 'trends'
+              ? 'bg-card text-(--ink) shadow-2xs'
+              : 'text-muted hover:text-(--ink)'
+          }`}
+          aria-pressed={activeView === 'trends'}
+        >
+          Trend Discovery
+        </button>
       </div>
 
       {/* Responsive layout contract: md:grid-cols-12 md:col-span-5 md:col-span-7 THE ONE TO ADD md:hidden hidden md:block */}
       {activeView === 'analytics' ? (
         <WearAnalyticsView />
+      ) : activeView === 'trends' ? (
+        <TrendDiscoveryScreen />
       ) : (
         <SmartBuyReportView />
       )}

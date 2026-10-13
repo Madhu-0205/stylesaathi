@@ -1,0 +1,205 @@
+[
+  {
+    "concept": {
+      "id": "trend_relaxed_linen_tailoring",
+      "name": "Relaxed Linen Tailoring",
+      "slug": "relaxed-linen-tailoring",
+      "summary": "Unstructured, breathable linen shirts and relaxed-fit trousers in neutral earth tones for smart casual ease.",
+      "targetAttributes": {
+        "categories": ["Tops", "Bottoms"],
+        "subcategories": ["shirt", "trousers"],
+        "fabrics": ["linen", "cotton"],
+        "patterns": ["solid", "striped"],
+        "silhouettes": ["relaxed", "straight"],
+        "colorPalette": ["white", "beige", "olive", "khaki"],
+        "occasions": ["everyday", "casual outing", "office"],
+        "seasons": ["summer", "monsoon", "winter"]
+      },
+      "indianFashionContext": {
+        "isIndianFusion": false,
+        "culturalNotes": "Contemporary smart-casual styling suitable for Indian tropical temperatures"
+      },
+      "lifecycleState": "ACTIVE",
+      "validFrom": "2026-01-01",
+      "validUntil": "2026-12-31"
+    },
+    "provenance": {
+      "sourceType": "CURATED_EDITORIAL",
+      "sourceReference": "Vogue India Summer 2026 Editorial Archive",
+      "curatorOrReviewer": "StyleSaathi Editorial Board",
+      "observedAt": "2026-03-01",
+      "confidence": 0.95,
+      "reviewed": true,
+      "corroborationCount": 3,
+      "notes": "Corroborated across Elle India and Lakme Fashion Week menswear collections"
+    },
+    "corroboratingSignalIds": ["sig_vogue_2026_01", "sig_elle_2026_04", "sig_lfw_2026_linen"],
+    "editorialNotes": "Emphasizes natural linen texture without demanding rigid formal creases.",
+    "reviewedBy": "StyleSaathi Editorial Board",
+    "reviewedAt": "2026-03-05"
+  },
+  {
+    "concept": {
+      "id": "trend_contemporary_khadi_coord",
+      "name": "Contemporary Khadi Co-ord",
+      "slug": "contemporary-khadi-coord",
+      "summary": "Handspun khadi coordinates combining clean modern silhouettes with artisanal Indian weaves.",
+      "targetAttributes": {
+        "categories": ["Tops", "Bottoms", "Ethnic"],
+        "subcategories": ["kurta", "trousers", "co-ord set"],
+        "fabrics": ["khadi", "cotton"],
+        "patterns": ["solid", "checked"],
+        "silhouettes": ["relaxed", "tailored"],
+        "colorPalette": ["indigo", "white", "mustard", "navy"],
+        "occasions": ["college", "casual outing", "office"],
+        "seasons": ["summer", "monsoon", "winter"]
+      },
+      "indianFashionContext": {
+        "isIndianFusion": true,
+        "traditionalGarmentParallels": ["kurta"],
+        "regionalHeritage": "Bengal & Wardha Khadi handloom",
+        "culturalNotes": "Pairs breathable khadi with western co-ord cuts for everyday ease"
+      },
+      "lifecycleState": "ACTIVE",
+      "validFrom": "2026-01-01",
+      "validUntil": "2026-12-31"
+    },
+    "provenance": {
+      "sourceType": "INDIAN_HERITAGE_CURATION",
+      "sourceReference": "Crafts Council of India Handloom Showcase 2026",
+      "curatorOrReviewer": "StyleSaathi Textile Advisory",
+      "observedAt": "2026-02-15",
+      "confidence": 0.95,
+      "reviewed": true,
+      "corroborationCount": 3,
+      "notes": "Verified handspun weave standard compliant"
+    },
+    "corroboratingSignalIds": ["sig_crafts_council_2026", "sig_fdci_handloom_01"],
+    "editorialNotes": "Celebrates indigenous sustainable textiles in modular everyday wear.",
+    "reviewedBy": "StyleSaathi Textile Advisory",
+    "reviewedAt": "2026-02-20"
+  },
+  {
+    "concept": {
+      "id": "trend_minimalist_chikankari_fusion",
+      "name": "Minimalist Chikankari Fusion",
+      "slug": "minimalist-chikankari-fusion",
+      "summary": "Tonal white-on-white and pastel shadow-work embroidery styled with contemporary denim or tailored trousers.",
+      "targetAttributes": {
+        "categories": ["Tops", "Bottoms", "Ethnic"],
+        "subcategories": ["kurti", "kurta", "jeans", "trousers"],
+        "fabrics": ["cotton", "mulmul", "georgette"],
+        "patterns": ["chikankari", "embroidered"],
+        "silhouettes": ["straight", "relaxed"],
+        "colorPalette": ["white", "ivory", "sky blue", "lavender", "mint"],
+        "occasions": ["college", "office", "everyday"],
+        "seasons": ["summer", "monsoon", "winter"]
+      },
+      "indianFashionContext": {
+        "isIndianFusion": true,
+        "traditionalGarmentParallels": ["kurti"],
+        "regionalHeritage": "Lucknow Chikankari",
+        "culturalNotes": "Traditional shadow-stitch craft integrated with denim for campus and workwear"
+      },
+      "lifecycleState": "ACTIVE",
+      "validFrom": "2026-02-01",
+      "validUntil": "2026-12-31"
+    },
+    "provenance": {
+      "sourceType": "OFFICIAL_FASHION_SOURCE",
+      "sourceReference": "FDCI Craft Revival Pavilion 2026",
+      "curatorOrReviewer": "StyleSaathi Editorial Board",
+      "observedAt": "2026-02-10",
+      "confidence": 0.95,
+      "reviewed": true,
+      "corroborationCount": 2,
+      "notes": "Presented across multiple designer capsules"
+    },
+    "corroboratingSignalIds": ["sig_fdci_lucknow_2026", "sig_verve_craft_2026"],
+    "editorialNotes": "Effortless casual fusion pairing airy embroidery with casual essentials.",
+    "reviewedBy": "StyleSaathi Editorial Board",
+    "reviewedAt": "2026-02-15"
+  },
+  {
+    "concept": {
+      "id": "trend_earthy_handloom_layering",
+      "name": "Earthy Handloom Layering",
+      "slug": "earthy-handloom-layering",
+      "summary": "Layering lightweight bundis, Nehru jackets, or open overshirts over solid cotton bases in raw terracotta and olive palettes.",
+      "targetAttributes": {
+        "categories": ["Tops", "Outerwear", "Ethnic"],
+        "subcategories": ["shirt", "nehru jacket", "jacket", "shrug"],
+        "fabrics": ["cotton", "khadi", "linen"],
+        "patterns": ["solid", "block_print"],
+        "silhouettes": ["straight", "tailored", "relaxed"],
+        "colorPalette": ["terracotta", "olive", "rust", "beige", "brown"],
+        "occasions": ["office", "casual outing", "family gathering"],
+        "seasons": ["monsoon", "winter"]
+      },
+      "indianFashionContext": {
+        "isIndianFusion": true,
+        "traditionalGarmentParallels": ["nehru jacket"],
+        "regionalHeritage": "Khadi & Ajrakh natural dye traditions",
+        "culturalNotes": "Nehru jackets worn open as unstructured utility layers"
+      },
+      "lifecycleState": "ACTIVE",
+      "validFrom": "2026-06-01",
+      "validUntil": "2027-02-28"
+    },
+    "provenance": {
+      "sourceType": "DESIGNER_ARCHIVE",
+      "sourceReference": "Lakme Fashion Week Sustainable Day 2026",
+      "curatorOrReviewer": "StyleSaathi Editorial Board",
+      "observedAt": "2026-06-15",
+      "confidence": 0.88,
+      "reviewed": true,
+      "corroborationCount": 2,
+      "notes": "Verified modular layering structure"
+    },
+    "corroboratingSignalIds": ["sig_lfw_sustainable_layering", "sig_craft_cluster_earth"],
+    "editorialNotes": "Utilizes structured vests and unlined jackets for trans-seasonal rotation.",
+    "reviewedBy": "StyleSaathi Editorial Board",
+    "reviewedAt": "2026-06-20"
+  },
+  {
+    "concept": {
+      "id": "trend_jewel_tone_festive_silk",
+      "name": "Jewel Tone Festive Silk",
+      "slug": "jewel-tone-festive-silk",
+      "summary": "Rich emerald, sapphire, and ruby silk ensembles featuring subtle gold or silver zari accents for celebratory gatherings.",
+      "targetAttributes": {
+        "categories": ["Ethnic", "Dresses"],
+        "subcategories": ["kurta", "anarkali", "saree", "lehenga"],
+        "fabrics": ["silk", "chanderi", "banarasi"],
+        "patterns": ["solid", "zari_brocade"],
+        "silhouettes": ["straight", "a_line", "flared", "anarkali"],
+        "colorPalette": ["emerald", "ruby", "navy", "purple", "maroon", "gold"],
+        "occasions": ["festive", "celebration", "wedding guest", "family function", "Diwali"],
+        "seasons": ["winter", "monsoon"]
+      },
+      "indianFashionContext": {
+        "isIndianFusion": false,
+        "traditionalGarmentParallels": ["saree", "kurta", "anarkali"],
+        "regionalHeritage": "Banaras & Chanderi silk weaving",
+        "culturalNotes": "Traditional celebratory tones for Indian festivals and wedding guest attire"
+      },
+      "lifecycleState": "ACTIVE",
+      "validFrom": "2026-08-01",
+      "validUntil": "2027-01-31"
+    },
+    "provenance": {
+      "sourceType": "CURATED_EDITORIAL",
+      "sourceReference": "Harper's Bazaar India Festive Couture Edit 2026",
+      "curatorOrReviewer": "StyleSaathi Editorial Board",
+      "observedAt": "2026-08-10",
+      "confidence": 0.92,
+      "reviewed": true,
+      "corroborationCount": 2,
+      "notes": "Standard celebratory palette"
+    },
+    "corroboratingSignalIds": ["sig_bazaar_festive_2026", "sig_fdci_couture_silk"],
+    "editorialNotes": "Prioritizes timeless jewel-toned handloom silks over synthetic fast-fashion embellishments.",
+    "reviewedBy": "StyleSaathi Editorial Board",
+    "reviewedAt": "2026-08-15"
+  }
+]

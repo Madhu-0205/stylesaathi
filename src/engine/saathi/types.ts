@@ -12,6 +12,7 @@ import {
   RecommendedOutfit,
   MissingOutfitRequirement,
   GeneratedOutfit,
+  CulturalContextSignals,
 } from '../../types';
 import { WardrobeGapReport, PurchaseAssessment } from '../smartBuy/types';
 import { WearAnalyticsReport } from '../analytics/types';
@@ -136,6 +137,7 @@ export type DomainResultType =
   | 'FASHION_KNOWLEDGE'
   | 'PLAN_CREATED'
   | 'WEAR_RECORDED'
+  | 'TREND_INTELLIGENCE'
   | 'ERROR';
 
 export interface SaathiPurchaseAssessmentDetail {
@@ -165,6 +167,7 @@ export interface DomainResultReference {
   purchaseAssessment?: PurchaseAssessment | SaathiPurchaseAssessmentDetail;
   knowledgeSignals?: FashionKnowledgeSignal[];
   createdPlan?: OutfitPlan;
+  trends?: any[];
   data?: Record<string, unknown>;
 }
 
@@ -209,6 +212,8 @@ export interface SaathiToolContext {
   wearLogs?: WearEvent[];
   weatherSnapshot?: ContextSnapshot | null;
   weather?: any;
+  culturalSignals?: CulturalContextSignals;
+  userId?: string;
   referenceTimestamp: number;
   localDate?: string; // YYYY-MM-DD
   wardrobeRepo?: any;

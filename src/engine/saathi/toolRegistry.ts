@@ -20,6 +20,20 @@ import { computeWearAnalytics } from '../analytics';
 import { computeWardrobeGaps } from '../smartBuy';
 import { fashionKnowledgeEngine } from '../knowledge/fashionKnowledgeEngine';
 import { EXPLANATION_REGISTRY } from '../knowledge/explanations';
+import {
+  DiscoveryClassification,
+  CuratedActiveTrend,
+  TrendEvidence,
+} from '../trends/types';
+import {
+  getBundledCuratedTrends,
+  getBundledTrendById,
+} from '../trends/trendCatalog';
+import {
+  evaluateWardrobeDiscoveryOpportunities,
+  exploreTrendWithWardrobe,
+} from '../trends/discoveryEngine';
+import { evaluateTrendEvidence } from '../trends/evidenceEvaluator';
 
 function getSafeStyleProfile(context: SaathiToolContext) {
   const baseProfile = derivePersonalStyleProfile([]);
@@ -534,6 +548,170 @@ export const recordWearTool: SaathiTool<RecordWearInput, DomainResultReference> 
   },
 };
 
+// ============================================================================
+// 13. TOOL: getRelevantTrends (Phase 11 - Trend Intelligence)
+// ============================================================================
+export interface GetRelevantTrendsInput {
+  occasion?: Occasion;
+  classification?: DiscoveryClassification;
+}
+
+export const getRelevantTrendsTool: SaathiTool<GetRelevantTrendsInput, DomainResultReference> = {
+  name: 'getRelevantTrends',
+  description: 'Discovers active curated fashion trends evaluated against existing wardrobe pieces.',
+  isMutation: false,
+  requiresConfirmation: false,
+  async execute(input, context) {
+    const refDateStr = new Date(context.referenceTimestamp).toISOString().split('T')[0];
+    const trends = getBundledCuratedTrends().filter((t) => {
+      if (!input.occasion) return true;
+      return t.concept.targetAttributes.occasions.includes(input.occasion);
+    });
+
+    const styleProfile = getSafeStyleProfile(context);
+    const wearEvents = getNormalizedWearEvents(context);
+    const analytics = computeWearAnalytics(context.wardrobe, wearEvents, context.referenceTimestamp);
+    const dormantItems = analytics.dormantItems.map((d) => d.item);
+
+    const opportunities = evaluateWardrobeDiscoveryOpportunities(
+      trends,
+      context.wardrobe,
+      styleProfile,
+      context.weatherSnapshot?.weather || context.weather || undefined,
+      context.culturalSignals,
+      dormantItems,
+      refDateStr
+    );
+
+    const filtered = input.classification
+      ? opportunities.filter((o) => o.evidence.classification === input.classification)
+      : opportunities;
+
+    const evidenceList = filtered.map((o) => o.evidence);
+
+    return {
+      type: 'TREND_INTELLIGENCE',
+      summary: `Found ${evidenceList.length} relevant trends matching your style and wardrobe.`,
+      trends: evidenceList,
+      data: {
+        trends: evidenceList,
+      },
+    };
+  },
+};
+
+// ============================================================================
+// 14. TOOL: exploreTrendWithWardrobe (Phase 11 - Phase 5 Wardrobe Exploration)
+// ============================================================================
+export interface ExploreTrendWithWardrobeInput {
+  trendId: string;
+  occasion?: Occasion;
+}
+
+export const exploreTrendWithWardrobeTool: SaathiTool<ExploreTrendWithWardrobeInput, DomainResultReference> = {
+  name: 'exploreTrendWithWardrobe',
+  description: 'Generates wardrobe outfit recommendations that style a specific curated trend.',
+  isMutation: false,
+  requiresConfirmation: false,
+  async execute(input, context) {
+    const refDateStr = new Date(context.referenceTimestamp).toISOString().split('T')[0];
+    const trend = getBundledTrendById(input.trendId);
+    if (!trend) {
+      return {
+        type: 'ERROR',
+        summary: `Trend with ID "${input.trendId}" was not found in the curated catalog.`,
+      };
+    }
+
+    const styleProfile = getSafeStyleProfile(context);
+    const result = exploreTrendWithWardrobe(
+      trend,
+      context.wardrobe,
+      styleProfile,
+      context.weatherSnapshot?.weather || context.weather || undefined,
+      context.culturalSignals,
+      refDateStr,
+      input.occasion
+    );
+
+    if (result.outfits.length === 0) {
+      return {
+        type: 'RECOMMENDATION',
+        summary: `No complete outfits could be generated with your current clean wardrobe for "${trend.concept.name}".`,
+        outfits: [],
+        missingRequirements: result.missingRequirements,
+      };
+    }
+
+    return {
+      type: 'RECOMMENDATION',
+      summary: `Generated ${result.outfits.length} outfit recommendations exploring "${trend.concept.name}".`,
+      outfits: result.outfits,
+      missingRequirements: result.missingRequirements,
+    };
+  },
+};
+
+// ============================================================================
+// 15. TOOL: explainTrend (Phase 11 - Transparent Trend Telemetry & Provenance)
+// ============================================================================
+export interface ExplainTrendInput {
+  trendId: string;
+}
+
+export const explainTrendTool: SaathiTool<ExplainTrendInput, DomainResultReference> = {
+  name: 'explainTrend',
+  description: 'Explains provenance, editorial corroboration, evidence dimensions, and limitations for a trend.',
+  isMutation: false,
+  requiresConfirmation: false,
+  async execute(input, context) {
+    const refDateStr = new Date(context.referenceTimestamp).toISOString().split('T')[0];
+    const trend = getBundledTrendById(input.trendId);
+    if (!trend) {
+      return {
+        type: 'ERROR',
+        summary: `Trend with ID "${input.trendId}" was not found in the curated catalog.`,
+      };
+    }
+
+    const styleProfile = getSafeStyleProfile(context);
+    const wearEvents = getNormalizedWearEvents(context);
+    const analytics = computeWearAnalytics(context.wardrobe, wearEvents, context.referenceTimestamp);
+    const dormantItems = analytics.dormantItems.map((d) => d.item);
+
+    const evidence = evaluateTrendEvidence(
+      trend,
+      context.wardrobe,
+      styleProfile,
+      context.weatherSnapshot?.weather || context.weather || undefined,
+      context.culturalSignals,
+      dormantItems,
+      refDateStr
+    );
+
+    return {
+      type: 'TREND_INTELLIGENCE',
+      summary: `Provenance, corroboration, and evidence details for "${trend.concept.name}".`,
+      data: {
+        trendId: trend.concept.id,
+        trendName: trend.concept.name,
+        provenance: evidence.provenance,
+        corroboration: evidence.temporalFreshness.corroboratingSignalsCount,
+        evidenceDimensions: {
+          provenanceAndTrust: evidence.provenanceAndTrust,
+          temporalFreshness: evidence.temporalFreshness,
+          wardrobeCoverage: evidence.wardrobeCoverage,
+          personalStyleAlignment: evidence.personalStyleAlignment,
+          culturalModestyContext: evidence.culturalModestyContext,
+          contextThermalFit: evidence.contextThermalFit,
+          rotationOpportunity: evidence.rotationOpportunity,
+        },
+        limitations: evidence.limitations,
+      },
+    };
+  },
+};
+
 /**
  * Canonical tool registry map.
  */
@@ -550,6 +728,9 @@ export const SAATHI_TOOLS: Record<string, SaathiTool<any, any>> = {
   explainFashionKnowledge: explainFashionKnowledgeTool,
   createPlan: createPlanTool,
   recordWear: recordWearTool,
+  getRelevantTrends: getRelevantTrendsTool,
+  exploreTrendWithWardrobe: exploreTrendWithWardrobeTool,
+  explainTrend: explainTrendTool,
 };
 
 export const saathiToolRegistry = new Map<string, SaathiTool<any, any>>(
