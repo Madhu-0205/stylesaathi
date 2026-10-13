@@ -10,7 +10,9 @@ import { AddItemSheet } from './components/wardrobe/AddItemSheet';
 import { Toast } from './components/common/Toast';
 import { StyleSaathiLoadingOverlay } from './components/loading/StyleSaathiLoadingOverlay';
 import { NeedleCommandBar } from './components/needle/NeedleCommandBar';
+import { AISaathiChatView } from './components/saathi/AISaathiChatView';
 import { Skeleton } from './components/common/Skeleton';
+import { Sparkles } from 'lucide-react';
 
 // Route-level code splitting for non-initial screens
 const CalendarScreen = React.lazy(() =>
@@ -45,10 +47,27 @@ export const App: React.FC = () => {
   const { status } = useAuth();
   const [currentTab, setCurrentTab] = useState<NavTab>('Wardrobe');
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isSaathiOpen, setIsSaathiOpen] = useState(false);
   const [isBooting, setIsBooting] = useState(true);
   const [isFadingOut, setIsFadingOut] = useState(false);
 
   const isContextLoading = loading || status === 'loading';
+
+  useEffect(() => {
+    const handleOpenSaathi = () => setIsSaathiOpen((prev) => !prev);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'j') {
+        e.preventDefault();
+        setIsSaathiOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('open-saathi-chat', handleOpenSaathi);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('open-saathi-chat', handleOpenSaathi);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   useEffect(() => {
     // When initial context repository hydration finishes, transition smoothly into the application
@@ -98,6 +117,7 @@ export const App: React.FC = () => {
               onChangeTab={setCurrentTab}
               onOpenAddItem={() => setIsAddOpen(true)}
               onOpenNeedle={() => window.dispatchEvent(new CustomEvent('open-needle-command'))}
+              onOpenSaathi={() => setIsSaathiOpen(true)}
               theme={theme}
               toggleTheme={toggleTheme}
             />
@@ -137,6 +157,22 @@ export const App: React.FC = () => {
 
             {/* Global Needle 3 On-Device Command Palette */}
             <NeedleCommandBar onNavigateTab={setCurrentTab} />
+
+            {/* Global AI Saathi Conversational Companion */}
+            <button
+              type="button"
+              onClick={() => setIsSaathiOpen(true)}
+              aria-label="Open AI Saathi conversation"
+              className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-30 flex min-h-11 items-center gap-2 rounded-full border border-(--burnished-gold)/40 bg-card px-3.5 py-2 text-xs font-bold text-(--ink) shadow-md backdrop-blur-md transition-all hover:bg-(--ivory) active:scale-95"
+            >
+              <Sparkles className="h-4 w-4 text-(--burnished-gold) animate-pulse" />
+              <span className="font-serif">AI Saathi</span>
+            </button>
+
+            <AISaathiChatView
+              isOpen={isSaathiOpen}
+              onClose={() => setIsSaathiOpen(false)}
+            />
 
             {/* Global Add Item Sheet / Dialog */}
             <AddItemSheet

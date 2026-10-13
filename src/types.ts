@@ -842,5 +842,28 @@ export type {
   ComputeWardrobeGapsInput,
 } from './engine/smartBuy/types';
 
+// ============================================================================
+// PHASE 10: AI SAATHI MULTI-TURN ORCHESTRATION TYPES
+// ============================================================================
+export type {
+  SaathiIntent,
+  SaathiEntities,
+  MissingContext,
+  SaathiIntentResult,
+  ClarificationOption,
+  ClarificationRequest,
+  ConfirmationRequest,
+  DomainResultType,
+  DomainResultReference,
+  SaathiPurchaseAssessmentDetail,
+  SaathiMessage,
+  SaathiConversationState,
+  SaathiToolContext,
+  SaathiTool,
+  SaathiResponse,
+  SaathiErrorType,
+  SaathiError,
+} from './engine/saathi/types';
+
 
 

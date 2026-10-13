@@ -8,6 +8,7 @@ interface TopNavProps {
   onChangeTab: (tab: NavTab) => void;
   onOpenAddItem: () => void;
   onOpenNeedle?: () => void;
+  onOpenSaathi?: () => void;
   theme: 'light' | 'dark';
   toggleTheme: () => void;
 }
@@ -25,6 +26,7 @@ export const TopNav: React.FC<TopNavProps> = ({
   onChangeTab,
   onOpenAddItem,
   onOpenNeedle,
+  onOpenSaathi,
   theme,
   toggleTheme,
 }) => {
@@ -72,6 +74,18 @@ export const TopNav: React.FC<TopNavProps> = ({
 
         {/* Global Desktop Actions */}
         <div className="flex items-center gap-2.5">
+          {onOpenSaathi && (
+            <button
+              type="button"
+              onClick={onOpenSaathi}
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-(--burnished-gold)/40 bg-(--burnished-gold)/10 px-3.5 py-1.5 text-xs font-semibold text-(--ink) shadow-2xs backdrop-blur-sm transition-all hover:bg-(--burnished-gold)/20 active:scale-95"
+              aria-label="Open AI Saathi conversation"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-(--burnished-gold)" />
+              <span>AI Saathi</span>
+            </button>
+          )}
+
           {onOpenNeedle && (
             <button
               type="button"
