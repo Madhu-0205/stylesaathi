@@ -3,6 +3,7 @@ import { User, AuthStatus } from '../types';
 import { supabaseAuthRepository } from '../repositories/SupabaseAuthRepository';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { syncService } from '../lib/sync/syncService';
+import { deepLinkAuthHandler } from '../services/deepLinkHandler';
 
 interface AuthContextValue {
   user: User | null;
@@ -61,9 +62,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
 
+    // Initialize Android deep link listener for PKCE OAuth callback
+    let cleanupDeepLink: (() => void) | undefined;
+    deepLinkAuthHandler
+      .initialize((authenticatedUser) => {
+        if (!mounted) return;
+        setUser(authenticatedUser);
+        setStatus('authenticated');
+        syncService.setCurrentUser(authenticatedUser);
+        syncService.migrateGuestData(authenticatedUser).then(() => {
+          syncService.recoverAndSync();
+        });
+      })
+      .then((cleanup) => {
+        cleanupDeepLink = cleanup;
+      });
+
     return () => {
       mounted = false;
       unsubscribe?.();
+      cleanupDeepLink?.();
     };
   }, []);
 

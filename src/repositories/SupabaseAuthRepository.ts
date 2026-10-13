@@ -1,5 +1,7 @@
 import { AuthRepository, User } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 
 const GUEST_SESSION_KEY = 'stylesaathi-guest-session-v1';
 
@@ -105,16 +107,24 @@ export class SupabaseAuthRepository implements AuthRepository {
       );
     }
 
+    const isNative = typeof window !== 'undefined' && Capacitor.isNativePlatform();
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const redirectTo = isNative ? 'stylesaathi://auth/callback' : origin;
+
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: origin,
+        redirectTo,
+        skipBrowserRedirect: isNative,
       },
     });
 
     if (error) {
       throw new Error(error.message || 'Google authentication failed');
+    }
+
+    if (isNative && data?.url) {
+      await Browser.open({ url: data.url, windowName: '_self' });
     }
 
     return { url: data?.url ?? undefined };
