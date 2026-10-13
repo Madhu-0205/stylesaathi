@@ -1,4 +1,5 @@
 import { get, set, del, clear, createStore, UseStore } from 'idb-keyval';
+import { isQuotaExceededError } from './storageResilience';
 
 const DB_NAME = 'stylesaathi-images-db';
 const STORE_NAME = 'images';
@@ -36,6 +37,10 @@ export async function saveImage(id: string, blob: Blob): Promise<void> {
     }
   } catch (err: any) {
     memoryFallback.set(id, blob);
+    if (isQuotaExceededError(err)) {
+      console.warn('Storage quota exceeded when saving image:', id);
+      throw new Error('STORAGE_QUOTA_EXCEEDED: Device storage is full. Please remove some items or clear cache.');
+    }
     if (typeof indexedDB !== 'undefined') {
       console.warn('IndexedDB saveImage failed, saved to memory fallback:', err);
       throw err;
