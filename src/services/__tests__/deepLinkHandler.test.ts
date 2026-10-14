@@ -208,5 +208,93 @@ describe('Deep Link OAuth Validation & Handling', () => {
       expect(onSuccess).not.toHaveBeenCalled();
       expect(onError).not.toHaveBeenCalled();
     });
+
+    it('processes cold-start deep link via App.getLaunchUrl upon initialization', async () => {
+      const { App } = await import('@capacitor/app');
+      vi.mocked(App.getLaunchUrl).mockResolvedValueOnce({
+        url: 'stylesaathi://auth/callback?code=cold-start-code-555',
+      });
+
+      const mockUser = {
+        id: 'usr_cold_1',
+        email: 'cold@example.in',
+        user_metadata: { name: 'Cold User' },
+        created_at: new Date().toISOString(),
+      };
+
+      vi.spyOn(supabase.auth, 'exchangeCodeForSession').mockResolvedValueOnce({
+        data: {
+          user: mockUser as any,
+          session: {
+            user: mockUser as any,
+            access_token: 'tk',
+            refresh_token: 'rf',
+            expires_in: 3600,
+            token_type: 'bearer',
+          } as any,
+        },
+        error: null,
+      });
+
+      const onSuccess = vi.fn();
+      const cleanup = await deepLinkAuthHandler.initialize(onSuccess);
+
+      expect(supabase.auth.exchangeCodeForSession).toHaveBeenCalledWith('cold-start-code-555');
+      expect(onSuccess).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'usr_cold_1',
+          name: 'Cold User',
+        })
+      );
+      cleanup();
+    });
+
+    it('processes warm-start deep link via App appUrlOpen listener', async () => {
+      const { App } = await import('@capacitor/app');
+      let registeredListener: ((event: { url: string }) => Promise<void>) | undefined;
+
+      vi.mocked(App.addListener).mockImplementationOnce((eventName: any, callback: any) => {
+        if (eventName === 'appUrlOpen') {
+          registeredListener = callback;
+        }
+        return Promise.resolve({ remove: vi.fn() }) as any;
+      });
+
+      const mockUser = {
+        id: 'usr_warm_1',
+        email: 'warm@example.in',
+        user_metadata: { name: 'Warm User' },
+        created_at: new Date().toISOString(),
+      };
+
+      vi.spyOn(supabase.auth, 'exchangeCodeForSession').mockResolvedValueOnce({
+        data: {
+          user: mockUser as any,
+          session: {
+            user: mockUser as any,
+            access_token: 'tk',
+            refresh_token: 'rf',
+            expires_in: 3600,
+            token_type: 'bearer',
+          } as any,
+        },
+        error: null,
+      });
+
+      const onSuccess = vi.fn();
+      const cleanup = await deepLinkAuthHandler.initialize(onSuccess);
+
+      expect(registeredListener).toBeDefined();
+      await registeredListener!({ url: 'stylesaathi://auth/callback?code=warm-start-code-777' });
+
+      expect(supabase.auth.exchangeCodeForSession).toHaveBeenCalledWith('warm-start-code-777');
+      expect(onSuccess).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'usr_warm_1',
+          name: 'Warm User',
+        })
+      );
+      cleanup();
+    });
   });
 });

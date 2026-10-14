@@ -5,9 +5,21 @@
 
 CREATE OR REPLACE FUNCTION public.delete_user_data_records(target_user_id UUID)
 RETURNS boolean AS $$
-BEGIN
-  -- Strict authorization check: client cannot supply another user's UUID
-  IF target_user_id IS NULL OR target_user_id != auth.uid() THEN
+  -- Strict authorization check:
+  -- 1. If executed by service_role (trusted server-side Edge Function), allow target_user_id derived from verified JWT
+  -- 2. If executed by authenticated user, auth.uid() must strictly match target_user_id
+  -- 3. All other callers (anon, mismatched user) are strictly rejected
+  IF target_user_id IS NULL THEN
+    RAISE EXCEPTION 'Target user ID must not be null';
+  END IF;
+
+  IF auth.role() = 'service_role' THEN
+    -- Trusted server-side orchestration
+    NULL;
+  ELSIF auth.uid() IS NOT NULL AND auth.uid() = target_user_id THEN
+    -- Authenticated user deleting own records
+    NULL;
+  ELSE
     RAISE EXCEPTION 'Authorization failure: cannot delete data for another user or unauthenticated request';
   END IF;
 
@@ -39,6 +51,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Restrict execution to authenticated users only
+-- Restrict execution to authenticated users and service_role only
 REVOKE EXECUTE ON FUNCTION public.delete_user_data_records(UUID) FROM public;
 GRANT EXECUTE ON FUNCTION public.delete_user_data_records(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.delete_user_data_records(UUID) TO service_role;

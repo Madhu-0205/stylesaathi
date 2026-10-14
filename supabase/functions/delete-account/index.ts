@@ -78,16 +78,16 @@ serve(async (req) => {
       console.warn('Storage cleanup non-fatal error:', storageErr);
     }
 
-    // Step B: Clean up database tables in foreign-key dependency order
-    // Order: wear_events (FK RESTRICT) -> style_signals -> calendar_plans -> saved_outfits -> wardrobe_image_versions -> wardrobe_items -> style_preferences -> profiles
-    await adminClient.from('wear_events').delete().eq('user_id', userId);
-    await adminClient.from('style_signals').delete().eq('user_id', userId);
-    await adminClient.from('calendar_plans').delete().eq('user_id', userId);
-    await adminClient.from('saved_outfits').delete().eq('user_id', userId);
-    await adminClient.from('wardrobe_image_versions').delete().eq('user_id', userId);
-    await adminClient.from('wardrobe_items').delete().eq('user_id', userId);
-    await adminClient.from('style_preferences').delete().eq('user_id', userId);
-    await adminClient.from('profiles').delete().eq('id', userId);
+    // Step B: Clean up database tables atomically via transactional RPC in foreign-key dependency order
+    const { error: rpcError } = await adminClient.rpc('delete_user_data_records', {
+      target_user_id: userId,
+    });
+    if (rpcError) {
+      return new Response(
+        JSON.stringify({ error: `Database cleanup failed: ${rpcError.message}` }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Step C: Delete user from Supabase Auth (GoTrue)
     const { error: deleteUserError } = await adminClient.auth.admin.deleteUser(userId);
