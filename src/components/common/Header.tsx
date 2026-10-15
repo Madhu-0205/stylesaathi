@@ -24,7 +24,7 @@ export const Header: React.FC<HeaderProps> = ({
           <span className="text-[11px] font-extrabold tracking-[0.22em] text-(--text) uppercase">
             StyleSaathi
           </span>
-          <span className="hidden sm:inline-block text-[9px] tracking-[0.14em] text-(--muted) uppercase font-medium">
+          <span className="hidden sm:inline-block text-[9px] tracking-[0.14em] text-muted uppercase font-medium">
             Your wardrobe, thoughtfully styled
           </span>
         </div>
@@ -35,7 +35,7 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               onClick={onToggleTheme}
               aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-              className="flex h-10 w-10 items-center justify-center rounded-full text-(--muted) hover:text-(--text) transition-colors active:scale-95"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-muted hover:text-(--text) transition-colors active:scale-95"
             >
               {theme === 'dark' ? (
                 <Sun className="h-4 w-4 text-amber-300 stroke-[1.8]" />
@@ -54,7 +54,7 @@ export const Header: React.FC<HeaderProps> = ({
             {title}
           </h1>
           {subtitle && (
-            <p className="mt-0.5 text-xs text-(--muted) font-medium tracking-wide">
+            <p className="mt-0.5 text-xs text-muted font-medium tracking-wide">
               {subtitle}
             </p>
           )}

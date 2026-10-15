@@ -62,7 +62,7 @@ export const GapsScreen: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveView('gaps')}
-          className={`min-h-[44px] px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-full transition-all ${
+          className={`min-h-11 px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-full transition-all ${
             activeView === 'gaps'
               ? 'bg-card text-(--ink) shadow-2xs'
               : 'text-muted hover:text-(--ink)'
@@ -74,7 +74,7 @@ export const GapsScreen: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveView('analytics')}
-          className={`min-h-[44px] px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-full transition-all ${
+          className={`min-h-11 px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-full transition-all ${
             activeView === 'analytics'
               ? 'bg-card text-(--ink) shadow-2xs'
               : 'text-muted hover:text-(--ink)'
@@ -86,7 +86,7 @@ export const GapsScreen: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveView('trends')}
-          className={`min-h-[44px] px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-full transition-all ${
+          className={`min-h-11 px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-full transition-all ${
             activeView === 'trends'
               ? 'bg-card text-(--ink) shadow-2xs'
               : 'text-muted hover:text-(--ink)'

@@ -89,14 +89,24 @@ export const RELAXED_SILHOUETTES: SilhouetteFit[] = [
   'anarkali',
 ];
 
+export const NEUTRAL_COLORS_SET = new Set<string>(NEUTRAL_COLORS);
+export const BREATHABLE_FABRICS_SET = new Set<FabricType>(BREATHABLE_FABRICS);
+export const STRUCTURED_HEAVY_FABRICS_SET = new Set<FabricType>(STRUCTURED_HEAVY_FABRICS);
+export const DRAPE_FLUID_FABRICS_SET = new Set<FabricType>(DRAPE_FLUID_FABRICS);
+export const TRADITIONAL_INDIAN_PATTERNS_SET = new Set<PatternType>(TRADITIONAL_INDIAN_PATTERNS);
+export const WESTERN_GEOMETRIC_PATTERNS_SET = new Set<PatternType>(WESTERN_GEOMETRIC_PATTERNS);
+export const STRUCTURED_SILHOUETTES_SET = new Set<SilhouetteFit>(STRUCTURED_SILHOUETTES);
+export const STANDARD_SILHOUETTES_SET = new Set<SilhouetteFit>(STANDARD_SILHOUETTES);
+export const RELAXED_SILHOUETTES_SET = new Set<SilhouetteFit>(RELAXED_SILHOUETTES);
+
 /**
  * Normalizes fabric enum into approved Phase 8 domain groupings.
  */
 export function normalizeFabricGroup(fabric?: FabricType): NormalizedFabricGroup {
   if (!fabric || fabric === 'unknown') return 'unknown';
-  if (BREATHABLE_FABRICS.includes(fabric)) return 'breathable';
-  if (STRUCTURED_HEAVY_FABRICS.includes(fabric)) return 'structured';
-  if (DRAPE_FLUID_FABRICS.includes(fabric)) return 'drape';
+  if (BREATHABLE_FABRICS_SET.has(fabric)) return 'breathable';
+  if (STRUCTURED_HEAVY_FABRICS_SET.has(fabric)) return 'structured';
+  if (DRAPE_FLUID_FABRICS_SET.has(fabric)) return 'drape';
   if (fabric === 'denim') return 'denim';
   return 'unknown';
 }
@@ -107,8 +117,8 @@ export function normalizeFabricGroup(fabric?: FabricType): NormalizedFabricGroup
 export function normalizePatternGroup(pattern?: PatternType): NormalizedPatternGroup {
   if (!pattern || pattern === 'unknown') return 'unknown';
   if (pattern === 'solid') return 'solid';
-  if (TRADITIONAL_INDIAN_PATTERNS.includes(pattern)) return 'traditional_indian';
-  if (WESTERN_GEOMETRIC_PATTERNS.includes(pattern)) return 'western_geometric';
+  if (TRADITIONAL_INDIAN_PATTERNS_SET.has(pattern)) return 'traditional_indian';
+  if (WESTERN_GEOMETRIC_PATTERNS_SET.has(pattern)) return 'western_geometric';
   return 'unknown';
 }
 
@@ -117,9 +127,9 @@ export function normalizePatternGroup(pattern?: PatternType): NormalizedPatternG
  */
 export function normalizeSilhouetteGroup(fit?: SilhouetteFit): NormalizedSilhouetteGroup {
   if (!fit) return 'unknown';
-  if (STRUCTURED_SILHOUETTES.includes(fit)) return 'structured';
-  if (STANDARD_SILHOUETTES.includes(fit)) return 'standard';
-  if (RELAXED_SILHOUETTES.includes(fit)) return 'relaxed';
+  if (STRUCTURED_SILHOUETTES_SET.has(fit)) return 'structured';
+  if (STANDARD_SILHOUETTES_SET.has(fit)) return 'standard';
+  if (RELAXED_SILHOUETTES_SET.has(fit)) return 'relaxed';
   return 'unknown';
 }
 
@@ -155,7 +165,28 @@ export function deduplicateAndFilterWearEvents(
 
   for (const list of itemEventsMap.values()) {
     if (list.length > 1) {
-      list.sort((a, b) => a.wornAt - b.wornAt);
+      let isSorted = true;
+      for (let k = 1; k < list.length; k++) {
+        if (list[k].wornAt < list[k - 1].wornAt) {
+          isSorted = false;
+          break;
+        }
+      }
+      if (!isSorted) {
+        if (list.length <= 32) {
+          for (let i = 1; i < list.length; i++) {
+            const cur = list[i];
+            let j = i - 1;
+            while (j >= 0 && list[j].wornAt > cur.wornAt) {
+              list[j + 1] = list[j];
+              j--;
+            }
+            list[j + 1] = cur;
+          }
+        } else {
+          list.sort((a, b) => a.wornAt - b.wornAt);
+        }
+      }
       let lastValid = list[0];
       validEvents.push(lastValid);
       for (let j = 1; j < list.length; j++) {
@@ -182,9 +213,9 @@ export function deduplicateAndFilterWearEvents(
  */
 export function reconcileItemWears(
   item: WardrobeItem,
-  itemEvents: readonly WearEvent[]
+  itemEventsOrCount: readonly WearEvent[] | number
 ): ReconciledItemWears {
-  const eventCount = itemEvents.length;
+  const eventCount = typeof itemEventsOrCount === 'number' ? itemEventsOrCount : itemEventsOrCount.length;
   const counterTimesWorn = item.timesWorn || 0;
 
   if (eventCount === counterTimesWorn) {
@@ -389,8 +420,18 @@ export function computeParetoConcentration(
   }
 
   const kItemsCount = Math.max(1, Math.ceil(0.2 * totalWardrobeCount));
-  const sortedByWears = [...itemsAnalysis].sort((a, b) => b.effectiveWears - a.effectiveWears);
-  const topKWears = sortedByWears.slice(0, kItemsCount).reduce((sum, item) => sum + item.effectiveWears, 0);
+  let isSorted = true;
+  for (let i = 1; i < itemsAnalysis.length; i++) {
+    if (itemsAnalysis[i].effectiveWears > itemsAnalysis[i - 1].effectiveWears) {
+      isSorted = false;
+      break;
+    }
+  }
+  const sortedByWears = isSorted ? itemsAnalysis : [...itemsAnalysis].sort((a, b) => b.effectiveWears - a.effectiveWears);
+  let topKWears = 0;
+  for (let i = 0; i < kItemsCount; i++) {
+    topKWears += sortedByWears[i].effectiveWears;
+  }
 
   const concentrationRatio = Math.round((topKWears / totalLifetimeWears) * 100);
 
@@ -434,21 +475,24 @@ export function computeWearAnalytics(
 
   // 2. Partition events by item ID and detect orphaned events
   const itemMap = new Map<string, WardrobeItem>();
-  for (const item of items) {
+  const eventCountsByItem = new Map<string, number>();
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
     itemMap.set(item.id, item);
+    eventCountsByItem.set(item.id, 0);
   }
 
-  const eventsByItem = new Map<string, WearEvent[]>();
   let unresolvedOrphanCount = 0;
+  let earliestTimestamp = now;
 
-  for (const event of validEvents) {
-    if (itemMap.has(event.wardrobeItemId)) {
-      let list = eventsByItem.get(event.wardrobeItemId);
-      if (!list) {
-        list = [];
-        eventsByItem.set(event.wardrobeItemId, list);
-      }
-      list.push(event);
+  for (let i = 0; i < validEvents.length; i++) {
+    const event = validEvents[i];
+    if (event.wornAt < earliestTimestamp) {
+      earliestTimestamp = event.wornAt;
+    }
+    const current = eventCountsByItem.get(event.wardrobeItemId);
+    if (current !== undefined) {
+      eventCountsByItem.set(event.wardrobeItemId, current + 1);
     } else {
       unresolvedOrphanCount++;
     }
@@ -473,8 +517,8 @@ export function computeWearAnalytics(
       totalCleanItems++;
     }
 
-    const itemEvents = eventsByItem.get(item.id) || [];
-    const reconciliation = reconcileItemWears(item, itemEvents);
+    const eventCount = eventCountsByItem.get(item.id) || 0;
+    const reconciliation = reconcileItemWears(item, eventCount);
     reconciledWears[item.id] = reconciliation;
 
     const effectiveWears = reconciliation.effectiveLifetimeWears;
@@ -506,12 +550,6 @@ export function computeWearAnalytics(
   const totalLifetimeWears = totalItemWearsSum + unresolvedOrphanCount;
 
   // 4. Time span calculation
-  let earliestTimestamp = now;
-  for (let i = 0; i < validEvents.length; i++) {
-    if (validEvents[i].wornAt < earliestTimestamp) {
-      earliestTimestamp = validEvents[i].wornAt;
-    }
-  }
   const timeSpanDays = Math.max(0, Math.floor((now - earliestTimestamp) / (24 * 3600 * 1000)));
 
   // 5. Global confidence calculation
@@ -550,25 +588,28 @@ export function computeWearAnalytics(
     itemsByState,
   };
 
-  // 7. Pareto Concentration Metrics
+  // 7. Sort itemsAnalysis once by effectiveWears descending for Pareto and Most Worn
+  const sortedByWears = [...itemsAnalysis].sort((a, b) => b.effectiveWears - a.effectiveWears);
+
+  // 8. Pareto Concentration Metrics
   const concentration = computeParetoConcentration(
-    itemsAnalysis,
+    sortedByWears,
     totalLifetimeWears,
     overallConfidence
   );
 
-  // 8. Snapshots & Style Evolution (Phase 8 Pure Projection)
+  // 9. Snapshots & Style Evolution (Phase 8 Pure Projection)
   const { snapshots, evolution } = computeStyleSnapshotsAndEvolution(
     itemMap,
     validEvents,
     reconciledWears,
-    now
+    now,
+    totalLifetimeWears
   );
 
-  // 9. Sorted Top & Dormant Lists
-  const mostWornItems = [...itemsAnalysis]
+  // 10. Sorted Top & Dormant Lists
+  const mostWornItems = sortedByWears
     .filter((i) => i.effectiveWears > 0)
-    .sort((a, b) => b.effectiveWears - a.effectiveWears)
     .slice(0, 6);
 
   const dormantItems = [...itemsByState.dormant, ...itemsByState.never_worn]

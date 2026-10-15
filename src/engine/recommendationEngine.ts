@@ -303,6 +303,19 @@ export class RecommendationEngine {
     }
     const unmetTemplates: UnmetTemplateRecord[] = [];
 
+    const poolByCategory = new Map<Category, WardrobeItem[]>();
+    for (let i = 0; i < eligiblePool.length; i++) {
+      const item = eligiblePool[i];
+      let catList = poolByCategory.get(item.category);
+      if (!catList) {
+        catList = [];
+        poolByCategory.set(item.category, catList);
+      }
+      catList.push(item);
+    }
+    let cachedFootwearRanked: WardrobeItem[] | null = null;
+    let cachedAccessoryRanked: WardrobeItem[] | null = null;
+
     for (const t of occasionTemplates) {
       let effectiveTemplate = t;
       let anchorSlot: string | null = null;
@@ -365,6 +378,24 @@ export class RecommendationEngine {
       for (const [slot] of Object.entries(effectiveTemplate.required)) {
         if (anchorItem && slot === anchorSlot) {
           slotCandidates[anchorSlot] = [anchorItem];
+        } else if (slot === 'footwear') {
+          if (!cachedFootwearRanked) {
+            const fwPool = poolByCategory.get('Footwear') || [];
+            cachedFootwearRanked = preRankSlotCandidates(
+              fwPool,
+              'footwear',
+              occasion,
+              season,
+              preferences,
+              styleProfile
+            );
+          }
+          if (cachedFootwearRanked.length === 0) {
+            hasAllRequired = false;
+            if (!firstMissingSlot) firstMissingSlot = slot;
+            break;
+          }
+          slotCandidates[slot] = cachedFootwearRanked;
         } else {
           const matching = eligiblePool.filter((i) => compatible(slot, i, effectiveTemplate));
           const ranked = preRankSlotCandidates(
@@ -392,15 +423,43 @@ export class RecommendationEngine {
       }
 
       for (const [slot] of Object.entries(effectiveTemplate.optional)) {
-        const matching = eligiblePool.filter((i) => compatible(slot, i, effectiveTemplate));
-        slotCandidates[slot] = preRankSlotCandidates(
-          matching,
-          slot,
-          occasion,
-          season,
-          preferences,
-          styleProfile
-        );
+        if (slot === 'accessory') {
+          if (!cachedAccessoryRanked) {
+            const accPool = poolByCategory.get('Accessories') || [];
+            cachedAccessoryRanked = preRankSlotCandidates(
+              accPool,
+              'accessory',
+              occasion,
+              season,
+              preferences,
+              styleProfile
+            );
+          }
+          slotCandidates[slot] = cachedAccessoryRanked;
+        } else if (slot === 'footwear') {
+          if (!cachedFootwearRanked) {
+            const fwPool = poolByCategory.get('Footwear') || [];
+            cachedFootwearRanked = preRankSlotCandidates(
+              fwPool,
+              'footwear',
+              occasion,
+              season,
+              preferences,
+              styleProfile
+            );
+          }
+          slotCandidates[slot] = cachedFootwearRanked;
+        } else {
+          const matching = eligiblePool.filter((i) => compatible(slot, i, effectiveTemplate));
+          slotCandidates[slot] = preRankSlotCandidates(
+            matching,
+            slot,
+            occasion,
+            season,
+            preferences,
+            styleProfile
+          );
+        }
       }
 
       viableTemplates.push({
@@ -623,6 +682,15 @@ export class RecommendationEngine {
 
     const scoredPool: ScoredCandidate[] = [];
 
+    const knowledgeContext: FashionKnowledgeContext = {
+      occasion,
+      season,
+      regionalPreference: culturalSignals?.regionalTradition,
+      festivalContext: culturalSignals?.festivalContext,
+      declaredModestyLevel: culturalSignals?.declaredModestyLevel,
+      userAesthetics: preferences?.preferredAesthetics,
+    };
+
     for (const cand of validCandidates) {
       const pieces = Object.values(cand.slots).flat();
       const id = computeCanonicalOutfitId({
@@ -662,14 +730,6 @@ export class RecommendationEngine {
       }
 
       // Knowledge Graph Context & Structured Domain Signals
-      const knowledgeContext: FashionKnowledgeContext = {
-        occasion,
-        season,
-        regionalPreference: culturalSignals?.regionalTradition,
-        festivalContext: culturalSignals?.festivalContext,
-        declaredModestyLevel: culturalSignals?.declaredModestyLevel,
-        userAesthetics: preferences?.preferredAesthetics,
-      };
       const knowledgeSignals = fashionKnowledgeEngine.getSignals(pieces, knowledgeContext);
 
       let ifkgCompatibilityDelta = 0;

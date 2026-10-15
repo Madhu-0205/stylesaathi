@@ -134,14 +134,14 @@ export const ClothingFallback: React.FC<ClothingFallbackProps> = ({
 
   return (
     <div
-      className={`relative flex h-full w-full flex-col items-center justify-center p-3 text-(--muted) select-none bg-(--background)/60 ${className}`}
+      className={`relative flex h-full w-full flex-col items-center justify-center p-3 text-muted select-none bg-(--background)/60 ${className}`}
     >
-      <div className="text-(--muted)/80 transition-transform duration-200 group-hover:scale-105">
+      <div className="text-muted/80 transition-transform duration-200 group-hover:scale-105">
         {renderSilhouette()}
       </div>
 
       {showLabel && name && (
-        <span className="mt-2 text-center text-[11px] font-medium tracking-tight text-(--muted) line-clamp-1 max-w-[90%]">
+        <span className="mt-2 text-center text-[11px] font-medium tracking-tight text-muted line-clamp-1 max-w-[90%]">
           {name}
         </span>
       )}

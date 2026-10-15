@@ -3,54 +3,69 @@ import { getPatternCompatibilityScore } from './patternIntelligence';
 import { calculatePersonalStyleScore, getPersonalStyleExplanations } from './styleBrain';
 import { calculateWeatherComfortScore, getContextWhyReasons } from './contextScoring';
 
+const NEUTRAL_COLORS_SET = new Set<string>([
+  'black',
+  'white',
+  'cream',
+  'beige',
+  'navy',
+  'brown',
+  'tan',
+  'grey',
+  'silver',
+  'gold',
+]);
+
+const HARMONIC_PAIRS_LIST: [string, string][] = [
+  ['blue', 'orange'],
+  ['blue', 'yellow'],
+  ['blue', 'green'],
+  ['pink', 'green'],
+  ['pink', 'yellow'],
+  ['pink', 'orange'],
+  ['pink', 'purple'],
+  ['pink', 'teal'],
+  ['purple', 'yellow'],
+  ['purple', 'gold'],
+  ['red', 'green'],
+  ['red', 'gold'],
+  ['red', 'yellow'],
+  ['mustard', 'navy'],
+  ['mustard', 'pink'],
+  ['mustard', 'olive'],
+  ['mustard', 'teal'],
+  ['mustard', 'rust'],
+  ['olive', 'rust'],
+  ['olive', 'mustard'],
+  ['olive', 'beige'],
+  ['teal', 'coral'],
+  ['teal', 'peach'],
+];
+
+const HARMONIC_PAIRS_SET = new Set<string>();
+for (const [p, q] of HARMONIC_PAIRS_LIST) {
+  HARMONIC_PAIRS_SET.add(`${p}|${q}`);
+  HARMONIC_PAIRS_SET.add(`${q}|${p}`);
+}
+
 export const harmony = (a: string[], b: string[]): number => {
-  const neutral = [
-    'black',
-    'white',
-    'cream',
-    'beige',
-    'navy',
-    'brown',
-    'tan',
-    'grey',
-    'silver',
-    'gold',
-  ];
-  if (a.some((x) => neutral.includes(x)) || b.some((x) => neutral.includes(x))) return 2;
-  if (a.some((x) => b.includes(x))) return 2;
+  for (let i = 0; i < a.length; i++) {
+    if (NEUTRAL_COLORS_SET.has(a[i])) return 2;
+  }
+  for (let j = 0; j < b.length; j++) {
+    if (NEUTRAL_COLORS_SET.has(b[j])) return 2;
+  }
+  for (let i = 0; i < a.length; i++) {
+    if (b.includes(a[i])) return 2;
+  }
 
-  const harmonicPairs: [string, string][] = [
-    ['blue', 'orange'],
-    ['blue', 'yellow'],
-    ['blue', 'green'],
-    ['pink', 'green'],
-    ['pink', 'yellow'],
-    ['pink', 'orange'],
-    ['pink', 'purple'],
-    ['pink', 'teal'],
-    ['purple', 'yellow'],
-    ['purple', 'gold'],
-    ['red', 'green'],
-    ['red', 'gold'],
-    ['red', 'yellow'],
-    ['mustard', 'navy'],
-    ['mustard', 'pink'],
-    ['mustard', 'olive'],
-    ['mustard', 'teal'],
-    ['mustard', 'rust'],
-    ['olive', 'rust'],
-    ['olive', 'mustard'],
-    ['olive', 'beige'],
-    ['teal', 'coral'],
-    ['teal', 'peach'],
-  ];
-
-  if (
-    a.some((x) =>
-      b.some((y) => harmonicPairs.some(([p, q]) => (p === x && q === y) || (q === x && p === y)))
-    )
-  ) {
-    return 1.5;
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i];
+    for (let j = 0; j < b.length; j++) {
+      if (HARMONIC_PAIRS_SET.has(`${x}|${b[j]}`)) {
+        return 1.5;
+      }
+    }
   }
 
   return -1.5;

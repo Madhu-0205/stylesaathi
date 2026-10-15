@@ -18,11 +18,17 @@ export function preRankSlotCandidates(
   preferences?: StylePreferences,
   styleProfile?: PersonalStyleProfile
 ): WardrobeItem[] {
+  const coreScores = new Map<string, number>();
+  for (let i = 0; i < slotItems.length; i++) {
+    const item = slotItems[i];
+    coreScores.set(item.id, computeQuickCoreScore(item, occasion, preferences, styleProfile));
+  }
+
   if (slotItems.length <= 10) {
     // Sort deterministically even when pool <= 10
     return [...slotItems].sort((a, b) => {
-      const scoreA = computeQuickCoreScore(a, occasion, preferences, styleProfile);
-      const scoreB = computeQuickCoreScore(b, occasion, preferences, styleProfile);
+      const scoreA = coreScores.get(a.id)!;
+      const scoreB = coreScores.get(b.id)!;
       if (Math.abs(scoreB - scoreA) > 0.001) return scoreB - scoreA;
       return a.id.localeCompare(b.id);
     });
@@ -54,8 +60,8 @@ export function preRankSlotCandidates(
 
   // 1. Bucket 1: Core Affinity / Staples (Quota: 4)
   const coreSorted = [...slotItems].sort((a, b) => {
-    const scoreA = computeQuickCoreScore(a, occasion, preferences, styleProfile);
-    const scoreB = computeQuickCoreScore(b, occasion, preferences, styleProfile);
+    const scoreA = coreScores.get(a.id)!;
+    const scoreB = coreScores.get(b.id)!;
     if (Math.abs(scoreB - scoreA) > 0.001) return scoreB - scoreA;
     return a.id.localeCompare(b.id);
   });

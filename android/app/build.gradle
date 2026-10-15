@@ -1,8 +1,10 @@
+
 apply plugin: 'com.android.application'
 
 android {
     namespace = "com.stylesaathi.app"
     compileSdk = rootProject.ext.compileSdkVersion
+
     defaultConfig {
         applicationId "com.stylesaathi.app"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -10,14 +12,67 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
         aaptOptions {
-             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
-             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+
+    signingConfigs {
+        release {
+            def keystorePath = System.getenv("KEYSTORE_PATH") ?: (project.hasProperty("KEYSTORE_PATH") ? project.property("KEYSTORE_PATH") : null)
+            def keystorePassword = System.getenv("KEYSTORE_PASSWORD") ?: (project.hasProperty("KEYSTORE_PASSWORD") ? project.property("KEYSTORE_PASSWORD") : null)
+            def releaseKeyAlias = System.getenv("KEY_ALIAS") ?: (project.hasProperty("KEY_ALIAS") ? project.property("KEY_ALIAS") : null)
+            def releaseKeyPassword = System.getenv("KEY_PASSWORD") ?: (project.hasProperty("KEY_PASSWORD") ? project.property("KEY_PASSWORD") : null)
+
+            def signingPropsFile = rootProject.file("release-signing.properties")
+            if (signingPropsFile.exists()) {
+                def props = new Properties()
+                signingPropsFile.withInputStream { props.load(it) }
+
+                keystorePath = keystorePath ?: props['KEYSTORE_PATH']
+                keystorePassword = keystorePassword ?: props['KEYSTORE_PASSWORD']
+                releaseKeyAlias = releaseKeyAlias ?: props['KEY_ALIAS']
+                releaseKeyPassword = releaseKeyPassword ?: props['KEY_PASSWORD']
+            }
+
+            if (!keystorePath || !keystorePassword || !releaseKeyAlias || !releaseKeyPassword) {
+                def missing = []
+                if (!keystorePath) missing.add("KEYSTORE_PATH")
+                if (!keystorePassword) missing.add("KEYSTORE_PASSWORD")
+                if (!releaseKeyAlias) missing.add("KEY_ALIAS")
+                if (!releaseKeyPassword) missing.add("KEY_PASSWORD")
+                throw new GradleException("Release signing is not configured. Missing required credential(s): ${missing.join(', ')}. Configure them in android/release-signing.properties or as environment variables.")
+            }
+
+            File resolvedKeystoreFile = null
+            File directFile = new File(keystorePath)
+            if (directFile.isAbsolute() && directFile.exists()) {
+                resolvedKeystoreFile = directFile
+            } else if (rootProject.file(keystorePath).exists()) {
+                resolvedKeystoreFile = rootProject.file(keystorePath)
+            } else if (keystorePath.startsWith("android/") && rootProject.file(keystorePath.substring(8)).exists()) {
+                resolvedKeystoreFile = rootProject.file(keystorePath.substring(8))
+            } else if (new File(rootProject.projectDir.parentFile, keystorePath).exists()) {
+                resolvedKeystoreFile = new File(rootProject.projectDir.parentFile, keystorePath)
+            } else {
+                resolvedKeystoreFile = rootProject.file(keystorePath)
+            }
+
+            if (!resolvedKeystoreFile.exists()) {
+                throw new GradleException("Release keystore not found at: ${resolvedKeystoreFile.absolutePath}")
+            }
+
+            storeFile resolvedKeystoreFile
+            storePassword keystorePassword
+            keyAlias releaseKeyAlias
+            keyPassword releaseKeyPassword
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
@@ -25,7 +80,7 @@ android {
 }
 
 repositories {
-    flatDir{
+    flatDir {
         dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
     }
 }

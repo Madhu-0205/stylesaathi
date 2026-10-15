@@ -4,7 +4,12 @@
 -- Deletes in strict foreign-key dependency order.
 
 CREATE OR REPLACE FUNCTION public.delete_user_data_records(target_user_id UUID)
-RETURNS boolean AS $$
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
   -- Strict authorization check:
   -- 1. If executed by service_role (trusted server-side Edge Function), allow target_user_id derived from verified JWT
   -- 2. If executed by authenticated user, auth.uid() must strictly match target_user_id
@@ -49,7 +54,7 @@ RETURNS boolean AS $$
 
   RETURN true;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- Restrict execution to authenticated users and service_role only
 REVOKE EXECUTE ON FUNCTION public.delete_user_data_records(UUID) FROM public;

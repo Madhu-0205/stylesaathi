@@ -78,25 +78,34 @@ export class AccountDeletionService {
       let cloudErrorMessage: string | null = null;
 
       if (isSupabaseConfigured()) {
+        let edgeFunctionExecuted = false;
+
         try {
           // Attempt preferred Edge Function orchestrator
           const { data, error } = await supabase.functions.invoke('delete-account', {
             method: 'POST',
           });
 
-          if (!error && (data?.success || !data?.error)) {
+          if (!error && data?.success === true) {
             cloudSucceeded = true;
+          } else if (data?.error) {
+            edgeFunctionExecuted = true;
+            cloudErrorMessage = data.error;
           } else if (error) {
             cloudErrorMessage = error.message;
-          } else if (data?.error) {
-            cloudErrorMessage = data.error;
+            // If the error contains context/status from function response, it was executed
+            if ((error as any)?.context || (error as any)?.status) {
+              edgeFunctionExecuted = true;
+            }
           }
         } catch (edgeFnErr: any) {
           cloudErrorMessage = edgeFnErr?.message || 'Edge function invocation error';
         }
 
-        // If Edge Function was not deployed or failed, execute authoritative database RPC cascade
-        if (!cloudSucceeded) {
+        // If Edge Function actively ran and returned a deletion error (e.g. storage cleanup halted
+        // to prevent orphaned files, or database locked), DO NOT bypass it with direct RPC fallback.
+        // Direct RPC fallback is ONLY for environments where Edge Functions are not deployed/available.
+        if (!cloudSucceeded && !edgeFunctionExecuted) {
           try {
             const { error: rpcError } = await supabase.rpc('delete_user_data_records', {
               target_user_id: currentUser.id,

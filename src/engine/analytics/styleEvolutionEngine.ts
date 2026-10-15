@@ -14,7 +14,7 @@ import {
   StyleSnapshot,
 } from './types';
 import {
-  NEUTRAL_COLORS,
+  NEUTRAL_COLORS_SET,
   normalizeFabricGroup,
   normalizePatternGroup,
   normalizeSilhouetteGroup,
@@ -24,12 +24,16 @@ import {
  * Builds normalized AttributeDistribution from weighted value counts.
  */
 function buildDistribution(counts: Record<string, number>): AttributeDistribution {
-  const total = Object.values(counts).reduce((sum, v) => sum + v, 0);
+  let total = 0;
+  for (const key in counts) {
+    total += counts[key];
+  }
   const percentages: Record<string, number> = {};
   let topAttribute: string | undefined;
   let topWeight = -1;
 
-  for (const [key, weight] of Object.entries(counts)) {
+  for (const key in counts) {
+    const weight = counts[key];
     const pct = total > 0 ? Math.round((weight / total) * 100) / 100 : 0;
     percentages[key] = pct;
     if (weight > topWeight) {
@@ -64,8 +68,8 @@ export function buildItemStyleProfile(item: WardrobeItem): ItemStyleProfile {
   const colors = item.colors.length > 0 ? item.colors.map((c) => c.trim().toLowerCase()) : ['unknown'];
   const colorWeight = 1.0 / colors.length;
   let neutralWeight = 0;
-  for (const c of colors) {
-    if (NEUTRAL_COLORS.includes(c)) neutralWeight += colorWeight;
+  for (let i = 0; i < colors.length; i++) {
+    if (NEUTRAL_COLORS_SET.has(colors[i])) neutralWeight += colorWeight;
   }
   const fabricGroup = normalizeFabricGroup(item.fabric);
   const patternGroup = normalizePatternGroup(item.pattern);
@@ -139,7 +143,7 @@ export function computeStyleSnapshot(
   let relaxedSilhouetteWeightSum = 0;
   let classifiedSilhouetteWeightSum = 0;
 
-  const uniqueGarmentIds = new Set<string>();
+  let uniqueGarmentsWorn = 0;
   let eventCountsByItem: ReadonlyMap<string, number>;
   let totalWearEvents: number;
 
@@ -164,11 +168,12 @@ export function computeStyleSnapshot(
   }
 
   for (const [itemId, count] of eventCountsByItem.entries()) {
+    if (count <= 0) continue;
     const profile = profileMap.get(itemId);
     // Exclude orphaned events from attribute distributions
     if (!profile) continue;
 
-    uniqueGarmentIds.add(profile.item.id);
+    uniqueGarmentsWorn++;
     totalGarmentsCount += count;
     totalFormalitySum += profile.formality * count;
 
@@ -254,7 +259,7 @@ export function computeStyleSnapshot(
     windowStartMs,
     windowEndMs,
     totalWearEvents,
-    uniqueGarmentsWorn: uniqueGarmentIds.size,
+    uniqueGarmentsWorn,
     isEligible,
     color: buildDistribution(colorCounts),
     neutralColorRatio,
@@ -457,33 +462,68 @@ export function computeStyleSnapshotsAndEvolution(
   items: readonly WardrobeItem[] | ReadonlyMap<string, WardrobeItem>,
   validEvents: readonly WearEvent[],
   reconciledWears: Record<string, ReconciledItemWears>,
-  referenceTimestamp: number
+  referenceTimestamp: number,
+  precalculatedLifetimeWears?: number
 ): {
   snapshots: Record<SnapshotWindowId, StyleSnapshot>;
   evolution: StyleEvolutionReport;
 } {
   const now = referenceTimestamp;
-  const ms7d = 7 * 86400000;
-  const ms30d = 30 * 86400000;
-  const ms90d = 90 * 86400000;
+  const t7d = now - 7 * 86400000;
+  const t30d = now - 30 * 86400000;
+  const t90d = now - 90 * 86400000;
 
-  const weeklyEvents: WearEvent[] = [];
-  const recentEvents: WearEvent[] = [];
-  const baselineEvents: WearEvent[] = [];
-  const allTimeItemCounts = new Map<string, number>();
+  interface ItemCountsBucket {
+    w: number;
+    r: number;
+    b: number;
+    a: number;
+  }
+  const buckets = new Map<string, ItemCountsBucket>();
+  let weeklyCount = 0;
+  let recentCount = 0;
+  let baselineCount = 0;
   let allTimeCount = 0;
 
-  const earliestTime = validEvents.length > 0 ? validEvents[0].wornAt : now;
+  let earliestTime = now;
 
   for (let i = 0; i < validEvents.length; i++) {
     const e = validEvents[i];
     if (e.wornAt <= now) {
+      if (e.wornAt < earliestTime) {
+        earliestTime = e.wornAt;
+      }
       allTimeCount++;
-      allTimeItemCounts.set(e.wardrobeItemId, (allTimeItemCounts.get(e.wardrobeItemId) || 0) + 1);
-      if (e.wornAt >= now - ms7d) weeklyEvents.push(e);
-      if (e.wornAt >= now - ms30d) recentEvents.push(e);
-      else if (e.wornAt >= now - ms90d) baselineEvents.push(e);
+      let b = buckets.get(e.wardrobeItemId);
+      if (!b) {
+        b = { w: 0, r: 0, b: 0, a: 0 };
+        buckets.set(e.wardrobeItemId, b);
+      }
+      b.a++;
+      if (e.wornAt >= t7d) {
+        weeklyCount++;
+        b.w++;
+      }
+      if (e.wornAt >= t30d) {
+        recentCount++;
+        b.r++;
+      } else if (e.wornAt >= t90d) {
+        baselineCount++;
+        b.b++;
+      }
     }
+  }
+
+  const weeklyItemCounts = new Map<string, number>();
+  const recentItemCounts = new Map<string, number>();
+  const baselineItemCounts = new Map<string, number>();
+  const allTimeItemCounts = new Map<string, number>();
+
+  for (const [id, b] of buckets.entries()) {
+    allTimeItemCounts.set(id, b.a);
+    if (b.w > 0) weeklyItemCounts.set(id, b.w);
+    if (b.r > 0) recentItemCounts.set(id, b.r);
+    if (b.b > 0) baselineItemCounts.set(id, b.b);
   }
 
   const profileMap = new Map<string, ItemStyleProfile>();
@@ -492,16 +532,19 @@ export function computeStyleSnapshotsAndEvolution(
     profileMap.set(item.id, buildItemStyleProfile(item));
   }
 
-  const weeklySnapshot = computeStyleSnapshot('weekly_7d', now - ms7d, now, profileMap, weeklyEvents);
-  const recentSnapshot = computeStyleSnapshot('recent_30d', now - ms30d, now, profileMap, recentEvents);
-  const baselineSnapshot = computeStyleSnapshot('baseline_60d', now - ms90d, now - ms30d, profileMap, baselineEvents);
+  const weeklySnapshot = computeStyleSnapshot('weekly_7d', t7d, now, profileMap, weeklyItemCounts, weeklyCount);
+  const recentSnapshot = computeStyleSnapshot('recent_30d', t30d, now, profileMap, recentItemCounts, recentCount);
+  const baselineSnapshot = computeStyleSnapshot('baseline_60d', t90d, t30d, profileMap, baselineItemCounts, baselineCount);
   const allTimeSnapshot = computeStyleSnapshot('all_time', 0, now, profileMap, allTimeItemCounts, allTimeCount);
 
   const timeSpanDays = Math.max(0, Math.floor((now - earliestTime) / 86400000));
-  const totalLifetimeWears = Object.values(reconciledWears).reduce(
-    (sum, r) => sum + r.effectiveLifetimeWears,
-    0
-  );
+  let totalLifetimeWears = precalculatedLifetimeWears;
+  if (totalLifetimeWears === undefined) {
+    totalLifetimeWears = 0;
+    for (const key in reconciledWears) {
+      totalLifetimeWears += reconciledWears[key].effectiveLifetimeWears;
+    }
+  }
 
   const evolution = computeStyleEvolution(
     recentSnapshot,

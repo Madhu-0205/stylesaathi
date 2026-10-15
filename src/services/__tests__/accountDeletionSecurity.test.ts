@@ -288,4 +288,110 @@ describe('Account Deletion Security & Resilience Gate', () => {
     expect(secondTry.state).toBe('COMPLETE');
     expect(localStorage.getItem('stylesaathi-wardrobe-items')).toBeNull();
   });
+
+  // 13. Storage listing failure halts deletion to prevent orphaned files
+  it('13. Storage listing failure halts deletion, avoids direct RPC fallback, and preserves local data', async () => {
+    const client = getSupabaseClient();
+    vi.spyOn(client, 'functions', 'get').mockReturnValue({
+      invoke: vi.fn().mockResolvedValue({
+        data: {
+          error: 'Storage cleanup failed: unable to list user files. Deletion halted to prevent orphaned data.',
+          stage: 'storage',
+          retryable: true,
+        },
+        error: null,
+      }),
+    } as any);
+
+    const rpcSpy = vi.spyOn(client, 'rpc').mockResolvedValue({
+      data: true,
+      error: null,
+    } as any);
+
+    localStorage.setItem('stylesaathi-wardrobe-items', JSON.stringify([{ id: 'saree_precious' }]));
+
+    const res = await service.executeAccountDeletion(validUser);
+
+    // Deletion must be rejected with RETRY_REQUIRED
+    expect(res.success).toBe(false);
+    expect(res.state).toBe('RETRY_REQUIRED');
+    expect(res.error).toContain('Storage cleanup failed: unable to list user files');
+
+    // Direct RPC must NOT have been called to bypass storage halt
+    expect(rpcSpy).not.toHaveBeenCalled();
+
+    // Local data must NOT be wiped
+    expect(localStorage.getItem('stylesaathi-wardrobe-items')).not.toBeNull();
+  });
+
+  // 14. Storage removal failure halts deletion and prevents orphaned private files
+  it('14. Storage removal failure halts deletion and preserves identity for safe retry', async () => {
+    const client = getSupabaseClient();
+    vi.spyOn(client, 'functions', 'get').mockReturnValue({
+      invoke: vi.fn().mockResolvedValue({
+        data: {
+          error: 'Storage cleanup failed: unable to remove user files. Deletion halted to prevent orphaned data.',
+          stage: 'storage',
+          retryable: true,
+        },
+        error: null,
+      }),
+    } as any);
+
+    const rpcSpy = vi.spyOn(client, 'rpc').mockResolvedValue({
+      data: true,
+      error: null,
+    } as any);
+
+    localStorage.setItem('stylesaathi-wardrobe-items', JSON.stringify([{ id: 'lehenga_gold' }]));
+
+    const res = await service.executeAccountDeletion(validUser);
+
+    expect(res.success).toBe(false);
+    expect(res.state).toBe('RETRY_REQUIRED');
+    expect(res.error).toContain('Storage cleanup failed: unable to remove user files');
+    expect(rpcSpy).not.toHaveBeenCalled();
+    expect(localStorage.getItem('stylesaathi-wardrobe-items')).not.toBeNull();
+  });
+
+  // 15. Safe recovery lifecycle: storage failure followed by successful retry
+  it('15. Safe recovery lifecycle: storage transient error followed by successful retry achieves COMPLETE', async () => {
+    const client = getSupabaseClient();
+
+    // Attempt 1: Storage removal transient error
+    vi.spyOn(client, 'functions', 'get').mockReturnValueOnce({
+      invoke: vi.fn().mockResolvedValue({
+        data: {
+          error: 'Storage cleanup failed: unable to remove user files. Deletion halted to prevent orphaned data.',
+          stage: 'storage',
+          retryable: true,
+        },
+        error: null,
+      }),
+    } as any);
+
+    localStorage.setItem('stylesaathi-wardrobe-items', JSON.stringify([{ id: 'kurti_silk' }]));
+
+    const res1 = await service.executeAccountDeletion(validUser);
+    expect(res1.success).toBe(false);
+    expect(res1.state).toBe('RETRY_REQUIRED');
+    expect(localStorage.getItem('stylesaathi-wardrobe-items')).not.toBeNull();
+
+    // Attempt 2: Storage service recovers and succeeds
+    vi.spyOn(client, 'functions', 'get').mockReturnValueOnce({
+      invoke: vi.fn().mockResolvedValue({
+        data: {
+          success: true,
+          message: 'Account and associated records successfully erased',
+        },
+        error: null,
+      }),
+    } as any);
+    vi.spyOn(client.auth, 'signOut').mockResolvedValue({ error: null });
+
+    const res2 = await service.executeAccountDeletion(validUser);
+    expect(res2.success).toBe(true);
+    expect(res2.state).toBe('COMPLETE');
+    expect(localStorage.getItem('stylesaathi-wardrobe-items')).toBeNull();
+  });
 });

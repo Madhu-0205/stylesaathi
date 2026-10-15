@@ -59,23 +59,72 @@ serve(async (req) => {
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
     // Step A: Clean up private Storage files in 'wardrobe' bucket under user's folder
+    // Security Invariant: Must strictly verify and complete storage deletion before deleting DB/Auth.
+    // If storage cleanup fails, halt immediately to preserve user identity and prevent orphaned private files.
     try {
-      const { data: fileList, error: listError } = await adminClient.storage
-        .from('wardrobe')
-        .list(userId);
+      let hasMoreFiles = true;
+      const batchSize = 100;
 
-      if (!listError && fileList && fileList.length > 0) {
-        const filePaths = fileList.map((f) => `${userId}/${f.name}`);
-        const { error: removeError } = await adminClient.storage
+      while (hasMoreFiles) {
+        const { data: fileList, error: listError } = await adminClient.storage
           .from('wardrobe')
-          .remove(filePaths);
+          .list(userId, { limit: batchSize, sortBy: { column: 'name', order: 'asc' } });
 
-        if (removeError) {
-          console.warn('Storage removal encountered partial error:', removeError);
+        if (listError) {
+          console.error('Storage list failed during account deletion:', listError);
+          return new Response(
+            JSON.stringify({
+              error: 'Storage cleanup failed: unable to list user files. Deletion halted to prevent orphaned data.',
+              stage: 'storage',
+              retryable: true,
+            }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        if (!fileList || fileList.length === 0) {
+          hasMoreFiles = false;
+          break;
+        }
+
+        // Filter out placeholders and extract full storage paths
+        const filePaths = fileList
+          .filter((f) => f.name && f.name !== '.emptyFolderPlaceholder')
+          .map((f) => `${userId}/${f.name}`);
+
+        if (filePaths.length > 0) {
+          const { error: removeError } = await adminClient.storage
+            .from('wardrobe')
+            .remove(filePaths);
+
+          if (removeError) {
+            console.error('Storage removal failed during account deletion:', removeError);
+            return new Response(
+              JSON.stringify({
+                error: 'Storage cleanup failed: unable to remove user files. Deletion halted to prevent orphaned data.',
+                stage: 'storage',
+                retryable: true,
+              }),
+              { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+        }
+
+        // If returned files were less than batch size, no more files exist
+        if (fileList.length < batchSize) {
+          hasMoreFiles = false;
         }
       }
-    } catch (storageErr) {
-      console.warn('Storage cleanup non-fatal error:', storageErr);
+    } catch (storageErr: any) {
+      console.error('Storage cleanup unexpected error:', storageErr);
+      return new Response(
+        JSON.stringify({
+          error: `Storage cleanup exception: ${storageErr?.message || 'unexpected error'}. Deletion halted.`,
+          stage: 'storage',
+          retryable: true,
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Step B: Clean up database tables atomically via transactional RPC in foreign-key dependency order
