@@ -245,7 +245,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Ananya"
-                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-(--ink) focus:border-(--ink) focus:outline-none"
+                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-base sm:text-sm text-(--ink) focus:border-(--ink) focus:outline-none"
               />
             </div>
             <div>
@@ -258,7 +258,7 @@ export const AuthView: React.FC<AuthViewProps> = ({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-(--ink) focus:border-(--ink) focus:outline-none"
+                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-base sm:text-sm text-(--ink) focus:border-(--ink) focus:outline-none"
               />
             </div>
 

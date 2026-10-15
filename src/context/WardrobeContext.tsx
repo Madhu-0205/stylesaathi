@@ -21,6 +21,8 @@ import { clearImages, deleteImage } from '../services/imageStore';
 import { migrateLegacyPhotos } from '../services/migration';
 import { syncQueue } from '../lib/sync/syncQueue';
 import { syncService } from '../lib/sync/syncService';
+import { Capacitor } from '@capacitor/core';
+import { StatusBar, Style } from '@capacitor/status-bar';
 
 const SETTINGS_KEY = 'stylesaathi-settings-v1';
 
@@ -111,10 +113,28 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     const root = document.documentElement;
-    if (settings.theme === 'dark') {
+    const isDark = settings.theme === 'dark';
+    if (isDark) {
       root.classList.add('dark');
     } else {
       root.classList.remove('dark');
+    }
+
+    // 1. Browser Chrome: Synchronize all theme-color meta tags to prevent stale media-query overrides
+    const themeColor = isDark ? '#141312' : '#F7F2E9';
+    const metaThemeColors = document.querySelectorAll('meta[name="theme-color"]');
+    metaThemeColors.forEach((meta) => {
+      meta.setAttribute('content', themeColor);
+    });
+
+    // 2. Native Android / Capacitor Status Bar runtime sync without altering native project files
+    try {
+      if (Capacitor.isNativePlatform() && Capacitor.isPluginAvailable('StatusBar')) {
+        StatusBar.setBackgroundColor({ color: themeColor }).catch(() => {});
+        StatusBar.setStyle({ style: isDark ? Style.Dark : Style.Light }).catch(() => {});
+      }
+    } catch {
+      // Graceful no-op in browser and test environments
     }
   }, [settings.theme]);
 

@@ -280,7 +280,7 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
                   placeholder="Price"
                   value={purchasePrice}
                   onChange={(e) => setPurchasePrice(e.target.value)}
-                  className="w-20 min-h-8 px-2 py-0.5 rounded-md border border-border text-xs text-(--ink) bg-(--paper) outline-none focus-editorial"
+                  className="w-20 min-h-8 px-2 py-0.5 rounded-md border border-border text-base sm:text-xs text-(--ink) bg-(--paper) outline-none focus-editorial"
                 />
               </div>
             )}

@@ -218,6 +218,15 @@ button, input, textarea, select {
   font: inherit;
 }
 
+/* Touch device viewport zoom prevention: iOS Safari zooms viewports if font-size < 16px */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
 button {
   cursor: pointer;
 }

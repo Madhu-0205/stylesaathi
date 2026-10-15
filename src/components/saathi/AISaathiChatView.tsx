@@ -220,7 +220,7 @@ export const AISaathiChatView: React.FC<AISaathiChatViewProps> = ({
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               placeholder="Ask AI Saathi about your closet, looks, or gaps…"
-              className="flex-1 min-h-11 px-4 rounded-xl border border-(--border) bg-background text-xs text-(--text) placeholder:text-muted focus:outline-hidden focus:ring-1 focus:ring-(--burnished-gold) transition-all"
+              className="flex-1 min-h-11 px-4 rounded-xl border border-(--border) bg-background text-base sm:text-xs text-(--text) placeholder:text-muted focus:outline-hidden focus:ring-1 focus:ring-(--burnished-gold) transition-all"
             />
             <button
               type="submit"

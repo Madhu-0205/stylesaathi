@@ -109,7 +109,7 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search garments by name, color, fabric..."
-            className="w-full min-h-11 rounded-xl border border-border bg-card/60 pl-10 pr-12 text-xs font-medium text-(--text) outline-none transition-colors placeholder:text-muted focus:border-accent focus:bg-card"
+            className="w-full min-h-11 rounded-xl border border-border bg-card/60 pl-10 pr-12 text-base md:text-xs font-medium text-(--text) outline-none transition-colors placeholder:text-muted focus:border-accent focus:bg-card"
           />
           {search && (
             <button
