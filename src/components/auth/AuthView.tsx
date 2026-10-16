@@ -347,19 +347,30 @@ export const AuthView: React.FC<AuthViewProps> = ({
 
   if (isModal) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-md p-4 animate-fade-in">
-        <div className="relative w-full max-w-md rounded-2xl border border-border bg-card shadow-xl">
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 animate-fade-in overflow-y-auto"
+      >
+        <div
+          className="fixed inset-0"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+        <div className="relative z-10 w-full max-w-md max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl animate-scale-in">
           {onClose && (
             <button
               type="button"
               onClick={onClose}
-              className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full text-muted hover:text-(--ink) hover:bg-(--ivory)"
-              aria-label="Close"
+              className="absolute top-3 right-3 z-20 flex min-h-11 min-w-11 items-center justify-center rounded-full text-muted hover:text-(--ink) hover:bg-(--ivory) transition-colors active:scale-95"
+              aria-label="Close dialog"
             >
-              &times;
+              <span className="text-xl leading-none">&times;</span>
             </button>
           )}
-          {content}
+          <div className="overflow-y-auto p-2 sm:p-4 safe-bottom">
+            {content}
+          </div>
         </div>
       </div>
     );

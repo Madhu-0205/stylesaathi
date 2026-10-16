@@ -31,7 +31,7 @@ export const TopNav: React.FC<TopNavProps> = ({
   toggleTheme,
 }) => {
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-(--border) bg-(--card)/95 backdrop-blur-md transition-colors">
+    <header className="sticky top-0 z-40 w-full border-b border-border bg-card/95 backdrop-blur-md transition-colors">
       <div className="mx-auto flex h-15 max-w-6xl xl:max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Official Brand Identity */}
         <div
@@ -52,10 +52,11 @@ export const TopNav: React.FC<TopNavProps> = ({
                 key={tab.id}
                 type="button"
                 onClick={() => onChangeTab(tab.id)}
-                className={`relative flex min-h-11 items-center gap-2 rounded-lg px-3 sm:px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all select-none ${
+                aria-current={isActive ? 'page' : undefined}
+                className={`relative flex min-h-11 items-center gap-2 rounded-lg px-3 sm:px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-[transform,background-color,color] duration-150 ease-out select-none active:scale-[0.98] ${
                   isActive
                     ? 'text-(--ink) bg-(--ivory) font-bold shadow-2xs'
-                    : 'text-(--muted) hover:text-(--ink) hover:bg-(--ivory)/60'
+                    : 'text-muted hover:text-(--ink) hover:bg-(--ivory)/60'
                 }`}
               >
                 <Icon
@@ -95,7 +96,7 @@ export const TopNav: React.FC<TopNavProps> = ({
             >
               <Sparkles className="h-3.5 w-3.5 text-amber-500 animate-pulse" />
               <span className="font-serif tracking-wide">Ask Stylist…</span>
-              <kbd className="ml-1 rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+              <kbd className="ml-1 rounded border border-border bg-(--ivory) dark:bg-(--border)/60 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted dark:text-(--ink)">
                 ⌘K
               </kbd>
             </button>
@@ -104,11 +105,11 @@ export const TopNav: React.FC<TopNavProps> = ({
           <button
             type="button"
             onClick={toggleTheme}
-            className="flex min-h-11 min-w-11 items-center justify-center rounded-full border border-(--border) text-(--muted) transition-colors hover:border-(--ink) hover:text-(--ink)"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-full border border-border text-muted transition-colors hover:border-(--ink) hover:text-(--ink)"
             aria-label="Toggle theme"
           >
             {theme === 'light' ? (
-              <Moon className="h-4 w-4 text-(--muted)" />
+              <Moon className="h-4 w-4 text-muted" />
             ) : (
               <Sun className="h-4 w-4 text-(--burnished-gold)" />
             )}
@@ -117,7 +118,7 @@ export const TopNav: React.FC<TopNavProps> = ({
           <button
             type="button"
             onClick={onOpenAddItem}
-            className="hidden sm:inline-flex min-h-11 items-center gap-1.5 rounded-full bg-(--accent) px-4 py-2 text-xs font-bold text-white shadow-2xs transition-transform hover:opacity-95 active:scale-95"
+            className="hidden sm:inline-flex min-h-11 items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-xs font-bold text-white shadow-2xs transition-transform hover:opacity-95 active:scale-95"
             aria-label="Add clothing piece"
           >
             <Plus className="h-3.5 w-3.5 stroke-[2.5]" />

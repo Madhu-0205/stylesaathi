@@ -90,16 +90,16 @@ export const NeedleCommandBar: React.FC<NeedleCommandBarProps> = ({ onNavigateTa
       >
         <Sparkles className="h-3.5 w-3.5 text-amber-500 animate-pulse" />
         <span className="font-serif tracking-wide">Ask Stylist…</span>
-        <kbd className="ml-1.5 rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+        <kbd className="ml-1.5 rounded border border-border bg-(--ivory) dark:bg-(--border)/60 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted dark:text-(--ink)">
           ⌘K
         </kbd>
       </button>
 
-      {/* Mobile Floating Action Pill */}
+      {/* Mobile Floating Action Pill (replaced by integrated trigger in WardrobeScreen) */}
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="md:hidden fixed bottom-20 right-4 z-40 flex items-center gap-2 rounded-full border border-amber-500/30 bg-card/95 px-4 py-2.5 text-xs font-semibold text-foreground shadow-lg backdrop-blur-md transition-transform active:scale-95"
+        className="hidden"
         aria-label="Open on-device Stylist"
       >
         <Sparkles className="h-4 w-4 text-amber-500" />

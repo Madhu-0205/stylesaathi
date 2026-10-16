@@ -253,7 +253,7 @@ export const ProfileScreen: React.FC = () => {
                       key={ctx}
                       type="button"
                       onClick={() => handleToggleContext(ctx)}
-                      className={`min-h-9 rounded-lg px-3 py-1 text-xs font-semibold uppercase tracking-wider transition-all active:scale-95 ${
+                      className={`min-h-11 rounded-full px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider transition-[transform,background-color,border-color,color,box-shadow] duration-150 ease-out select-none active:scale-[0.97] focus-editorial ${
                         isSelected
                           ? 'border border-(--ink) bg-(--ink) text-(--paper) shadow-2xs'
                           : 'border border-border bg-card text-muted hover:border-(--ink)'
