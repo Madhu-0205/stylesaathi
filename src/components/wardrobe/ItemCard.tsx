@@ -19,7 +19,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
 
   return (
     <article
-      className={`group relative flex flex-col select-none transition-all ${
+      className={`group relative flex flex-col select-none transition-[opacity,filter] duration-200 ${
         isLaundry ? 'opacity-65 grayscale-30' : ''
       }`}
     >
@@ -36,10 +36,10 @@ export const ItemCard: React.FC<ItemCardProps> = ({
             onSelect(item);
           }
         }}
-        className="flex flex-col cursor-pointer active:scale-[0.98] transition-transform rounded-2xl focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+        className="flex flex-col cursor-pointer active:scale-[0.98] transition-transform duration-150 ease-out rounded-2xl focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
       >
         {/* Editorial Photo Frame */}
-        <div className="relative aspect-4/5 w-full overflow-hidden rounded-2xl border border-border bg-card transition-all duration-300 group-hover:border-muted/60">
+        <div className="relative aspect-4/5 w-full overflow-hidden rounded-2xl border border-border bg-card transition-colors duration-200 group-hover:border-muted/60">
           <ItemImage
             item={item}
             className="h-full w-full object-contain p-2"

@@ -102,7 +102,7 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
   };
 
   return (
-    <article className="group relative overflow-hidden rounded-2xl border border-border bg-card p-4 sm:p-5 transition-all duration-300 animate-fade-in shadow-2xs">
+    <article className="group relative overflow-hidden rounded-2xl border border-border bg-card p-4 sm:p-5 transition-[border-color,box-shadow] duration-200 hover:border-muted/60 animate-fade-in shadow-2xs">
       {/* Top Editorial Header */}
       <div className="mb-3 flex items-baseline justify-between border-b border-border pb-2.5">
         <div>
@@ -150,7 +150,7 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
             )}
 
             {/* Secondary Supporting Pieces Stack (Right ~42% width) */}
-            <div className="col-span-5 flex flex-col gap-2">
+            <div className="col-span-5 flex flex-col gap-2 h-full">
               {secondarySlots.length <= 2 ? (
                 secondarySlots.map(([slotName, items]) => {
                   const piece = items[0];
@@ -158,7 +158,7 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
                   return (
                     <div
                       key={slotName}
-                      className="relative flex-1 min-h-24 overflow-hidden rounded-xl border border-(--border)/80 bg-(--ivory)"
+                      className="relative flex-1 min-h-0 h-full overflow-hidden rounded-xl border border-(--border)/80 bg-(--ivory)"
                     >
                       <ItemImage
                         item={piece}
@@ -174,7 +174,7 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
                 <>
                   {/* First secondary piece (e.g. Kurta / Top) */}
                   {secondarySlots[0] && secondarySlots[0][1][0] && (
-                    <div className="relative flex-1 min-h-24 overflow-hidden rounded-xl border border-(--border)/80 bg-(--ivory)">
+                    <div className="relative flex-1 min-h-0 h-full overflow-hidden rounded-xl border border-(--border)/80 bg-(--ivory)">
                       <ItemImage
                         item={secondarySlots[0][1][0]}
                         className="h-full w-full object-cover"
@@ -185,14 +185,14 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
                     </div>
                   )}
                   {/* Remaining secondary pieces side-by-side (e.g. Bottom + Footwear) */}
-                  <div className="grid grid-cols-2 gap-1.5">
+                  <div className="grid grid-cols-2 gap-1.5 flex-1 min-h-0">
                     {secondarySlots.slice(1).map(([slotName, items]) => {
                       const piece = items[0];
                       if (!piece) return null;
                       return (
                         <div
                           key={slotName}
-                          className="relative aspect-square overflow-hidden rounded-xl border border-(--border)/80 bg-(--ivory)"
+                          className="relative h-full overflow-hidden rounded-xl border border-(--border)/80 bg-(--ivory)"
                         >
                           <ItemImage
                             item={piece}

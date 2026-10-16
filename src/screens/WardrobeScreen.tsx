@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, Sparkles } from 'lucide-react';
 import { useWardrobe } from '../hooks/useWardrobe';
 import { Chip } from '../components/common/Chip';
 import { ItemCard } from '../components/wardrobe/ItemCard';
@@ -57,7 +57,7 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
   };
 
   return (
-    <div className="pb-8 animate-fade-in">
+    <div className="pb-28 sm:pb-24 md:pb-8 animate-fade-in">
       {/* Compact Fashion Archive Header */}
       <header className="mb-3 flex items-center justify-between border-b border-border pb-2.5">
         <div>
@@ -101,30 +101,42 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
 
       {/* Search Input and Filters */}
       <div className="mb-4 space-y-2.5 md:space-y-3">
-        {/* Search Bar */}
-        <div className="relative">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted pointer-events-none" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search garments by name, color, fabric..."
-            className="w-full min-h-11 rounded-xl border border-border bg-card/60 pl-10 pr-12 text-base md:text-xs font-medium text-(--text) outline-none transition-colors placeholder:text-muted focus:border-accent focus:bg-card"
-          />
-          {search && (
-            <button
-              type="button"
-              onClick={() => setSearch('')}
-              className="absolute right-1 top-1/2 -translate-y-1/2 flex min-h-11 min-w-11 items-center justify-center text-[11px] font-bold text-muted hover:text-(--ink) transition-colors active:scale-95"
-              aria-label="Clear search"
-            >
-              Clear
-            </button>
-          )}
+        {/* Search Bar and Stylist Trigger */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted pointer-events-none" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search garments by name, color, fabric..."
+              className="w-full min-h-11 rounded-xl border border-border bg-card/60 pl-10 pr-12 text-base md:text-xs font-medium text-(--text) outline-none transition-colors placeholder:text-muted focus:border-accent focus:bg-card"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                className="absolute right-1 top-1/2 -translate-y-1/2 flex min-h-11 min-w-11 items-center justify-center text-[11px] font-bold text-muted hover:text-(--ink) transition-colors active:scale-95"
+                aria-label="Clear search"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('open-needle-command'))}
+            aria-label="Open on-device Stylist"
+            className="md:hidden flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-border bg-card px-3 text-xs font-semibold text-(--ink) shadow-2xs transition-[transform,background-color] active:scale-95"
+          >
+            <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+            <span className="font-serif">Stylist</span>
+          </button>
         </div>
 
         {/* Category Filter Chips */}
-        <div className="no-scrollbar -mx-3.5 sm:-mx-6 md:mx-0 flex gap-2 overflow-x-auto px-3.5 sm:px-6 md:px-0 py-1 md:flex-wrap">
+        <div className="no-scrollbar -mx-3.5 sm:-mx-6 md:mx-0 flex gap-2 overflow-x-auto px-3.5 sm:px-6 md:px-0 py-1 md:flex-wrap scroll-fade-mask-end md:mask-none">
           <Chip
             label="All"
             count={stats.total}
@@ -143,12 +155,12 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
         </div>
 
         {/* Secondary Status & Favorite Filters */}
-        <div className="no-scrollbar -mx-3.5 sm:-mx-6 md:mx-0 flex gap-2 overflow-x-auto px-3.5 sm:px-6 md:px-0 py-0.5 md:flex-wrap">
+        <div className="no-scrollbar -mx-3.5 sm:-mx-6 md:mx-0 flex gap-2 overflow-x-auto px-3.5 sm:px-6 md:px-0 py-0.5 md:flex-wrap scroll-fade-mask-end md:mask-none">
           <button
             type="button"
             onClick={() => setFavoriteOnly(!favoriteOnly)}
             aria-pressed={favoriteOnly}
-            className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3.5 text-[10.5px] font-semibold tracking-wider uppercase transition-all whitespace-nowrap active:scale-95 focus-editorial ${
+            className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3.5 text-[10.5px] font-semibold tracking-wider uppercase transition-[transform,background-color,border-color,color,box-shadow] duration-150 ease-out whitespace-nowrap active:scale-[0.97] focus-editorial ${
               favoriteOnly
                 ? 'border border-(--kumkum) bg-(--kumkum) text-white shadow-2xs'
                 : 'border border-border bg-card text-muted hover:border-(--ink)'
@@ -169,7 +181,7 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
               type="button"
               onClick={() => setStatusFilter(statusFilter === s.id ? 'All' : s.id)}
               aria-pressed={statusFilter === s.id}
-              className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3.5 text-[10.5px] font-semibold tracking-wider uppercase transition-all whitespace-nowrap active:scale-95 focus-editorial ${
+              className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3.5 text-[10.5px] font-semibold tracking-wider uppercase transition-[transform,background-color,border-color,color,box-shadow] duration-150 ease-out whitespace-nowrap active:scale-[0.97] focus-editorial ${
                 statusFilter === s.id
                   ? 'border border-(--ink) bg-(--ink) text-(--paper) shadow-2xs'
                   : 'border border-border bg-card text-muted hover:border-(--ink)'

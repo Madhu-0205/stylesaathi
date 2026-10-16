@@ -204,7 +204,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
 
       {/* MOBILE-ONLY: Smooth Horizontal Day Strip (Prevents Squeezing 7 cols into 375px) */}
       <div className="md:hidden mb-4">
-        <div className="no-scrollbar -mx-3.5 sm:-mx-6 flex gap-1.5 overflow-x-auto px-3.5 sm:px-6 py-1">
+        <div className="no-scrollbar -mx-3.5 sm:-mx-6 flex gap-1.5 overflow-x-auto px-3.5 sm:px-6 py-1 scroll-fade-mask-end snap-x snap-mandatory">
           {Array.from({ length: daysInMonth }).map((_, idx) => {
             const dayNum = idx + 1;
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
@@ -219,7 +219,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
                 key={`mob-${dayNum}`}
                 type="button"
                 onClick={() => setSelectedDateStr(dateStr)}
-                className={`flex min-h-12 min-w-11 shrink-0 flex-col items-center justify-center rounded-xl border p-1 transition-all active:scale-95 ${
+                className={`flex min-h-12 min-w-11 shrink-0 snap-start flex-col items-center justify-center rounded-xl border p-1 transition-[transform,background-color,border-color,color] duration-150 ease-out active:scale-[0.97] ${
                   isSelected
                     ? 'border-(--ink) bg-(--ink) text-(--paper) shadow-2xs font-bold'
                     : isToday
