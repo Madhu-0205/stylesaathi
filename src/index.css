@@ -254,6 +254,17 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
   scrollbar-width: none;
 }
 
+/* Horizontal scroll fade masks for touch devices */
+.scroll-fade-mask {
+  mask-image: linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent);
+}
+
+.scroll-fade-mask-end {
+  mask-image: linear-gradient(to right, black calc(100% - 24px), transparent);
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 24px), transparent);
+}
+
 /* Restrained Luxury Motion Animations */
 @keyframes fadeIn {
   from {

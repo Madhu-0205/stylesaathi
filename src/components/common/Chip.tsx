@@ -25,7 +25,7 @@ export const Chip: React.FC<ChipProps> = ({
       onClick={onClick}
       disabled={disabled}
       aria-pressed={active}
-      className={`inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-full px-4 text-[11px] font-bold tracking-wider uppercase transition-all select-none active:scale-95 focus-editorial disabled:opacity-40 disabled:pointer-events-none ${
+      className={`inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-full px-4 text-[11px] font-bold tracking-wider uppercase transition-[transform,background-color,border-color,color,box-shadow] duration-150 ease-out select-none active:scale-[0.97] focus-editorial disabled:opacity-40 disabled:pointer-events-none ${
         active
           ? 'bg-(--text) text-background shadow-2xs'
           : 'border border-border bg-card/60 text-muted hover:text-(--text) hover:border-muted'

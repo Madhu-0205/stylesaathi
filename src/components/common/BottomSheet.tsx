@@ -18,13 +18,20 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
   maxHeight = 'max-h-[88vh]',
 }) => {
   const [mounted, setMounted] = useState(false);
+  const [dragOffset, setDragOffset] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const touchStartY = React.useRef(0);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      setDragOffset(0);
+      setIsDragging(false);
+      return;
+    }
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
@@ -37,6 +44,26 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
       document.body.style.overflow = originalOverflow;
     };
   }, [isOpen, onClose]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY;
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    const delta = e.touches[0].clientY - touchStartY.current;
+    if (delta > 0) {
+      setDragOffset(delta);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    if (dragOffset > 75) {
+      onClose();
+    }
+    setDragOffset(0);
+  };
 
   if (!isOpen || !mounted) return null;
 
@@ -51,11 +78,22 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
 
       {/* Sheet / Modal panel */}
       <div
-        className={`relative z-10 w-full max-w-lg mx-auto overflow-hidden rounded-t-3xl sm:rounded-2xl border-t sm:border border-border bg-card shadow-2xl animate-slide-up sm:animate-fade-in ${maxHeight} sm:max-h-[85dvh] flex flex-col`}
+        style={{
+          transform: dragOffset > 0 ? `translateY(${dragOffset}px)` : undefined,
+          transition: isDragging ? 'none' : 'transform 200ms cubic-bezier(0.16, 1, 0.3, 1)',
+        }}
+        className={`relative z-10 w-full max-w-lg mx-auto overflow-hidden rounded-t-3xl sm:rounded-2xl border-t sm:border border-border bg-card shadow-2xl animate-slide-up sm:animate-fade-in ${maxHeight} sm:max-h-[85dvh] flex flex-col will-change-transform`}
       >
         {/* Mobile Drag handle (hidden on tablet/desktop) */}
-        <div className="sm:hidden flex justify-center pt-3 pb-1 cursor-grab" onClick={onClose} aria-hidden="true">
-          <div className="h-1 w-10 rounded-full bg-border" />
+        <div
+          className="sm:hidden flex justify-center pt-3 pb-2 cursor-grab touch-none"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onClick={onClose}
+          aria-hidden="true"
+        >
+          <div className="h-1.5 w-12 rounded-full bg-border hover:bg-muted transition-colors" />
         </div>
 
         {/* Sheet / Dialog header */}

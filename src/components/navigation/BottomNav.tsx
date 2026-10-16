@@ -28,7 +28,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onChangeTab })
               key={tab.id}
               onClick={() => onChangeTab(tab.id)}
               aria-label={tab.label}
-              className={`flex min-h-12 flex-col items-center justify-center gap-0.5 text-center transition-all select-none active:scale-95 ${
+              aria-current={isActive ? 'page' : undefined}
+              className={`flex min-h-12 flex-col items-center justify-center gap-0.5 text-center transition-[transform,color] duration-150 ease-out select-none active:scale-[0.97] ${
                 isActive
                   ? 'text-(--text) font-bold'
                   : 'text-muted font-medium hover:text-(--text)'
@@ -46,7 +47,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onChangeTab })
               </span>
               {/* Subtle textile dot active indicator */}
               <div
-                className={`h-1 w-1 rounded-full transition-all ${
+                className={`h-1 w-1 rounded-full transition-[transform,background-color] duration-200 ease-out ${
                   isActive ? 'bg-accent scale-100' : 'bg-transparent scale-0'
                 }`}
               />
