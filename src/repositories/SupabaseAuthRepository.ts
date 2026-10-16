@@ -5,6 +5,81 @@ import { Browser } from '@capacitor/browser';
 
 const GUEST_SESSION_KEY = 'stylesaathi-guest-session-v1';
 
+export const PRODUCTION_WEB_ORIGIN = 'https://stylesaathi.vercel.app';
+export const NATIVE_REDIRECT_URI = 'stylesaathi://auth/callback';
+
+export interface AuthRedirectOptions {
+  preferNativeScheme?: boolean;
+  customOrigin?: string;
+  isNative?: boolean;
+}
+
+/**
+ * Validates and resolves the authentication redirect URL for Google OAuth and Email OTP/Magic-Link flows.
+ *
+ * Security guarantees:
+ * 1. Native Capacitor platform: returns 'stylesaathi://auth/callback' when preferNativeScheme is true.
+ * 2. Trusted Web Origins:
+ *    - Canonical production: 'https://stylesaathi.vercel.app'
+ *    - Vercel preview deployments: https://stylesaathi-*.vercel.app
+ *    - Local development: http://localhost:[port] or http://127.0.0.1:[port]
+ * 3. Sanitization & Fallback:
+ *    - Rejects arbitrary cross-origin or untrusted redirect targets (open redirect prevention).
+ *    - Rejects javascript:, data:, or non-http(s) schemes on web.
+ *    - Falls back strictly to 'https://stylesaathi.vercel.app'.
+ */
+export function getValidAuthRedirectUrl(options: AuthRedirectOptions = {}): string {
+  const isNative =
+    options.isNative !== undefined
+      ? options.isNative
+      : typeof window !== 'undefined' && Capacitor.isNativePlatform();
+
+  if (isNative && options.preferNativeScheme) {
+    return NATIVE_REDIRECT_URI;
+  }
+
+  // Determine raw origin
+  let raw = options.customOrigin;
+  if (!raw && typeof window !== 'undefined' && window.location?.origin) {
+    raw = window.location.origin;
+  }
+
+  if (!raw || typeof raw !== 'string') {
+    return PRODUCTION_WEB_ORIGIN;
+  }
+
+  try {
+    const parsed = new URL(raw.trim());
+
+    // Localhost / 127.0.0.1 development (allow any port)
+    const isLocal =
+      (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') &&
+      (parsed.protocol === 'http:' || parsed.protocol === 'https:');
+    if (isLocal) {
+      return parsed.origin;
+    }
+
+    // Canonical production domain
+    if (parsed.protocol === 'https:' && parsed.hostname === 'stylesaathi.vercel.app') {
+      return PRODUCTION_WEB_ORIGIN;
+    }
+
+    // Vercel preview environments: https://stylesaathi-*.vercel.app
+    if (
+      parsed.protocol === 'https:' &&
+      parsed.hostname.startsWith('stylesaathi') &&
+      parsed.hostname.endsWith('.vercel.app')
+    ) {
+      return parsed.origin;
+    }
+
+    // Reject arbitrary/untrusted origin and return canonical production
+    return PRODUCTION_WEB_ORIGIN;
+  } catch {
+    return PRODUCTION_WEB_ORIGIN;
+  }
+}
+
 export class SupabaseAuthRepository implements AuthRepository {
   private memStorage = new Map<string, string>();
 
@@ -108,8 +183,7 @@ export class SupabaseAuthRepository implements AuthRepository {
     }
 
     const isNative = typeof window !== 'undefined' && Capacitor.isNativePlatform();
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const redirectTo = isNative ? 'stylesaathi://auth/callback' : origin;
+    const redirectTo = getValidAuthRedirectUrl({ preferNativeScheme: true, isNative });
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -141,10 +215,13 @@ export class SupabaseAuthRepository implements AuthRepository {
     }
 
     const cleanedEmail = email.trim().toLowerCase();
+    const emailRedirectTo = getValidAuthRedirectUrl({ preferNativeScheme: false });
+
     const { error } = await supabase.auth.signInWithOtp({
       email: cleanedEmail,
       options: {
         shouldCreateUser: true,
+        emailRedirectTo,
         data: name?.trim() ? { name: name.trim() } : undefined,
       },
     });
