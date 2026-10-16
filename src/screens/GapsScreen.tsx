@@ -26,7 +26,7 @@ export const GapsScreen: React.FC = () => {
   const ethnicCount = items.filter((i) => i.category === 'Ethnic').length;
 
   return (
-    <div className="pb-12 animate-fade-in space-y-4">
+    <div className="pb-28 sm:pb-24 md:pb-8 animate-fade-in space-y-4">
       {/* Compact Editorial Header: "INSIGHT · Smart Buy 2.0 / Analytics / Trends" */}
       <header className="flex items-center justify-between border-b border-border pb-2.5">
         <div>

@@ -81,11 +81,11 @@ export const NeedleCommandBar: React.FC<NeedleCommandBarProps> = ({ onNavigateTa
   return (
     <>
       {/* 1. Global Editorial Triggers */}
-      {/* Desktop Top Trigger Pill */}
+      {/* Desktop Top Trigger Pill (desktop trigger integrated into TopNav) */}
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="hidden md:inline-flex items-center gap-2 rounded-full border border-border bg-card/80 px-3.5 py-1.5 text-xs font-medium text-muted-foreground shadow-2xs backdrop-blur-sm transition-all hover:border-primary/40 hover:text-foreground active:scale-98"
+        className="hidden"
         aria-label="Open AI Stylist (Command + K)"
       >
         <Sparkles className="h-3.5 w-3.5 text-amber-500 animate-pulse" />

@@ -125,7 +125,7 @@ export const ProfileScreen: React.FC = () => {
   };
 
   return (
-    <div className="pb-12 animate-fade-in space-y-4">
+    <div className="pb-28 sm:pb-24 md:pb-8 animate-fade-in space-y-4">
       {/* Compact Editorial Header: "YOU · Personal Archive" */}
       <header className="flex items-center justify-between border-b border-border pb-2.5">
         <div>

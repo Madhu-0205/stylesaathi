@@ -55,7 +55,7 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
   };
 
   return (
-    <div className="pb-12 animate-fade-in">
+    <div className="pb-28 sm:pb-24 md:pb-8 animate-fade-in">
       {/* Compact Editorial Header: "Aaj kya pehenna hai?" + Actions */}
       <header className="mb-3 flex items-center justify-between border-b border-border pb-2.5">
         <div>

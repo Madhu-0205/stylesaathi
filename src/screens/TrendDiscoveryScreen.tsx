@@ -81,7 +81,7 @@ export const TrendDiscoveryScreen: React.FC = () => {
   };
 
   return (
-    <div className="pb-12 animate-fade-in space-y-5" aria-label="Trend Intelligence Discovery Hub">
+    <div className="pb-28 sm:pb-24 md:pb-8 animate-fade-in space-y-5" aria-label="Trend Intelligence Discovery Hub">
       {/* Header */}
       <header className="border-b border-border pb-3">
         <div className="flex items-center gap-2">

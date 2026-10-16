@@ -154,7 +154,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
   }, [selectedDateStr, todayStr]);
 
   return (
-    <div className="pb-12 animate-fade-in">
+    <div className="pb-28 sm:pb-24 md:pb-8 animate-fade-in">
       {/* Header */}
       <header className="mb-3 sm:mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-border pb-2.5 sm:pb-3 gap-2">
         <div>
@@ -182,7 +182,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
             <button
               type="button"
               onClick={handlePrevMonth}
-              className="flex min-h-8 min-w-8 items-center justify-center rounded-full text-muted hover:text-(--ink) hover:bg-(--ivory)"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-muted hover:text-(--ink) hover:bg-(--ivory) active:scale-95 transition-transform"
               aria-label="Previous month"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -193,7 +193,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
             <button
               type="button"
               onClick={handleNextMonth}
-              className="flex min-h-8 min-w-8 items-center justify-center rounded-full text-muted hover:text-(--ink) hover:bg-(--ivory)"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-muted hover:text-(--ink) hover:bg-(--ivory) active:scale-95 transition-transform"
               aria-label="Next month"
             >
               <ChevronRight className="h-4 w-4" />
