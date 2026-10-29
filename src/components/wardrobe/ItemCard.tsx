@@ -39,17 +39,17 @@ export const ItemCard: React.FC<ItemCardProps> = ({
         className="flex flex-col cursor-pointer active:scale-[0.98] transition-transform duration-150 ease-out rounded-2xl focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
       >
         {/* Editorial Photo Frame */}
-        <div className="relative aspect-4/5 w-full overflow-hidden rounded-2xl border border-border bg-card transition-colors duration-200 group-hover:border-muted/60">
+        <div className="relative aspect-4/5 w-full overflow-hidden rounded-2xl border border-border bg-card transition-all duration-300 group-hover:border-muted/60 specular-border shadow-2xs group-hover:shadow-md">
           <ItemImage
             item={item}
-            className="h-full w-full object-contain p-2"
+            className="h-full w-full"
           />
 
           {/* Subtle status indicator: only shown when garment is not clean */}
           {(isWash || isLaundry) && (
-            <div className="absolute left-2 top-2 z-10">
+            <div className="absolute left-2.5 top-2.5 z-10">
               <span
-                className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold tracking-wider uppercase backdrop-blur-md ${
+                className={`rounded-full px-2 py-0.5 text-[8.5px] font-bold tracking-wider uppercase backdrop-blur-md shadow-2xs ${
                   isWash
                     ? 'bg-amber-100/90 text-amber-900 border border-amber-300 dark:bg-amber-950/80 dark:text-amber-300'
                     : 'bg-stone-200/90 text-stone-700 border border-stone-300 dark:bg-stone-800/80 dark:text-stone-300'
@@ -65,16 +65,16 @@ export const ItemCard: React.FC<ItemCardProps> = ({
         <div className="pt-2 px-0.5">
           <h4
             title={item.name}
-            className="line-clamp-2 min-h-8 text-xs font-bold text-(--text) tracking-tight"
+            className="line-clamp-2 min-h-8 font-serif text-[13.5px] sm:text-sm font-normal text-(--ink) tracking-tight leading-snug group-hover:text-accent transition-colors"
           >
             {item.name}
           </h4>
-          <div className="mt-0.5 flex items-center justify-between text-[11px] text-muted tracking-wide">
-            <span className="capitalize truncate max-w-32">
+          <div className="mt-0.5 flex items-center justify-between text-[11px] text-muted tracking-wide font-sans">
+            <span className="capitalize truncate max-w-32 opacity-90">
               {item.fabric ? `${item.fabric} · ` : ''}{item.subcategory || item.category}
             </span>
             {item.timesWorn > 0 && (
-              <span className="text-[10px] font-medium text-muted/80 shrink-0">
+              <span className="text-[10px] font-medium text-muted/75 shrink-0">
                 Worn {item.timesWorn}×
               </span>
             )}
@@ -90,9 +90,9 @@ export const ItemCard: React.FC<ItemCardProps> = ({
         onKeyDown={(e) => {
           e.stopPropagation();
         }}
-        className="absolute right-1 top-1 z-10 flex h-11 w-11 items-center justify-center rounded-full text-muted transition-transform hover:scale-105 active:scale-90 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+        className="absolute right-1.5 top-1.5 z-10 flex h-11 w-11 items-center justify-center rounded-full text-muted transition-transform hover:scale-105 active:scale-90 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
       >
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-card/85 backdrop-blur-md border border-border/60 text-muted">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full glass-pill text-muted shadow-2xs">
           <Heart
             className={`h-3.5 w-3.5 transition-colors ${
               item.favorite

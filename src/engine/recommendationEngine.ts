@@ -41,6 +41,7 @@ import { getExplanationForSignal } from './knowledge/explanations';
 
 const OCCASION_FORMALITY_TARGETS: Record<string, number> = {
   college: 1.8,
+  school: 1.8,
   everyday: 2.0,
   'casual outing': 2.2,
   travel: 2.0,
@@ -55,6 +56,7 @@ const OCCASION_FORMALITY_TARGETS: Record<string, number> = {
   Eid: 4.3,
   Holi: 2.2,
   interview: 4.5,
+  engagement: 4.4,
   celebration: 4.6,
   'wedding guest': 4.8,
 };
@@ -151,8 +153,20 @@ export class RecommendationEngine {
       anchorItemId,
     } = request;
 
-    // Filter templates for occasion
+    // Filter templates for occasion and presentation preferences
     const occasionTemplates = TEMPLATES.filter((t) => {
+      // 1. Presentation preference filtering
+      if (preferences?.presentationPreference === 'masculine') {
+        if (['Saree look', 'Lehenga ensemble', 'Anarkali look', 'Western dress'].includes(t.name)) {
+          return false;
+        }
+      } else if (preferences?.presentationPreference === 'feminine') {
+        if (['Sherwani look'].includes(t.name)) {
+          return false;
+        }
+      }
+
+      // 2. Occasion alignment
       if (t.name === 'Indo-western') {
         return ['college', 'casual outing', 'everyday', 'date', 'travel', 'party'].includes(occasion);
       }
@@ -185,6 +199,15 @@ export class RecommendationEngine {
       }
       if (t.name === 'Western dress') {
         return !['puja', 'wedding guest'].includes(occasion);
+      }
+      if (t.name === 'Sherwani look') {
+        return ['wedding guest', 'celebration', 'festive', 'engagement', 'family function', 'family gathering'].includes(occasion);
+      }
+      if (t.name === 'Dhoti & Kurta look') {
+        return ['puja', 'festive', 'celebration', 'wedding guest', 'family function', 'family gathering', 'everyday'].includes(occasion);
+      }
+      if (t.name === 'Bandhgala look') {
+        return ['office', 'interview', 'wedding guest', 'celebration', 'festive', 'engagement', 'family function', 'family gathering', 'party', 'date'].includes(occasion);
       }
       return true;
     });
@@ -645,10 +668,12 @@ export class RecommendationEngine {
         }
         hardCheck = evaluateTier1HardConstraints(
           { template: cand.template, slots: proxySlots },
-          context
+          context,
+          preferences,
+          occasion
         );
       } else {
-        hardCheck = evaluateTier1HardConstraints(cand, context);
+        hardCheck = evaluateTier1HardConstraints(cand, context, preferences, occasion);
       }
       if (!hardCheck.passed) continue;
 
@@ -685,10 +710,12 @@ export class RecommendationEngine {
     const knowledgeContext: FashionKnowledgeContext = {
       occasion,
       season,
-      regionalPreference: culturalSignals?.regionalTradition,
+      regionalPreference: culturalSignals?.regionalTradition || preferences?.regionalInterests?.[0],
       festivalContext: culturalSignals?.festivalContext,
       declaredModestyLevel: culturalSignals?.declaredModestyLevel,
       userAesthetics: preferences?.preferredAesthetics,
+      internationalInspirations: preferences?.internationalInspirations,
+      userRole: culturalSignals?.userRole,
     };
 
     for (const cand of validCandidates) {
@@ -768,7 +795,7 @@ export class RecommendationEngine {
         context.source !== 'unavailable';
 
       if (hasGenuineWeather) {
-        const comfort = calculateWeatherComfortScore(pieces, context!);
+        const comfort = calculateWeatherComfortScore(pieces, { ...context!, occasion });
         contextFit = comfort.scoreDelta;
       }
 
@@ -1014,14 +1041,16 @@ export class RecommendationEngine {
     }
 
     // 1. Weather evidence (ONLY when live or cached genuine weather)
+    let weatherComfortRationale: string | undefined = undefined;
     const hasGenuineWeather =
       context?.weather != null &&
       context.source !== 'simulated' &&
       context.source !== 'unavailable';
 
     if (hasGenuineWeather && Math.abs(cand.scoreBreakdown.contextFit) > 0.1) {
-      const weatherReasons = getContextWhyReasons(cand.pieces, context);
+      const weatherReasons = getContextWhyReasons(cand.pieces, { ...context, occasion });
       if (weatherReasons.length > 0) {
+        weatherComfortRationale = weatherReasons[0];
         evidenceSources.push('weather');
         reasons.push(weatherReasons[0]);
       }
@@ -1037,7 +1066,9 @@ export class RecommendationEngine {
     }
 
     // 3. Cultural Evidence
+    let culturalRationale: string | undefined = undefined;
     if (cand.culturalEvalReasons && cand.culturalEvalReasons.length > 0) {
+      culturalRationale = cand.culturalEvalReasons[0];
       evidenceSources.push('cultural');
       reasons.push(cand.culturalEvalReasons[0]);
     }
@@ -1092,10 +1123,56 @@ export class RecommendationEngine {
     else if (role === 'alternative') headline = anchorItem ? 'Alternative · Varied Silhouette' : 'Alternative · Varied Silhouette';
     else if (role === 'explore') headline = anchorItem ? 'Explore · Fresh Wardrobe Pairing' : 'Explore · Safe Wardrobe Discovery';
 
+    // Grounded transparent assumptions based on missing data
+    const assumptions: string[] = [];
+    if (!hasGenuineWeather) {
+      assumptions.push('Weather data unavailable — recommendation assumes mild indoor conditions.');
+    }
+    if (!styleProfile || (styleProfile.totalSignalsCount || 0) < 3) {
+      assumptions.push('Early-stage personal profile — styling relies on garment compatibility and occasion rules.');
+    }
+    if (preferences?.ageBand === 'teen_14_17') {
+      assumptions.push('Teen age-appropriate safeguards active — ensuring respectful, campus-compliant silhouettes.');
+    }
+    if (preferences?.internationalInspirations && preferences.internationalInspirations.length > 0) {
+      assumptions.push(`International style inspiration active: ${preferences.internationalInspirations.join(', ')}.`);
+    }
+
+    // Garment coordination mapping
+    const garmentCoordination: Record<string, string> = {};
+    for (const [slotKey, slotPieces] of Object.entries(cand.slots)) {
+      if (slotPieces && slotPieces.length > 0) {
+        const item = slotPieces[0];
+        garmentCoordination[slotKey] = `${item.name} (${item.colors.join('/')} ${item.fabric || ''} ${item.subcategory || ''})`.trim();
+      }
+    }
+
+    // Grounded Confidence Score (evidence-backed, not fabricated)
+    let weatherCertainty = 0;
+    if (hasGenuineWeather) {
+      weatherCertainty = context.source === 'live' ? 1.0 : 0.6;
+    }
+    const profileCertainty = styleProfile?.overallConfidence ?? 0.4;
+    const wardrobeCertainty = cand.pieces.every((p) => p.userVerified || (p.fabric && p.fabric !== 'unknown')) ? 0.9 : 0.7;
+    const confidenceScore = Math.round((profileCertainty * 0.4 + weatherCertainty * 0.3 + wardrobeCertainty * 0.3) * 100) / 100;
+
+    let confidenceLevel: import('../types').ConfidenceLevel = 'MEDIUM';
+    if (confidenceScore >= 0.85) confidenceLevel = 'VERIFIED';
+    else if (confidenceScore >= 0.70) confidenceLevel = 'HIGH';
+    else if (confidenceScore >= 0.45) confidenceLevel = 'MEDIUM';
+    else if (confidenceScore > 0) confidenceLevel = 'LOW';
+    else confidenceLevel = 'UNKNOWN';
+
     return {
       headline,
       reasons: reasons.slice(0, 3),
       evidenceSources: Array.from(new Set(evidenceSources)),
+      confidenceScore,
+      confidenceLevel,
+      assumptions,
+      garmentCoordination,
+      weatherComfortRationale,
+      culturalRationale,
     };
   }
 }

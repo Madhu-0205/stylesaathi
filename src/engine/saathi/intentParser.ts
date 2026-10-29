@@ -11,6 +11,10 @@ const OCCASIONS_MAP: Record<string, Occasion> = {
   classes: 'college',
   lecture: 'college',
 
+  school: 'school',
+  coaching: 'school',
+  tuition: 'school',
+
   everyday: 'everyday',
   daily: 'everyday',
   routine: 'everyday',
@@ -69,6 +73,12 @@ const OCCASIONS_MAP: Record<string, Occasion> = {
   sangeet: 'wedding guest',
   mehendi: 'wedding guest',
   marriage: 'wedding guest',
+
+  engagement: 'engagement',
+  roka: 'engagement',
+  sagai: 'engagement',
+  sagayi: 'engagement',
+  'ring ceremony': 'engagement',
 };
 
 const COLORS = [

@@ -73,6 +73,7 @@ export const harmony = (a: string[], b: string[]): number => {
 
 const OCCASION_FORMALITY_TARGETS: Record<string, number> = {
   college: 1.8,
+  school: 1.8,
   everyday: 2.0,
   'casual outing': 2.2,
   travel: 2.0,
@@ -87,6 +88,7 @@ const OCCASION_FORMALITY_TARGETS: Record<string, number> = {
   Eid: 4.3,
   Holi: 2.2,
   interview: 4.5,
+  engagement: 4.4,
   celebration: 4.6,
   'wedding guest': 4.8,
 };

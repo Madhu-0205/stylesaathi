@@ -18,6 +18,8 @@ const buttonVariants = cva(
           "bg-transparent text-(--text) hover:bg-(--card) hover:text-(--ink)",
         gold:
           "border border-(--gold-rule) bg-transparent text-(--burnished-gold) hover:bg-(--gold-rule)/10 hover:border-(--burnished-gold)",
+        glass:
+          "glass-pill text-(--text) hover:bg-(--ivory)/70 shadow-2xs border border-white/60 dark:border-white/10 active:scale-[0.97]",
         destructive:
           "bg-(--danger) text-white shadow-2xs hover:opacity-90 active:opacity-100",
         link:

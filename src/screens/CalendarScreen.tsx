@@ -154,16 +154,16 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
   }, [selectedDateStr, todayStr]);
 
   return (
-    <div className="pb-28 sm:pb-24 md:pb-8 animate-fade-in">
+    <div className="pb-28 sm:pb-24 md:pb-8 animate-fade-in space-y-4">
       {/* Header */}
-      <header className="mb-3 sm:mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-border pb-2.5 sm:pb-3 gap-2">
+      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-border/80 pb-3 sm:pb-4 gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
+            <span className="editorial-kicker text-(--kumkum)">
               STYLE CALENDAR
             </span>
           </div>
-          <h1 className="mt-0.5 font-serif text-2xl sm:text-3xl font-normal text-(--ink) tracking-tight">
+          <h1 className="mt-0.5 editorial-hero text-2xl sm:text-3xl font-normal text-(--ink) tracking-tight">
             Outfit Planner &amp; Journal
           </h1>
         </div>
@@ -174,11 +174,11 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
             variant="secondary"
             size="sm"
             onClick={handleJumpToToday}
-            className="min-h-8 rounded-full shadow-2xs font-semibold uppercase tracking-wider text-[11px] px-3 py-1"
+            className="min-h-11 rounded-full shadow-2xs font-semibold uppercase tracking-wider text-[11px] px-4 tactile-press-sm"
           >
             Today
           </Button>
-          <div className="inline-flex items-center rounded-full border border-border bg-card p-0.5 shadow-2xs">
+          <div className="inline-flex items-center rounded-full glass-pill specular-border p-0.5 shadow-2xs">
             <button
               type="button"
               onClick={handlePrevMonth}
@@ -251,7 +251,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
       {/* Grid: Tablet/Desktop Matrix on Left, Selected Day Outfit on Right */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-5 lg:gap-6 items-start">
         {/* TABLET / DESKTOP CALENDAR MATRIX (hidden on mobile) */}
-        <div className="hidden md:block md:col-span-5 rounded-2xl border border-border bg-card p-5 shadow-2xs">
+        <div className="hidden md:block md:col-span-5 rounded-3xl glass-card specular-border p-5 shadow-2xs">
           {/* Days of week header */}
           <div className="grid grid-cols-7 text-center mb-2">
             {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
@@ -281,7 +281,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
                   key={dayNum}
                   type="button"
                   onClick={() => setSelectedDateStr(dateStr)}
-                  className={`group relative flex min-h-11 flex-col items-center justify-center rounded-xl transition-all active:scale-95 ${
+                  className={`group relative flex min-h-11 flex-col items-center justify-center rounded-xl transition-all active:scale-95 tactile-press-sm ${
                     isSelected
                       ? 'border border-(--ink) bg-(--ink) text-(--paper) shadow-2xs'
                       : isToday
@@ -328,14 +328,14 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
 
         {/* SELECTED DAY OUTFIT DETAIL (Dominant, Fashion-First) */}
         <div className="md:col-span-7">
-          <div className="rounded-2xl border border-border bg-card p-4 sm:p-6 shadow-2xs">
+          <div className="rounded-3xl glass-card specular-border p-5 sm:p-6 shadow-2xs">
             {/* Header: Date + Badges */}
-            <div className="flex items-center justify-between border-b border-border pb-3 mb-4">
+            <div className="flex items-center justify-between border-b border-border/80 pb-3 mb-4">
               <div>
-                <span className="text-[9.5px] font-bold uppercase tracking-[0.18em] text-muted block">
+                <span className="editorial-kicker text-muted block">
                   SELECTED DAY
                 </span>
-                <h2 className="font-serif text-xl sm:text-2xl font-normal text-(--ink) tracking-tight">
+                <h2 className="editorial-sub text-xl sm:text-2xl text-(--ink) tracking-tight">
                   {selectedDateHeading}
                 </h2>
               </div>
@@ -364,13 +364,13 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
               <div className="space-y-4">
                 {/* Weather Forecast Preview for planned date */}
                 {matchingForecast && (
-                  <div className="rounded-xl border border-blue-200/70 bg-blue-50/60 dark:border-blue-900/40 dark:bg-blue-950/20 p-2.5 flex items-center justify-between text-xs text-blue-950 dark:text-blue-200 shadow-2xs">
+                  <div className="rounded-2xl border border-blue-200/70 bg-blue-50/60 dark:border-blue-900/40 dark:bg-blue-950/20 p-3 flex items-center justify-between text-xs text-blue-950 dark:text-blue-200 shadow-2xs">
                     <div className="flex items-center gap-2">
                       <CloudSun className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
                       <span className="font-medium">Forecast: {matchingForecast.summary}</span>
                     </div>
                     {matchingForecast.precipitationProbability >= 40 && (
-                      <span className="text-[10px] font-bold text-(--kumkum) bg-white dark:bg-zinc-900 px-1.5 py-0.5 rounded border border-(--border)/60">
+                      <span className="text-[10px] font-bold text-(--kumkum) bg-white dark:bg-zinc-900 px-2 py-0.5 rounded-full border border-(--border)/60">
                         Rain {matchingForecast.precipitationProbability}%
                       </span>
                     )}
@@ -378,7 +378,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
                 )}
                 {/* Fashion-First Integrity Notice if pieces are unavailable */}
                 {planIntegrity?.isStale && (
-                  <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-950/30 p-3 flex items-start gap-2.5 text-xs text-red-800 dark:text-red-300">
+                  <div className="rounded-2xl border border-red-200 bg-red-50 dark:bg-red-950/30 p-3.5 flex items-start gap-2.5 text-xs text-red-800 dark:text-red-300">
                     <AlertCircle className="h-4 w-4 shrink-0 text-red-600 mt-0.5" />
                     <div className="flex-1">
                       <span className="font-semibold block">One piece isn&apos;t available anymore:</span>
@@ -397,7 +397,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
                 )}
 
                 {planIntegrity?.hasLaundry && !planIntegrity.isStale && (
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 p-3 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 p-3.5 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
                     <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
                     <div className="flex-1">
                       <span className="font-semibold block">A piece is currently in care:</span>
@@ -416,7 +416,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
                 )}
 
                 {/* Garments Visual Rail Grid */}
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3 bg-(--ivory)/70 rounded-xl p-3 border border-(--border)/60">
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5 sm:gap-3.5 bg-(--ivory)/70 dark:bg-zinc-900/40 rounded-2xl p-3 sm:p-3.5 border border-(--border)/60">
                   {planIntegrity?.pieces.map((piece, pIdx) => (
                     <div
                       key={piece.id || pIdx}
@@ -434,7 +434,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
 
                 {/* Outfit Info */}
                 <div>
-                  <h3 className="font-serif text-lg text-(--ink) font-medium">
+                  <h3 className="editorial-headline text-lg text-(--ink)">
                     {selectedPlan.outfit.template}
                   </h3>
                   <p className="mt-1 text-xs text-muted leading-relaxed">
@@ -443,13 +443,13 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-(--border)/60">
+                <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-(--border)/60">
                   {selectedPlan.status !== 'worn' && (
                     <Button
                       variant="default"
                       size="default"
                       onClick={handleWearToday}
-                      className="flex-1 min-h-11 shadow-2xs font-semibold uppercase tracking-wider"
+                      className="flex-1 min-h-11 shadow-2xs font-semibold uppercase tracking-wider tactile-press"
                     >
                       <Check className="h-3.5 w-3.5 text-(--burnished-gold)" />
                       <span>Wear Today</span>
@@ -460,7 +460,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
                     variant="outline"
                     size="default"
                     onClick={() => onGoToDress(selectedPlan.occasion)}
-                    className="min-h-11 shadow-2xs font-semibold uppercase tracking-wider"
+                    className="min-h-11 shadow-2xs font-semibold uppercase tracking-wider tactile-press"
                   >
                     <span>Change Look</span>
                   </Button>
@@ -469,7 +469,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
                     variant="ghost"
                     size="icon"
                     onClick={() => setIsDeleteDialogOpen(true)}
-                    className="min-h-11 min-w-11 text-muted hover:text-red-600 hover:border-red-300 border border-border"
+                    className="min-h-11 min-w-11 text-muted hover:text-red-600 hover:border-red-300 border border-border tactile-press-sm"
                     aria-label="Delete plan"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -478,7 +478,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
               </div>
             ) : (
               /* Empty Day State */
-              <div className="py-8 text-center flex flex-col items-center justify-center">
+              <div className="py-10 text-center flex flex-col items-center justify-center">
                 <div className="h-12 w-12 rounded-full bg-(--ivory) border border-border flex items-center justify-center mb-3">
                   <Shirt className="h-5 w-5 text-(--burnished-gold)" />
                 </div>
@@ -491,7 +491,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
                 <Button
                   variant="default"
                   onClick={() => onGoToDress()}
-                  className="mt-4 min-h-11 gap-2 shadow-2xs font-semibold uppercase tracking-wider"
+                  className="mt-4 min-h-11 gap-2 shadow-2xs font-semibold uppercase tracking-wider tactile-press"
                 >
                   <Sparkles className="h-3.5 w-3.5 text-(--burnished-gold)" />
                   <span>Style a Look</span>
@@ -504,11 +504,11 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
 
       {/* Global Empty State if user has 0 plans total */}
       {plans.length === 0 && (
-        <div className="mt-6 rounded-2xl border border-dashed border-border bg-(--ivory)/60 p-6 text-center">
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-(--kumkum) block mb-1">
+        <div className="mt-6 rounded-3xl border border-dashed border-border/80 bg-(--ivory)/60 p-6 sm:p-8 text-center">
+          <span className="editorial-kicker text-(--kumkum) block mb-1">
             WARDROBE RHYTHM
           </span>
-          <h2 className="font-serif text-xl sm:text-2xl text-(--ink) font-normal">
+          <h2 className="editorial-title text-xl sm:text-2xl text-(--ink) font-normal">
             YOUR STYLE CALENDAR IS QUIET.
           </h2>
           <p className="mt-1.5 text-xs text-muted max-w-sm mx-auto">
@@ -517,7 +517,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
           <Button
             variant="default"
             onClick={() => onGoToDress()}
-            className="mt-3 min-h-11 gap-2 shadow-2xs font-semibold uppercase tracking-wider"
+            className="mt-4 min-h-11 gap-2 shadow-2xs font-semibold uppercase tracking-wider tactile-press"
           >
             <Sparkles className="h-3.5 w-3.5 text-(--burnished-gold)" />
             <span>STYLE A LOOK</span>
@@ -527,7 +527,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
 
       {/* Guest Mode Value Banner */}
       {isGuest && (
-        <div className="mt-6 rounded-2xl border border-border bg-card p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
+        <div className="mt-6 rounded-3xl glass-card specular-border p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-full bg-(--ivory) border border-border flex items-center justify-center shrink-0">
               <UserPlus className="h-4 w-4 text-(--burnished-gold)" />

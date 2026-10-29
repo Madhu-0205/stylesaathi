@@ -28,14 +28,14 @@ export const GapsScreen: React.FC = () => {
   return (
     <div className="pb-28 sm:pb-24 md:pb-8 animate-fade-in space-y-4">
       {/* Compact Editorial Header: "INSIGHT · Smart Buy 2.0 / Analytics / Trends" */}
-      <header className="flex items-center justify-between border-b border-border pb-2.5">
+      <header className="flex items-center justify-between border-b border-border/80 pb-3">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
-              INSIGHT
+            <span className="editorial-kicker text-(--kumkum)">
+              STYLESAATHI · INSIGHT
             </span>
           </div>
-          <h1 className="mt-0.5 font-serif text-2xl sm:text-3xl font-normal text-(--ink) tracking-tight">
+          <h1 className="mt-0.5 editorial-hero text-2xl sm:text-3xl font-normal text-(--ink) tracking-tight">
             {activeView === 'gaps'
               ? 'Smart Buy 2.0: Wardrobe Gap Intelligence'
               : activeView === 'analytics'
@@ -50,7 +50,7 @@ export const GapsScreen: React.FC = () => {
         <button
           type="button"
           onClick={toggleTheme}
-          className="md:hidden flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted transition-colors hover:border-(--ink) hover:text-(--ink)"
+          className="md:hidden flex h-9 w-9 min-h-11 min-w-11 items-center justify-center rounded-full border border-border text-muted transition-colors hover:border-(--ink) hover:text-(--ink) active:scale-95 tactile-press"
           aria-label="Toggle theme"
         >
           {theme === 'light' ? '☾' : '☼'}
@@ -58,13 +58,13 @@ export const GapsScreen: React.FC = () => {
       </header>
 
       {/* Segmented Sub-navigation Toggle: [ WARDROBE GAPS ] [ WEAR & STYLE ANALYTICS ] [ TREND DISCOVERY ] */}
-      <div className="flex items-center gap-1.5 p-1 bg-(--border-light)/70 rounded-full border border-(--border)/60 w-fit max-w-full overflow-x-auto no-scrollbar">
+      <div className="flex items-center gap-1.5 p-1 glass-pill specular-border rounded-full w-fit max-w-full overflow-x-auto no-scrollbar">
         <button
           type="button"
           onClick={() => setActiveView('gaps')}
-          className={`min-h-11 px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-full transition-all ${
+          className={`min-h-11 px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-full transition-all tactile-press-sm ${
             activeView === 'gaps'
-              ? 'bg-card text-(--ink) shadow-2xs'
+              ? 'bg-(--ink) text-(--paper) shadow-2xs'
               : 'text-muted hover:text-(--ink)'
           }`}
           aria-pressed={activeView === 'gaps'}
@@ -74,9 +74,9 @@ export const GapsScreen: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveView('analytics')}
-          className={`min-h-11 px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-full transition-all ${
+          className={`min-h-11 px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-full transition-all tactile-press-sm ${
             activeView === 'analytics'
-              ? 'bg-card text-(--ink) shadow-2xs'
+              ? 'bg-(--ink) text-(--paper) shadow-2xs'
               : 'text-muted hover:text-(--ink)'
           }`}
           aria-pressed={activeView === 'analytics'}
@@ -86,9 +86,9 @@ export const GapsScreen: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveView('trends')}
-          className={`min-h-11 px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-full transition-all ${
+          className={`min-h-11 px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-full transition-all tactile-press-sm ${
             activeView === 'trends'
-              ? 'bg-card text-(--ink) shadow-2xs'
+              ? 'bg-(--ink) text-(--paper) shadow-2xs'
               : 'text-muted hover:text-(--ink)'
           }`}
           aria-pressed={activeView === 'trends'}

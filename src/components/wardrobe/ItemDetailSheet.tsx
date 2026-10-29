@@ -95,7 +95,7 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
         <div className="relative aspect-4/3 w-full overflow-hidden rounded-2xl border border-border bg-(--ivory)">
           <ItemImage
             item={item}
-            className="h-full w-full object-contain p-2"
+            className="h-full w-full object-cover"
             isHero
           />
           <button

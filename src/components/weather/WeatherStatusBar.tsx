@@ -99,7 +99,7 @@ export const WeatherStatusBar: React.FC = () => {
     <>
       <section
         aria-label="Today's weather and climate context"
-        className="mb-3 rounded-xl border border-border bg-card p-3 shadow-2xs transition-all animate-fade-in"
+        className="mb-3 rounded-2xl glass-card p-3.5 shadow-2xs transition-all animate-fade-in"
       >
         <div className="flex flex-wrap items-center justify-between gap-2">
           {/* Left: Weather condition + Temp + Location Selector */}

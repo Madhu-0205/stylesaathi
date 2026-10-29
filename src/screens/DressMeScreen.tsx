@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RefreshCw, AlertCircle, Calendar } from 'lucide-react';
+import { RefreshCw, AlertCircle, Calendar, Pin, Bookmark, X, Sparkles } from 'lucide-react';
 import { useDressMe } from '../hooks/useDressMe';
 import { useWardrobeContext } from '../context/WardrobeContext';
 import { Chip } from '../components/common/Chip';
@@ -13,6 +13,9 @@ import { Occasion, Season, GeneratedOutfit } from '../types';
 import { OCCASIONS, SEASONS } from '../data/taxonomy';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ItemImage } from '../components/common/ItemImage';
+import { SelectAnchorModal } from '../components/dressme/SelectAnchorModal';
+import { SavedOutfitsModal } from '../components/dressme/SavedOutfitsModal';
 
 interface DressMeScreenProps {
   onGoToWardrobe: () => void;
@@ -20,7 +23,7 @@ interface DressMeScreenProps {
 }
 
 export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, onGoToCalendar }) => {
-  const { theme, toggleTheme, plans } = useWardrobeContext();
+  const { items, theme, toggleTheme, plans, savedOutfits } = useWardrobeContext();
   const {
     occasion,
     setOccasion,
@@ -36,11 +39,16 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
     saveOutfit,
     rejectOutfit,
     contextSnapshot,
+    anchorItem,
+    setAnchorItem,
+    laundryWarning,
   } = useDressMe();
 
   const [activeDrawerOutfitIndex, setActiveDrawerOutfitIndex] = useState<number | null>(null);
   const [isShuffling, setIsShuffling] = useState(false);
   const [planningOutfit, setPlanningOutfit] = useState<GeneratedOutfit | null>(null);
+  const [showAnchorModal, setShowAnchorModal] = useState(false);
+  const [showSavedOutfitsModal, setShowSavedOutfitsModal] = useState(false);
 
   // Tomorrow calculation
   const tomorrow = new Date();
@@ -55,42 +63,57 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
   };
 
   return (
-    <div className="pb-28 sm:pb-24 md:pb-8 animate-fade-in">
-      {/* Compact Editorial Header: "Aaj kya pehenna hai?" + Actions */}
-      <header className="mb-3 flex items-center justify-between border-b border-border pb-2.5">
+    <div className="pb-28 sm:pb-24 md:pb-8 animate-fade-in max-w-7xl mx-auto">
+      {/* Luxury Editorial Header: "What feels like you today?" */}
+      <header className="mb-4 flex items-start justify-between border-b border-border/80 pb-3.5">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
-              DRESS ME
+            <span className="editorial-kicker text-(--kumkum)">
+              DRESS ME · DAILY EDIT
+            </span>
+            <span className="text-[9px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-(--burnished-gold)/10 text-(--burnished-gold) border border-(--burnished-gold)/30">
+              Personalized
             </span>
           </div>
-          <h1 className="mt-0.5 font-serif text-2xl sm:text-3xl italic text-(--ink) tracking-tight">
-            Aaj kya pehenna hai?
+          <h1 className="mt-1 editorial-hero text-2xl sm:text-4xl lg:text-5xl text-(--ink) tracking-tight leading-none">
+            What feels like you today?
           </h1>
-          <p className="text-[11px] text-muted font-medium">
-            Styled around your wardrobe · Curated for how you like to dress
+          <p className="mt-1.5 text-xs text-muted font-medium">
+            <span className="font-serif italic text-(--kumkum)">Aaj kya pehenna hai?</span> · Styled around your wardrobe · Curated for how you like to dress
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0 pt-1">
           <button
             type="button"
             onClick={toggleTheme}
-            className="md:hidden flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted transition-colors hover:border-(--ink) hover:text-(--ink)"
+            className="md:hidden flex h-9 w-9 min-h-11 min-w-11 items-center justify-center rounded-full border border-border text-muted transition-colors hover:border-(--ink) hover:text-(--ink) active:scale-95 tactile-press"
             aria-label="Toggle theme"
           >
             {theme === 'light' ? '☾' : '☼'}
           </button>
 
           <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowSavedOutfitsModal(true)}
+            className="min-h-11 rounded-full shadow-2xs font-semibold uppercase tracking-wider gap-1.5 px-3.5 tactile-press"
+            aria-label="Open saved looks"
+          >
+            <Bookmark className="h-3.5 w-3.5 text-(--burnished-gold)" />
+            <span>Saved</span>
+            <span className="text-[10px] text-muted">({savedOutfits.length})</span>
+          </Button>
+
+          <Button
             variant="secondary"
             size="sm"
             onClick={handleShuffle}
-            className="rounded-full shadow-2xs font-semibold uppercase tracking-wider"
+            className="min-h-11 rounded-full shadow-2xs font-semibold uppercase tracking-wider gap-1.5 px-3.5 tactile-press"
             aria-label="Shuffle combinations"
           >
-            <RefreshCw className={`h-3 w-3 text-(--burnished-gold) ${isShuffling ? 'animate-spin' : ''}`} />
-            <span>Shuffle</span>
+            <RefreshCw className={`h-3.5 w-3.5 text-(--burnished-gold) ${isShuffling ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Shuffle</span>
           </Button>
         </div>
       </header>
@@ -100,7 +123,7 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
 
       {/* Tomorrow Shortcut Bar */}
       {tomorrowPlan ? (
-        <div className="mb-3 rounded-xl border border-(--burnished-gold)/40 bg-(--ivory) p-3 flex items-center justify-between shadow-2xs">
+        <div className="mb-3 rounded-2xl border border-(--burnished-gold)/40 bg-(--ivory) p-3.5 flex items-center justify-between shadow-2xs">
           <div className="flex items-center gap-2.5">
             <Calendar className="h-4 w-4 text-(--burnished-gold)" />
             <div className="text-left">
@@ -117,14 +140,14 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
               variant="outline"
               size="sm"
               onClick={onGoToCalendar}
-              className="text-[10px] font-semibold uppercase tracking-wider h-7 px-2.5"
+              className="text-[10px] font-semibold uppercase tracking-wider h-8 px-3 rounded-full"
             >
               View in Calendar
             </Button>
           )}
         </div>
       ) : (
-        <div className="mb-3 rounded-xl border border-(--border)/80 bg-card p-3 flex items-center justify-between shadow-2xs">
+        <div className="mb-3 rounded-2xl glass-card p-3.5 flex items-center justify-between shadow-2xs">
           <div className="flex items-center gap-2.5">
             <Calendar className="h-4 w-4 text-muted" />
             <div className="text-left">
@@ -141,7 +164,7 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
               variant="default"
               size="sm"
               onClick={() => setPlanningOutfit(outfits[0])}
-              className="text-[10px] font-semibold uppercase tracking-wider h-7 px-2.5 shadow-2xs"
+              className="text-[10px] font-semibold uppercase tracking-wider h-8 px-3 rounded-full shadow-2xs"
             >
               Plan Tomorrow
             </Button>
@@ -149,7 +172,73 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
         </div>
       )}
 
-      {/* Ultra-Compact Context Controls: Occasions + Seasons in one unified bar */}
+      {/* Anchor Garment Status Banner or Quick Stylist Launcher */}
+      {anchorItem ? (
+        <div className="mb-3.5 flex items-center justify-between p-3 sm:p-3.5 rounded-2xl border border-(--burnished-gold)/50 bg-(--burnished-gold)/10 shadow-2xs">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-border bg-(--paper)">
+              <ItemImage item={anchorItem} className="h-full w-full object-cover" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[9px] uppercase tracking-wider font-bold text-(--burnished-gold) block">
+                  LOCKED ANCHOR PIECE
+                </span>
+                <span className="text-[9px] uppercase tracking-wider text-muted font-sans">
+                  • {anchorItem.category}
+                </span>
+              </div>
+              <h4 className="font-serif text-sm sm:text-base font-normal text-(--ink) truncate">
+                {anchorItem.name}
+              </h4>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowAnchorModal(true)}
+              className="text-[11px] font-semibold text-muted hover:text-(--ink) px-3 py-1.5 rounded-full border border-border bg-card/70 transition-colors"
+            >
+              Change
+            </button>
+            <button
+              type="button"
+              onClick={() => setAnchorItem(null)}
+              className="flex h-9 w-9 items-center justify-center rounded-full text-muted hover:text-(--kumkum) hover:bg-(--kumkum)/10 transition-colors"
+              aria-label="Clear anchor piece"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="mb-3.5 flex items-center justify-between p-2.5 sm:p-3 rounded-2xl border border-dashed border-border/80 bg-(--card)/40">
+          <div className="flex items-center gap-2">
+            <Pin className="h-3.5 w-3.5 text-(--burnished-gold)" />
+            <span className="text-xs text-muted font-sans">
+              Want to build an ensemble around a specific piece?
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowAnchorModal(true)}
+            className="flex min-h-11 items-center gap-1.5 rounded-full bg-(--paper) border border-border px-3.5 py-1 text-xs font-semibold text-(--ink) shadow-2xs hover:border-(--burnished-gold) active:scale-95 transition-all"
+          >
+            <Sparkles className="h-3.5 w-3.5 text-(--burnished-gold)" />
+            <span>Style Around Piece</span>
+          </button>
+        </div>
+      )}
+
+      {/* Laundry Warning Banner (Anchor Piece) */}
+      {laundryWarning && (
+        <div className="mb-3.5 flex items-center gap-2.5 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-300 font-medium">
+          <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+          <span>{laundryWarning}. You can still style and schedule this outfit for later.</span>
+        </div>
+      )}
+
+      {/* Context Controls: Occasions + Seasons */}
       <div className="mb-4 space-y-2.5 border-b border-(--border)/70 pb-3">
         {/* Occasion Selector Chips */}
         <div className="no-scrollbar -mx-3.5 sm:-mx-6 md:mx-0 flex gap-1.5 overflow-x-auto px-3.5 sm:px-6 md:px-0 py-0.5 md:flex-wrap">
@@ -194,7 +283,7 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
         </div>
       </div>
 
-      {/* Outfit Results: The Outfit Dominates Immediately */}
+      {/* Outfit Results */}
       {isShuffling ? (
         <div className="space-y-4">
           <OutfitCardSkeleton />
@@ -210,14 +299,14 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
           }
           action={{
             label: emptyStateInfo?.actionLabel || 'Open Wardrobe',
-            onClick: onGoToWardrobe,
+            onClick: emptyStateInfo?.actionLabel === 'Clear Anchor' ? () => setAnchorItem(null) : onGoToWardrobe,
           }}
         />
       ) : (
         <div className="space-y-4">
           {outfits.map((outfit, index) => (
             <OutfitCard
-              key={`${outfit.template}-${index}-${season}-${occasion}`}
+              key={`${outfit.template}-${index}-${season}-${occasion}-${anchorItem?.id || 'none'}`}
               outfit={outfit}
               index={index}
               occasion={occasion}
@@ -261,7 +350,23 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
           occasion={occasion}
         />
       )}
+
+      {/* Select Anchor Garment Modal */}
+      <SelectAnchorModal
+        isOpen={showAnchorModal}
+        onClose={() => setShowAnchorModal(false)}
+        items={items}
+        selectedAnchor={anchorItem}
+        onSelectAnchor={(item) => setAnchorItem(item)}
+        onClearAnchor={() => setAnchorItem(null)}
+      />
+
+      {/* Saved Looks Lookbook Modal */}
+      <SavedOutfitsModal
+        isOpen={showSavedOutfitsModal}
+        onClose={() => setShowSavedOutfitsModal(false)}
+        onPlanLook={(savedOutfit) => setPlanningOutfit(savedOutfit)}
+      />
     </div>
   );
 };
-

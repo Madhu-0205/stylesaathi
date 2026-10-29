@@ -29,6 +29,11 @@ export const EXPLANATION_REGISTRY: Readonly<Record<string, string>> = Object.fre
   lehenga_structural_complete: 'Complete lehenga ensemble with complementary bodice',
   lehenga_missing_blouse: 'Lehenga skirt structurally requires a complementary blouse or fitted top',
   kurta_structural_complete: 'Balanced kurta ensemble with matching lower component',
+  sherwani_structural_complete: 'Complete regal sherwani ensemble with tailored bottoms',
+  dhoti_structural_complete: 'Graceful traditional dhoti ensemble with balanced upper component',
+  bandhgala_structural_complete: 'Architectural bandhgala tailored ensemble with structured dignity',
+  dhoti_missing_kurta: 'Traditional dhoti structurally requires a complementary kurta or shirt',
+  bandhgala_missing_trousers: 'Bandhgala jacket requires tailored trousers or churidar',
 
   // Cultural & Festivals
   festive_textile_resonance: 'Traditional festive textile pairing suited for celebratory occasion',
@@ -38,9 +43,16 @@ export const EXPLANATION_REGISTRY: Readonly<Record<string, string>> = Object.fre
   high_movement_mobility_constraint: 'Heavy or rigid fabric restricts movement for active festive celebrations',
   modesty_preference_aligned: 'Modest drape aligned with declared modesty preference',
   modesty_preference_mismatch: 'Cropped or revealing piece conflicts with declared modesty preference',
+  teen_safety_compliant: 'Age-appropriate silhouette supporting campus and everyday decorum',
+  teen_modesty_safeguard: 'Respects youth dress code guidelines and age-appropriate coverage',
 
   // Regional
   regional_craft_resonance: 'Celebrates authentic regional textile heritage and craft traditions',
+
+  // International Style Inspirations
+  international_korean_streetwear_resonance: 'Modern South Korean-inspired relaxed silhouette and minimalist styling',
+  international_japanese_workwear_resonance: 'Subtle Japanese-inspired textured minimalism and natural fiber focus',
+  international_european_tailored_resonance: 'Sharp European-inspired tailoring and refined tonal harmony',
 });
 
 /**

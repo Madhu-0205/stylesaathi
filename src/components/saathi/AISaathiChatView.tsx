@@ -87,22 +87,22 @@ export const AISaathiChatView: React.FC<AISaathiChatViewProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs transition-opacity"
+      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm transition-opacity"
       role="dialog"
       aria-modal="true"
       aria-label="AI Saathi Conversation"
     >
-      <div className="w-full h-full sm:h-[85vh] sm:max-h-180 max-w-xl bg-background rounded-none sm:rounded-2xl border-0 sm:border border-border flex flex-col overflow-hidden shadow-2xl">
+      <div className="w-full h-full sm:h-[85vh] sm:max-h-180 max-w-xl bg-background rounded-none sm:rounded-3xl border-0 sm:border border-border/80 flex flex-col overflow-hidden shadow-2xl">
         {/* Editorial Header */}
-        <header className="flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-border bg-(--card)/90 backdrop-blur-md shrink-0">
+        <header className="flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-border glass-header shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-(--ivory) border border-border flex items-center justify-center text-(--burnished-gold)">
-              <Sparkles className="w-4 h-4" />
+            <div className="w-9 h-9 rounded-full bg-(--ivory) border border-(--burnished-gold)/40 flex items-center justify-center text-(--burnished-gold) shadow-2xs">
+              <Sparkles className="w-4 h-4 animate-pulse" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <h2 className="text-sm font-bold tracking-tight text-(--text)">AI SAATHI</h2>
-                <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                <h2 className="text-sm font-serif font-bold tracking-wide text-(--text)">AI SAATHI</h2>
+                <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
                   Privacy-First Orchestrator
                 </span>
               </div>
@@ -119,7 +119,7 @@ export const AISaathiChatView: React.FC<AISaathiChatViewProps> = ({
               onClick={resetConversation}
               title="Reset conversation"
               aria-label="Reset conversation"
-              className="min-h-11 min-w-11 flex items-center justify-center rounded-full text-muted hover:text-(--text) hover:bg-(--ivory)/60 transition-colors active:scale-95"
+              className="min-h-11 min-w-11 flex items-center justify-center rounded-full text-muted hover:text-(--text) hover:bg-(--ivory) transition-all active:scale-95"
             >
               <RotateCcw className="w-4 h-4" />
             </button>
@@ -128,7 +128,7 @@ export const AISaathiChatView: React.FC<AISaathiChatViewProps> = ({
               onClick={onClose}
               title="Close chat"
               aria-label="Close chat"
-              className="min-h-11 min-w-11 flex items-center justify-center rounded-full text-muted hover:text-(--text) hover:bg-(--ivory)/60 transition-colors active:scale-95"
+              className="min-h-11 min-w-11 flex items-center justify-center rounded-full text-muted hover:text-(--text) hover:bg-(--ivory) transition-all active:scale-95"
             >
               <X className="w-5 h-5" />
             </button>
@@ -139,15 +139,15 @@ export const AISaathiChatView: React.FC<AISaathiChatViewProps> = ({
         <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-4 space-y-4">
-              <div className="w-12 h-12 rounded-2xl bg-(--ivory) border border-border flex items-center justify-center text-(--burnished-gold) shadow-2xs">
-                <Sparkles className="w-6 h-6" />
+              <div className="w-14 h-14 rounded-2xl bg-(--ivory) border border-(--burnished-gold)/30 flex items-center justify-center text-(--burnished-gold) shadow-2xs">
+                <Sparkles className="w-7 h-7" />
               </div>
-              <div className="space-y-1 max-w-sm">
-                <h3 className="font-serif text-lg font-medium text-(--text)">
+              <div className="space-y-1.5 max-w-sm">
+                <h3 className="editorial-headline text-2xl font-normal text-(--ink)">
                   Namaste! How can I style your day?
                 </h3>
-                <p className="text-xs text-muted leading-relaxed">
-                  I coordinate your wardrobe, verified weather, style brain, and gap intelligence to provide conversational decision support.
+                <p className="text-xs text-muted leading-relaxed font-normal">
+                  Your personal fashion consultant. Ask about outfit combinations, occasion etiquette, climate comfort, or wardrobe staples.
                 </p>
               </div>
 
@@ -198,7 +198,7 @@ export const AISaathiChatView: React.FC<AISaathiChatViewProps> = ({
         </div>
 
         {/* Input Bar */}
-        <footer className="border-t border-border bg-(--card)/90 backdrop-blur-md shrink-0">
+        <footer className="border-t border-border bg-(--card)/95 backdrop-blur-md shrink-0">
           {/* Quick Prompts Carousel */}
           <div className="px-3 sm:px-4 py-2 border-b border-border/40 flex gap-2 overflow-x-auto no-scrollbar">
             {QUICK_PROMPTS.map((prompt) => (
@@ -206,7 +206,7 @@ export const AISaathiChatView: React.FC<AISaathiChatViewProps> = ({
                 key={prompt}
                 type="button"
                 onClick={() => handleQuickPrompt(prompt)}
-                className="shrink-0 min-h-11 px-3 py-1.5 rounded-full border border-border bg-card hover:bg-(--ivory) text-[11px] text-(--text) transition-all active:scale-95 shadow-2xs whitespace-nowrap flex items-center"
+                className="shrink-0 min-h-9 px-3 py-1 rounded-full border border-border bg-card hover:bg-(--ivory) text-[11px] font-medium text-(--text) transition-all active:scale-95 shadow-2xs whitespace-nowrap flex items-center"
               >
                 {prompt}
               </button>
@@ -220,13 +220,13 @@ export const AISaathiChatView: React.FC<AISaathiChatViewProps> = ({
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               placeholder="Ask AI Saathi about your closet, looks, or gaps…"
-              className="flex-1 min-h-11 px-4 rounded-xl border border-border bg-background text-base sm:text-xs text-(--text) placeholder:text-muted focus:outline-hidden focus:ring-1 focus:ring-(--burnished-gold) transition-all"
+              className="flex-1 min-h-11 px-4 rounded-full border border-border bg-background text-base sm:text-xs text-(--text) placeholder:text-muted focus:outline-hidden focus:ring-1.5 focus:ring-(--burnished-gold) transition-all shadow-2xs"
             />
             <button
               type="submit"
               disabled={!inputText.trim() || isLoading}
               aria-label="Send message"
-              className="min-h-11 min-w-11 px-4 rounded-xl bg-(--ink) text-white flex items-center justify-center hover:opacity-95 active:scale-95 disabled:opacity-40 transition-all"
+              className="min-h-11 min-w-11 px-4 rounded-full bg-(--ink) text-white flex items-center justify-center hover:opacity-95 active:scale-95 disabled:opacity-40 transition-all shadow-2xs"
             >
               {isLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

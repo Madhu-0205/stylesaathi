@@ -149,7 +149,7 @@ export const TrendDiscoveryCard: React.FC<TrendDiscoveryCardProps> = ({
         <button
           type="button"
           onClick={() => onExplore(opportunity)}
-          className="inline-flex items-center gap-1.5 min-h-[40px] px-4 py-2 rounded-xl bg-(--ink) text-(--card) text-xs font-semibold tracking-wide hover:opacity-90 active:scale-95 transition-all shadow-xs"
+          className="inline-flex items-center gap-1.5 min-h-10 px-4 py-2 rounded-xl bg-(--ink) text-card text-xs font-semibold tracking-wide hover:opacity-90 active:scale-95 transition-all shadow-xs"
         >
           <Layers className="w-3.5 h-3.5" />
           Try With Your Wardrobe

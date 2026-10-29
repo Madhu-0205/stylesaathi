@@ -26,6 +26,7 @@ export function useDressMe(providedContext?: ContextSnapshot) {
   const [season, setSeason] = useState<Season>(() => {
     return deriveSeasonalContext(new Date(), weatherContext?.weather);
   });
+  const [anchorItem, setAnchorItem] = useState<WardrobeItem | null>(null);
   const [explorationSeedOffset, setExplorationSeedOffset] = useState<number>(0);
   const [activeAccessories, setActiveAccessories] = useState<Record<number, WardrobeItem | null>>({});
 
@@ -41,6 +42,18 @@ export function useDressMe(providedContext?: ContextSnapshot) {
     return contextSnapshot?.date || new Date().toISOString().split('T')[0];
   }, [contextSnapshot]);
 
+  // Check laundry status for anchor item
+  const laundryWarning = useMemo<string | null>(() => {
+    if (!anchorItem) return null;
+    if (anchorItem.status === 'needs_washing') {
+      return 'Needs Washing · Clean before wearing today';
+    }
+    if (anchorItem.status === 'in_laundry') {
+      return 'In Laundry · Clean before wearing today';
+    }
+    return null;
+  }, [anchorItem]);
+
   // Generate top-3 curated recommendations for chosen occasion & season with Recommendation Engine 2.0
   const outfits = useMemo(() => {
     return recommendOutfits({
@@ -53,8 +66,9 @@ export function useDressMe(providedContext?: ContextSnapshot) {
       styleProfile,
       context: contextSnapshot,
       limit: 3,
+      anchorItemId: anchorItem?.id,
     });
-  }, [items, occasion, season, localDate, explorationSeedOffset, preferences, styleProfile, contextSnapshot]);
+  }, [items, occasion, season, localDate, explorationSeedOffset, preferences, styleProfile, contextSnapshot, anchorItem]);
 
   // Clean accessories available in wardrobe
   const availableAccessories = useMemo(() => {
@@ -211,12 +225,20 @@ export function useDressMe(providedContext?: ContextSnapshot) {
       };
     }
 
+    if (anchorItem) {
+      return {
+        title: `No matching looks for ${anchorItem.name}`,
+        description: `StyleSaathi could not build a complete ensemble around this piece for ${occasion} in ${season}. Try changing the occasion or clear the anchor to explore other pieces.`,
+        actionLabel: 'Clear Anchor',
+      };
+    }
+
     return {
       title: 'No compatible combination for this look',
       description: `Your available clean pieces for ${occasion} in ${season} do not align with any outfit silhouette. Try another occasion or adjust clothing tags.`,
       actionLabel: 'Open Wardrobe',
     };
-  }, [items, occasion, season, outfits.length]);
+  }, [items, occasion, season, outfits.length, anchorItem]);
 
   return {
     occasion,
@@ -233,5 +255,8 @@ export function useDressMe(providedContext?: ContextSnapshot) {
     saveOutfit,
     rejectOutfit,
     contextSnapshot,
+    anchorItem,
+    setAnchorItem,
+    laundryWarning,
   };
 }

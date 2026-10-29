@@ -43,24 +43,24 @@ export const WearAnalyticsView: React.FC<WearAnalyticsViewProps> = ({
   return (
     <div className="space-y-5 animate-fade-in pb-12">
       {/* Timeframe Selector Bar */}
-      <div className="flex items-center justify-between border-b border-border pb-3">
+      <div className="flex items-center justify-between border-b border-border/80 pb-3">
         <div>
-          <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
+          <span className="editorial-kicker text-(--kumkum)">
             ANALYTICS &amp; EVOLUTION
           </span>
-          <h2 className="text-xl sm:text-2xl font-serif font-normal text-(--ink) tracking-tight">
+          <h2 className="editorial-title text-xl sm:text-2xl text-(--ink) tracking-tight">
             Your Wardrobe in Motion
           </h2>
         </div>
 
         {/* Timeframe Chips */}
-        <div className="flex items-center p-1 rounded-xl bg-(--ivory) border border-border">
+        <div className="flex items-center p-1 rounded-full glass-pill specular-border">
           {(['7d', '30d', '90d', 'all'] as AnalyticsTimeframe[]).map((tf) => (
             <button
               key={tf}
               type="button"
               onClick={() => setSelectedTimeframe(tf)}
-              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
+              className={`min-h-9 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all tactile-press-sm ${
                 selectedTimeframe === tf
                   ? 'bg-(--ink) text-(--paper) shadow-2xs'
                   : 'text-muted hover:text-(--ink)'

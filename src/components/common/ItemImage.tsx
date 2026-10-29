@@ -73,6 +73,7 @@ export const ItemImage: React.FC<ItemImageProps> = ({
         subcategory={item.subcategory}
         name={item.name}
         colors={item.colors}
+        fabric={item.fabric}
         className={className}
         showLabel={showLabel}
       />
@@ -91,7 +92,7 @@ export const ItemImage: React.FC<ItemImageProps> = ({
         fetchPriority={isHero ? 'high' : undefined}
         onLoad={() => setImgLoaded(true)}
         onError={() => setHasError(true)}
-        className={`h-full w-full object-contain p-2 transition-opacity duration-300 ${
+        className={`h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03] ${
           imgLoaded ? 'opacity-100' : 'opacity-0'
         }`}
       />

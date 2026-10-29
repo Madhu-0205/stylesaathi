@@ -32,6 +32,11 @@ export type Subcategory =
   | 'palazzo'
   | 'churidar'
   | 'pajama'
+  | 'dhoti'
+  | 'lungi'
+  | 'bandhgala'
+  | 'achkan'
+  | 'angrakha'
   | 'dupatta'
   | 'nehru jacket'
   | 'dress'
@@ -59,6 +64,7 @@ export type Season = 'summer' | 'monsoon' | 'winter';
 
 export type Occasion =
   | 'college'
+  | 'school'
   | 'everyday'
   | 'office'
   | 'interview'
@@ -70,6 +76,7 @@ export type Occasion =
   | 'puja'
   | 'festive'
   | 'wedding guest'
+  | 'engagement'
   | 'celebration'
   | 'Diwali'
   | 'Holi'
@@ -271,6 +278,17 @@ export interface StylePreferences {
   updatedAt: number;
   clientUpdatedAt?: number;
   serverUpdatedAt?: string;
+
+  // Phase Upgrade: User-controlled explicit personalization & safety
+  ageBand?: 'teen_14_17' | 'adult_18_plus';
+  presentationPreference?: 'masculine' | 'feminine' | 'androgynous' | 'all';
+  dislikedStyles?: string[];
+  preferredColors?: string[];
+  fabricSensitivities?: FabricType[];
+  preferredFits?: SilhouetteFit[];
+  regionalInterests?: string[];
+  budgetTier?: 'budget_conscious' | 'mid_range' | 'premium';
+  internationalInspirations?: ('indian_first' | 'korean_contemporary_streetwear' | 'japanese_relaxed_workwear' | 'european_tailored_smart')[];
 }
 
 export type PlanStatus = 'planned' | 'worn' | 'cancelled';
@@ -405,6 +423,13 @@ export interface PersonalStyleProfile {
   topFabrics: FabricType[];
   topFits: SilhouetteFit[];
   recentExplorations: string[];
+
+  // User-controlled explicit profile attributes:
+  ageBand?: 'teen_14_17' | 'adult_18_plus';
+  presentationPreference?: 'masculine' | 'feminine' | 'androgynous' | 'all';
+  fabricSensitivities?: FabricType[];
+  regionalInterests?: string[];
+  budgetTier?: 'budget_conscious' | 'mid_range' | 'premium';
 }
 
 export interface StyleSignalsRepository {
@@ -715,6 +740,12 @@ export interface RecommendationExplanation {
   headline: string;
   reasons: string[];
   evidenceSources: ExplanationEvidenceSource[];
+  confidenceScore?: number; // 0.0 to 1.0 grounded evidence completeness
+  confidenceLevel?: ConfidenceLevel; // Grounded indicator based on data sufficiency
+  assumptions?: string[]; // Transparent assumptions when signals are incomplete
+  garmentCoordination?: Record<string, string>; // Garment-by-garment styling rationale
+  weatherComfortRationale?: string; // Strictly omitted if weather unavailable
+  culturalRationale?: string; // Grounded cultural knowledge rationale
 }
 
 export interface RecommendedOutfit extends GeneratedOutfit {
@@ -730,6 +761,7 @@ export interface CulturalContextSignals {
   regionalTradition?: string;
   festivalContext?: string;
   customOccasionNotes?: string;
+  userRole?: 'host' | 'guest' | 'participant' | 'attendee' | 'key_family';
 }
 
 export type OutfitSlotRole =

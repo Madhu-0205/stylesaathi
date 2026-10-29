@@ -129,11 +129,11 @@ export const AuthView: React.FC<AuthViewProps> = ({
         <StyleSaathiLogo variant="mark" size="md" />
       </div>
 
-      <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-(--kumkum)">
+      <span className="editorial-kicker text-(--kumkum)">
         STYLESAATHI PROFILE
       </span>
 
-      <h1 className="mt-2 font-serif text-2xl sm:text-3xl font-normal text-(--ink) tracking-tight leading-tight">
+      <h1 className="mt-2 editorial-hero text-2xl sm:text-3xl font-normal text-(--ink) tracking-tight leading-tight">
         YOUR WARDROBE.<br />YOUR STYLE.<br />YOUR SAATHI.
       </h1>
 

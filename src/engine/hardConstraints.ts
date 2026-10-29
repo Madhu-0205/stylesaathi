@@ -107,12 +107,64 @@ export function validateClimateHazard(
 }
 
 /**
+ * Validates that no garment contains fabrics the user has declared sensitivity or allergy to.
+ */
+export function validateFabricSensitivities(
+  pieces: WardrobeItem[],
+  preferences?: StylePreferences
+): HardConstraintResult {
+  if (!preferences?.fabricSensitivities || preferences.fabricSensitivities.length === 0) {
+    return { valid: true };
+  }
+  for (const item of pieces) {
+    if (item.fabric && preferences.fabricSensitivities.includes(item.fabric as any)) {
+      return {
+        valid: false,
+        reason: `Fabric sensitivity safeguard: "${item.name}" contains ${item.fabric}, which is in declared fabric sensitivities.`,
+      };
+    }
+  }
+  return { valid: true };
+}
+
+/**
+ * Age-appropriate safety validation for teens aged 14-17.
+ * Strictly non-judgmental and protective: enforces school dress code compliance
+ * and filters adult-revealing/sexualized cuts without body-shaming or appearance ratings.
+ */
+export function validateTeenSafety(
+  pieces: WardrobeItem[],
+  preferences?: StylePreferences,
+  occasion?: Occasion
+): HardConstraintResult {
+  if (!preferences || preferences.ageBand !== 'teen_14_17') {
+    return { valid: true };
+  }
+
+  const subs = pieces.map((p) => p.subcategory?.toLowerCase() || '');
+
+  // 1. School compliance: in school/coaching contexts, modesty decorum applies
+  if (occasion === 'school') {
+    if (subs.includes('crop top') || subs.includes('shorts')) {
+      return {
+        valid: false,
+        reason: 'Age-appropriate safeguard: Crop tops and shorts are not suited for school dress codes.',
+      };
+    }
+  }
+
+  return { valid: true };
+}
+
+/**
  * Evaluates all Tier 1 Hard Constraints for a candidate outfit.
  * If any check fails, the candidate is discarded before multi-dimensional scoring.
  */
 export function evaluateTier1HardConstraints(
   candidate: { template: OutfitTemplate; slots: Record<string, WardrobeItem[]> },
-  context?: ContextSnapshot
+  context?: ContextSnapshot,
+  preferences?: StylePreferences,
+  occasion?: Occasion
 ): { passed: boolean; failureReason?: string } {
   const pieces = Object.values(candidate.slots).flat();
 
@@ -134,6 +186,16 @@ export function evaluateTier1HardConstraints(
   const climateCheck = validateClimateHazard(pieces, context);
   if (!climateCheck.valid) {
     return { passed: false, failureReason: climateCheck.reason };
+  }
+
+  const teenCheck = validateTeenSafety(pieces, preferences, occasion || context?.occasion);
+  if (!teenCheck.valid) {
+    return { passed: false, failureReason: teenCheck.reason };
+  }
+
+  const sensitivityCheck = validateFabricSensitivities(pieces, preferences);
+  if (!sensitivityCheck.valid) {
+    return { passed: false, failureReason: sensitivityCheck.reason };
   }
 
   return { passed: true };
@@ -211,8 +273,8 @@ export function evaluateCulturalTierScore(
       reasons.push('Dark tones traditionally avoided for devotional rites');
     }
   }
-  // 2. Wedding Guest / Grand Celebration
-  else if (occasion === 'wedding guest' || occasion === 'celebration') {
+  // 2. Wedding Guest / Grand Celebration / Engagement
+  else if (occasion === 'wedding guest' || occasion === 'celebration' || occasion === 'engagement') {
     const casualSubs = ['shorts', 't-shirt', 'hoodie', 'joggers', 'sneakers'];
     const hasCasualMismatch = subs.some((s) => casualSubs.includes(s));
 
@@ -220,27 +282,35 @@ export function evaluateCulturalTierScore(
       tier = 2;
       const basePenalty = 3.5;
       penalty += userPermissiveWestern ? basePenalty * 0.5 : basePenalty;
-      reasons.push('Casual garments heavily penalized for wedding guest formality');
+      reasons.push('Casual garments heavily penalized for celebratory formality');
     }
 
     if (hasEthnic) {
       bonus += 1.5;
     }
-    const festiveSubs = ['saree', 'lehenga', 'nehru jacket', 'sherwani', 'anarkali', 'dupatta'];
+    const festiveSubs = ['saree', 'lehenga', 'nehru jacket', 'sherwani', 'bandhgala', 'achkan', 'anarkali', 'dupatta'];
     if (subs.some((s) => festiveSubs.includes(s))) {
       bonus += 1.2;
-      reasons.push('Elevated festive craftsmanship suited for wedding celebrations');
+      reasons.push('Elevated festive craftsmanship suited for celebrations');
+    }
+
+    // Role-aware elevation: Host or Key Family
+    if (culturalSignals?.userRole === 'host' || culturalSignals?.userRole === 'key_family') {
+      if (subs.some((s) => ['sherwani', 'saree', 'lehenga', 'bandhgala', 'achkan'].includes(s))) {
+        bonus += 0.8;
+        reasons.push('Regal structured silhouette appropriate for ceremonial host role');
+      }
     }
   }
   // 3. Corporate / Interview
   else if (occasion === 'interview' || occasion === 'office') {
-    const informalSubs = ['shorts', 'sneakers', 'hoodie', 'lehenga', 'sherwani'];
+    const informalSubs = ['shorts', 'sneakers', 'hoodie', 'lehenga', 'sherwani', 'dhoti'];
     if (subs.some((s) => informalSubs.includes(s))) {
       tier = 2;
       penalty += 2.5;
       reasons.push('Silhouette does not align with structured professional setting');
     }
-    const formalSubs = ['blazer', 'shirt', 'trousers', 'formal shoes', 'saree', 'kurta'];
+    const formalSubs = ['blazer', 'shirt', 'trousers', 'formal shoes', 'saree', 'kurta', 'bandhgala'];
     if (subs.some((s) => formalSubs.includes(s))) {
       bonus += 1.0;
       reasons.push('Clean tailored presentation for professional context');
@@ -253,12 +323,29 @@ export function evaluateCulturalTierScore(
       reasons.push('Authentic ethnic silhouette for festive gathering');
     }
   }
+  // 5. Educational / Campus (School / College)
+  else if (occasion === 'school' || occasion === 'college') {
+    const overlyFormal = ['sherwani', 'lehenga', 'achkan'];
+    if (subs.some((s) => overlyFormal.includes(s))) {
+      penalty += 2.0;
+      reasons.push('Ceremonial formalwear is mismatched for campus/school day');
+    }
+    const campusComfort = ['jeans', 't-shirt', 'kurti', 'kurta', 'trousers', 'sneakers', 'flats'];
+    if (subs.some((s) => campusComfort.includes(s))) {
+      bonus += 0.8;
+    }
+  }
 
-  // Extension point for CulturalContextSignals
+  // Extension point for CulturalContextSignals & Modesty
   if (culturalSignals?.declaredModestyLevel === 'high') {
     if (subs.includes('dupatta') || subs.includes('kurta') || subs.includes('saree')) {
       bonus += 0.6;
     }
+  }
+
+  // Age-appropriate youth decorum
+  if (preferences?.ageBand === 'teen_14_17') {
+    bonus += 0.5;
   }
 
   return {

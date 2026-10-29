@@ -660,6 +660,21 @@ export function calculatePersonalStyleScore(
     ) {
       delta = Math.max(delta, 0.5);
     }
+    // Explicit preferred colors boost
+    if (declaredPrefs.preferredColors && declaredPrefs.preferredColors.length > 0) {
+      const preferred = declaredPrefs.preferredColors.map((c) => c.toLowerCase());
+      if (pieceColors.some((c) => preferred.includes(c))) {
+        delta += 0.5;
+      }
+    }
+    // Explicit disliked styles penalty
+    if (declaredPrefs.dislikedStyles && declaredPrefs.dislikedStyles.length > 0) {
+      const disliked = declaredPrefs.dislikedStyles.map((s) => s.toLowerCase());
+      const subs = pieces.map((p) => p.subcategory?.toLowerCase() || '');
+      if (subs.some((s) => disliked.includes(s))) {
+        delta -= 1.5;
+      }
+    }
   }
 
   // Clamp personal style score delta within [-3.0, 3.0]

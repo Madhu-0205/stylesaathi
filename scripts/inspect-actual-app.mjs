@@ -1,0 +1,441 @@
+import { spawn } from 'node:child_process';
+import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
+
+const DIST_DIR = path.resolve('dist');
+const USER_DATA_DIR = '/tmp/stylesaathi-inspect-chrome';
+const PORT = 5176;
+const CDP_PORT = 9226;
+
+const mimeTypes = {
+  '.html': 'text/html',
+  '.js': 'application/javascript',
+  '.css': 'text/css',
+  '.json': 'application/json',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.webp': 'image/webp',
+  '.svg': 'image/svg+xml',
+  '.wasm': 'application/wasm',
+  '.woff2': 'font/woff2',
+  '.woff': 'font/woff',
+  '.ttf': 'font/ttf',
+};
+
+// 1. Static file server for dist/
+function startServer() {
+  return new Promise((resolve) => {
+    const server = http.createServer((req, res) => {
+      let reqPath = req.url.split('?')[0];
+      if (reqPath === '/') reqPath = '/index.html';
+      const filePath = path.join(DIST_DIR, reqPath);
+
+      if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+        const ext = path.extname(filePath);
+        res.writeHead(200, {
+          'Content-Type': mimeTypes[ext] || 'application/octet-stream',
+          'Access-Control-Allow-Origin': '*',
+        });
+        fs.createReadStream(filePath).pipe(res);
+      } else {
+        // SPA fallback
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        fs.createReadStream(path.join(DIST_DIR, 'index.html')).pipe(res);
+      }
+    });
+
+    server.listen(PORT, '127.0.0.1', () => {
+      console.log(`[Server] Serving dist/ on http://127.0.0.1:${PORT}`);
+      resolve(server);
+    });
+  });
+}
+
+function fetchJson(url) {
+  return new Promise((resolve, reject) => {
+    http.get(url, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try { resolve(JSON.parse(data)); } catch (e) { reject(e); }
+      });
+    }).on('error', reject);
+  });
+}
+
+class CDPClient {
+  constructor(wsUrl) {
+    this.ws = new WebSocket(wsUrl);
+    this.id = 1;
+    this.callbacks = new Map();
+    this.networkRequests = [];
+
+    this.ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      if (msg.id && this.callbacks.has(msg.id)) {
+        const { resolve, reject } = this.callbacks.get(msg.id);
+        this.callbacks.delete(msg.id);
+        if (msg.error) reject(msg.error);
+        else resolve(msg.result);
+      } else if (msg.method === 'Network.responseReceived') {
+        this.networkRequests.push(msg.params.response);
+      }
+    };
+  }
+
+  waitOpen() {
+    return new Promise((resolve) => {
+      if (this.ws.readyState === WebSocket.OPEN) resolve();
+      else this.ws.onopen = () => resolve();
+    });
+  }
+
+  send(method, params = {}) {
+    return new Promise((resolve, reject) => {
+      const id = this.id++;
+      this.callbacks.set(id, { resolve, reject });
+      this.ws.send(JSON.stringify({ id, method, params }));
+    });
+  }
+
+  async eval(expression) {
+    const res = await this.send('Runtime.evaluate', {
+      expression,
+      returnByValue: true,
+      awaitPromise: true,
+    });
+    if (res.exceptionDetails) {
+      throw new Error(JSON.stringify(res.exceptionDetails));
+    }
+    return res.result?.value;
+  }
+
+  async captureScreenshot(outputPath) {
+    const res = await this.send('Page.captureScreenshot', { format: 'png' });
+    fs.writeFileSync(outputPath, Buffer.from(res.data, 'base64'));
+    console.log(`[Screenshot] Saved ${outputPath} (${fs.statSync(outputPath).size} bytes)`);
+  }
+
+  close() {
+    this.ws.close();
+  }
+}
+
+async function main() {
+  const server = await startServer();
+
+  if (!fs.existsSync(USER_DATA_DIR)) {
+    fs.mkdirSync(USER_DATA_DIR, { recursive: true });
+  }
+
+  console.log('[Chrome] Launching Headless Chrome on port', CDP_PORT);
+  const chrome = spawn('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', [
+    '--headless=new',
+    `--remote-debugging-port=${CDP_PORT}`,
+    `--user-data-dir=${USER_DATA_DIR}`,
+    '--no-first-run',
+    '--no-default-browser-check',
+    '--disable-gpu',
+    '--force-device-scale-factor=2',
+    '--window-size=390,844',
+    'about:blank',
+  ]);
+
+  try {
+    let targets = null;
+    for (let i = 0; i < 25; i++) {
+      await new Promise(r => setTimeout(r, 200));
+      try {
+        targets = await fetchJson(`http://127.0.0.1:${CDP_PORT}/json`);
+        if (targets && targets.length > 0) break;
+      } catch (e) {}
+    }
+
+    if (!targets) throw new Error('Could not connect to Chrome CDP');
+    const pageTarget = targets.find(t => t.type === 'page') || targets[0];
+    const cdp = new CDPClient(pageTarget.webSocketDebuggerUrl);
+    await cdp.waitOpen();
+
+    await cdp.send('Page.enable');
+    await cdp.send('Runtime.enable');
+    await cdp.send('Network.enable');
+
+    // Emulate iPhone 14/15 mobile device
+    await cdp.send('Emulation.setDeviceMetricsOverride', {
+      width: 390,
+      height: 844,
+      deviceScaleFactor: 2,
+      mobile: true,
+    });
+
+    // 1. Initial navigation to seed session
+    await cdp.send('Page.navigate', { url: `http://127.0.0.1:${PORT}/` });
+    await new Promise(r => setTimeout(r, 1200));
+
+    // Seed localStorage for onboarded guest session
+    await cdp.eval(`(() => {
+      localStorage.setItem('stylesaathi-settings-v1', JSON.stringify({
+        theme: 'light',
+        onboarded: true,
+        styleVibes: ['Minimal', 'Contemporary'],
+        setupCompleted: true
+      }));
+      localStorage.setItem('stylesaathi-guest-session-v1', JSON.stringify({
+        id: 'guest_1',
+        email: 'guest@stylesaathi.local',
+        name: 'Guest Stylist',
+        isGuest: true,
+        createdAt: Date.now()
+      }));
+    })()`);
+
+    // Reload page to apply session state
+    console.log('[App] Reloading with active guest profile & onboarded status...');
+    await cdp.send('Page.reload');
+    await new Promise(r => setTimeout(r, 1500));
+
+    // Check if wardrobe has pieces or needs sample load
+    const itemCount = await cdp.eval(`(() => {
+      const cards = document.querySelectorAll('article');
+      return cards.length;
+    })()`);
+    console.log('[Wardrobe] Initial visible cards count:', itemCount);
+
+    // If zero pieces, click "Load Sample Wardrobe" button if available
+    const loadResult = await cdp.eval(`(() => {
+      const loadBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent && b.textContent.includes('Load Sample Wardrobe'));
+      if (loadBtn) {
+        loadBtn.click();
+        return 'Clicked Load Sample Wardrobe';
+      }
+      return 'No sample button found';
+    })()`);
+    console.log('[Wardrobe Sample Action]:', loadResult);
+
+    // Wait for wardrobe items to render
+    for (let i = 0; i < 25; i++) {
+      const count = await cdp.eval(`document.querySelectorAll('article').length`);
+      if (count > 0) {
+        console.log(`[Wardrobe] ${count} wardrobe items rendered!`);
+        break;
+      }
+      await new Promise(r => setTimeout(r, 200));
+    }
+
+    // Wait a brief moment for images and styles to paint
+    await new Promise(r => setTimeout(r, 1000));
+
+    // Capture Wardrobe Mobile Screenshot (390px)
+    console.log('[Screenshot] Capturing Wardrobe Mobile (390px)...');
+    await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-wardrobe-390.png'));
+
+    // Switch to Desktop viewport to capture Wardrobe Desktop (1280px)
+    console.log('[Viewport] Switching to Desktop 1280x900...');
+    await cdp.send('Emulation.setDeviceMetricsOverride', {
+      width: 1280,
+      height: 900,
+      deviceScaleFactor: 2,
+      mobile: false,
+    });
+    await new Promise(r => setTimeout(r, 1000));
+    console.log('[Screenshot] Capturing Wardrobe Desktop (1280px)...');
+    await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-wardrobe-desktop.png'));
+
+    // Inspect Wardrobe Desktop elements & images
+    const wardrobeInspection = await cdp.eval(`(() => {
+      const h1 = document.querySelector('h1.editorial-hero');
+      const signatureSection = document.querySelector('section[aria-label="Curated Key Pieces"]');
+      const allImages = Array.from(document.querySelectorAll('img')).map(img => ({
+        src: img.src.split('/').pop(),
+        alt: img.alt,
+        naturalWidth: img.naturalWidth,
+        naturalHeight: img.naturalHeight,
+        complete: img.complete,
+      }));
+      const fallbackPlates = Array.from(document.querySelectorAll('.font-mono')).filter(el => el.textContent.includes('ATELIER ARCHIVE'));
+
+      return {
+        h1FontFamily: h1 ? window.getComputedStyle(h1).fontFamily : 'not found',
+        h1FontSize: h1 ? window.getComputedStyle(h1).fontSize : 'not found',
+        hasSignatureSection: Boolean(signatureSection),
+        loadedImagesCount: allImages.filter(img => img.naturalWidth > 0).length,
+        loadedImages: allImages.filter(img => img.naturalWidth > 0),
+        archivalPlatesCount: fallbackPlates.length,
+      };
+    })()`);
+    console.log('\n--- WARDROBE INSPECTION ---');
+    console.log(wardrobeInspection);
+
+    // Switch back to mobile viewport for Dress Me verification
+    console.log('[Viewport] Switching back to Mobile 390x844...');
+    await cdp.send('Emulation.setDeviceMetricsOverride', {
+      width: 390,
+      height: 844,
+      deviceScaleFactor: 2,
+      mobile: true,
+    });
+    await new Promise(r => setTimeout(r, 600));
+
+    // Switch to DRESS tab
+    console.log('[Navigation] Clicking DRESS tab...');
+    const switchTabResult = await cdp.eval(`(() => {
+      const navButtons = Array.from(document.querySelectorAll('nav button'));
+      const dressBtn = navButtons.find(b => b.getAttribute('aria-label') === 'DRESS' || b.textContent.includes('DRESS'));
+      if (dressBtn) {
+        dressBtn.click();
+        return 'Clicked DRESS tab';
+      }
+      return 'DRESS tab button not found';
+    })()`);
+    console.log('[Navigation] Result:', switchTabResult);
+
+    // Wait for recommendation outfit cards or content to render
+    for (let i = 0; i < 25; i++) {
+      const outfitCards = await cdp.eval(`document.querySelectorAll('article').length`);
+      if (outfitCards > 0) {
+        console.log(`[Dress Me] ${outfitCards} outfit cards rendered!`);
+        break;
+      }
+      await new Promise(r => setTimeout(r, 200));
+    }
+
+    // VERIFY FONTS & COMPUTED STYLES
+    console.log('\n--- 2. FONT VERIFICATION IN RUNNING BROWSER ---');
+
+    const fontChecks = await cdp.eval(`(() => {
+      const allFonts = Array.from(document.fonts).map(f => ({
+        family: f.family,
+        weight: f.weight,
+        style: f.style,
+        status: f.status,
+      }));
+      return {
+        cormorantRegular: document.fonts.check('400 32px "Cormorant Garamond"'),
+        cormorantItalic: document.fonts.check('italic 400 16px "Cormorant Garamond"'),
+        interCheck: document.fonts.check('14px "Inter"'),
+        inter400Check: document.fonts.check('400 14px "Inter"'),
+        allFontsLoaded: document.fonts.status,
+        fontsList: allFonts,
+      };
+    })()`);
+    console.log('[document.fonts.check]:', fontChecks);
+
+    // Check font network requests
+    console.log('\n--- 3. NETWORK FONT REQUESTS STATUS ---');
+    const fontRequests = cdp.networkRequests.filter(r => r.url && r.url.includes('/fonts/'));
+    console.log(`Captured ${fontRequests.length} local font network requests:`);
+    fontRequests.forEach(r => {
+      console.log(` - ${r.url}: Status ${r.status} (${r.mimeType})`);
+    });
+
+    // Inspect body and paragraph computed font family
+    const bodyInspection = await cdp.eval(`(() => {
+      const body = document.body;
+      const p = document.querySelector('p');
+      const bodyComp = window.getComputedStyle(body);
+      const pComp = p ? window.getComputedStyle(p) : null;
+      return {
+        bodyFontFamily: bodyComp.fontFamily,
+        pFontFamily: pComp ? pComp.fontFamily : 'no p tag',
+      };
+    })()`);
+    console.log('[Body & Paragraph Inspection]:', bodyInspection);
+
+    // Call document.fonts.load for Inter
+    const interLoadResult = await cdp.eval(`(async () => {
+      try {
+        const loaded = await document.fonts.load('14px "Inter"');
+        return {
+          loadedCount: loaded.length,
+          interCheckedAfterLoad: document.fonts.check('14px "Inter"'),
+        };
+      } catch (e) {
+        return { error: e.toString() };
+      }
+    })()`);
+    console.log('[Inter Explicit Load Test]:', interLoadResult);
+    console.log('\n--- 4. DOM HEADING ELEMENT & COMPUTED STYLES ---');
+    const headingInspection = await cdp.eval(`(() => {
+      const h1 = document.querySelector('h1.editorial-hero') || document.querySelector('h1');
+      if (!h1) return { error: 'No h1 element found' };
+
+      const computed = window.getComputedStyle(h1);
+      return {
+        tagName: h1.tagName,
+        className: h1.className,
+        textContent: h1.textContent.trim(),
+        computedFontFamily: computed.fontFamily,
+        computedFontSize: computed.fontSize,
+        computedLineHeight: computed.lineHeight,
+        computedLetterSpacing: computed.letterSpacing,
+        computedColor: computed.color,
+      };
+    })()`);
+    console.log('[Heading Inspection]:', headingInspection);
+
+    // Inspect look title heading in OutfitCard
+    const lookTitleInspection = await cdp.eval(`(() => {
+      const h3 = document.querySelector('h3.editorial-headline') || document.querySelector('article h3');
+      if (!h3) return { warning: 'No outfit card h3 found (might need sample wardrobe)' };
+
+      const computed = window.getComputedStyle(h3);
+      return {
+        tagName: h3.tagName,
+        className: h3.className,
+        textContent: h3.textContent.trim(),
+        computedFontFamily: computed.fontFamily,
+        computedFontSize: computed.fontSize,
+      };
+    })()`);
+    console.log('[Look Title Inspection]:', lookTitleInspection);
+
+    // Capture Dress Me Screen Screenshot
+    await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-dressme-390.png'));
+
+    // Test Saved Looks Modal
+    console.log('\n--- 5. SAVED LOOKS MODAL INTERACTION ---');
+    const openSavedResult = await cdp.eval(`(() => {
+      const btn = document.querySelector('button[aria-label="Open saved looks"]') || Array.from(document.querySelectorAll('button')).find(b => b.textContent && b.textContent.includes('Saved'));
+      if (btn) {
+        btn.click();
+        return 'Clicked Saved Looks button';
+      }
+      return 'Saved Looks button not found';
+    })()`);
+    console.log('[Saved Looks Action]:', openSavedResult);
+    await new Promise(r => setTimeout(r, 600));
+    await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-saved-looks-390.png'));
+
+    // Close Saved Looks Modal
+    await cdp.eval(`(() => {
+      const closeBtn = document.querySelector('button[aria-label="Close dialog"]') || document.querySelector('button[aria-label="Close"]');
+      if (closeBtn) closeBtn.click();
+    })()`);
+    await new Promise(r => setTimeout(r, 400));
+
+    // Test Anchor Item Modal
+    console.log('\n--- 6. ANCHOR PIECE STUDIO INTERACTION ---');
+    const openAnchorResult = await cdp.eval(`(() => {
+      const btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent && b.textContent.includes('Style Around Piece'));
+      if (btn) {
+        btn.click();
+        return 'Clicked Style Around Piece button';
+      }
+      return 'Style Around Piece button not found';
+    })()`);
+    console.log('[Anchor Action]:', openAnchorResult);
+    await new Promise(r => setTimeout(r, 600));
+    await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-anchor-studio-390.png'));
+
+    cdp.close();
+  } finally {
+    chrome.kill();
+    server.close();
+  }
+}
+
+main().catch(err => {
+  console.error('[Error in main]:', err);
+  process.exit(1);
+});

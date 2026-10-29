@@ -192,16 +192,34 @@ export const App: React.FC = () => {
             {/* Global Needle 3 On-Device Command Palette */}
             <NeedleCommandBar onNavigateTab={setCurrentTab} />
 
-            {/* Global AI Saathi Conversational Companion */}
-            <button
-              type="button"
-              onClick={() => setIsSaathiOpen(true)}
-              aria-label="Open AI Saathi conversation"
-              className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-30 flex min-h-11 items-center gap-2 rounded-full border border-(--burnished-gold)/40 bg-card px-3.5 py-2 text-xs font-bold text-(--ink) shadow-md backdrop-blur-md transition-all hover:bg-(--ivory) active:scale-95"
+            {/* Global Coordinated Floating AI Companion Hub (AI Saathi + Ask AI) */}
+            <aside
+              role="region"
+              aria-label="AI Companions"
+              className="safe-floating-ai fixed right-3.5 sm:right-6 md:right-6 z-30 flex items-center rounded-full glass-pill p-1 shadow-md transition-all border border-(--burnished-gold)/40"
             >
-              <Sparkles className="h-4 w-4 text-(--burnished-gold) animate-pulse" />
-              <span className="font-serif">AI Saathi</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => setIsSaathiOpen(true)}
+                aria-label="Open AI Saathi conversation"
+                className="flex min-h-11 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold text-(--ink) transition-colors hover:bg-(--ivory) active:scale-95"
+              >
+                <Sparkles className="h-4 w-4 text-(--burnished-gold) animate-pulse" />
+                <span className="font-serif">AI Saathi</span>
+              </button>
+
+              <div className="h-4 w-px bg-border/80 mx-0.5" aria-hidden="true" />
+
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent('open-needle-command'))}
+                aria-label="Open Ask AI command palette (Command + K)"
+                className="flex min-h-11 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-(--ink) transition-colors hover:bg-(--ivory) active:scale-95"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                <span className="font-serif">Ask AI</span>
+              </button>
+            </aside>
 
             <AISaathiChatView
               isOpen={isSaathiOpen}

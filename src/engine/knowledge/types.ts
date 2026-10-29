@@ -143,6 +143,8 @@ export interface FashionKnowledgeContext {
   festivalContext?: string;
   declaredModestyLevel?: 'standard' | 'high';
   userAesthetics?: string[];
+  internationalInspirations?: string[];
+  userRole?: string;
 }
 
 export interface FashionKnowledgeEngine {

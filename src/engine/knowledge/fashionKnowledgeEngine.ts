@@ -14,6 +14,7 @@ import {
 } from './compatibility';
 import { getCulturalSignals } from './culturalSignals';
 import { getRegionalSignals } from './regionalSignals';
+import { evaluateInternationalStyleSignals } from './internationalStyles';
 
 export class DefaultFashionKnowledgeEngine implements FashionKnowledgeEngine {
   readonly version = KNOWLEDGE_GRAPH_VERSION;
@@ -55,6 +56,9 @@ export class DefaultFashionKnowledgeEngine implements FashionKnowledgeEngine {
 
     // 7. Contextual Regional Resonance
     signals.push(...getRegionalSignals(items, context));
+
+    // 8. International Style Inspiration Synergy (Indian-first foundation)
+    signals.push(...evaluateInternationalStyleSignals(items, context?.internationalInspirations));
 
     return signals;
   }

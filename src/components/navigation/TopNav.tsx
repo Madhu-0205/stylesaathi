@@ -31,19 +31,22 @@ export const TopNav: React.FC<TopNavProps> = ({
   toggleTheme,
 }) => {
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border bg-card/95 backdrop-blur-md transition-colors">
-      <div className="mx-auto flex h-15 max-w-6xl xl:max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* Official Brand Identity */}
+    <header className="sticky top-0 z-40 w-full glass-header border-b border-border/60 transition-colors backdrop-blur-xl bg-(--background)/85">
+      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        {/* Official Editorial Brand Identity */}
         <div
-          className="flex items-center cursor-pointer select-none py-1 hover:opacity-95 transition-opacity"
+          className="flex items-center cursor-pointer select-none py-1 hover:opacity-90 transition-opacity"
           onClick={() => onChangeTab('Wardrobe')}
           aria-label="StyleSaathi Home"
         >
           <StyleSaathiLogo variant="full" size="sm" showTagline={true} />
         </div>
 
-        {/* Desktop / Tablet Navigation Tabs */}
-        <nav className="flex items-center gap-1 sm:gap-2" aria-label="Main Navigation">
+        {/* Floating Capsule Desktop Navigation */}
+        <nav
+          className="flex items-center gap-1 p-1.5 rounded-full bg-(--card)/85 dark:bg-white/5 border border-border/80 shadow-xs specular-border backdrop-blur-md"
+          aria-label="Main Navigation"
+        >
           {TABS.map((tab) => {
             const Icon = tab.icon;
             const isActive = currentTab === tab.id;
@@ -53,20 +56,20 @@ export const TopNav: React.FC<TopNavProps> = ({
                 type="button"
                 onClick={() => onChangeTab(tab.id)}
                 aria-current={isActive ? 'page' : undefined}
-                className={`relative flex min-h-11 items-center gap-2 rounded-lg px-3 sm:px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-[transform,background-color,color] duration-150 ease-out select-none active:scale-[0.98] ${
+                className={`relative flex min-h-11 items-center gap-2 rounded-full px-4 sm:px-5 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition-all duration-200 select-none active:scale-95 ${
                   isActive
-                    ? 'text-(--ink) bg-(--ivory) font-bold shadow-2xs'
-                    : 'text-muted hover:text-(--ink) hover:bg-(--ivory)/60'
+                    ? 'text-(--ink) bg-(--paper) font-bold shadow-xs'
+                    : 'text-muted hover:text-(--ink) hover:bg-(--paper)/40'
                 }`}
               >
                 <Icon
-                  className={`h-4 w-4 transition-colors ${
+                  className={`h-3.5 w-3.5 transition-colors ${
                     isActive ? 'text-(--kumkum) stroke-[2.2]' : 'stroke-[1.6]'
                   }`}
                 />
-                <span className="tracking-widest">{tab.label}</span>
+                <span>{tab.label}</span>
                 {isActive && (
-                  <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 h-0.5 w-4 rounded-full bg-(--kumkum)" />
+                  <span className="h-1 w-1 rounded-full bg-(--kumkum)" aria-hidden="true" />
                 )}
               </button>
             );
@@ -79,11 +82,11 @@ export const TopNav: React.FC<TopNavProps> = ({
             <button
               type="button"
               onClick={onOpenSaathi}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-(--burnished-gold)/40 bg-(--burnished-gold)/10 px-3.5 py-1.5 text-xs font-semibold text-(--ink) shadow-2xs backdrop-blur-sm transition-all hover:bg-(--burnished-gold)/20 active:scale-95"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-(--burnished-gold)/40 bg-(--burnished-gold)/10 px-4 py-2 text-xs font-semibold text-(--ink) shadow-2xs backdrop-blur-sm transition-all hover:bg-(--burnished-gold)/20 active:scale-95"
               aria-label="Open AI Saathi conversation"
             >
               <Sparkles className="h-3.5 w-3.5 text-(--burnished-gold)" />
-              <span>AI Saathi</span>
+              <span className="font-serif tracking-wide">AI Saathi</span>
             </button>
           )}
 
@@ -91,7 +94,7 @@ export const TopNav: React.FC<TopNavProps> = ({
             <button
               type="button"
               onClick={onOpenNeedle}
-              className="hidden md:inline-flex min-h-11 items-center gap-2 rounded-full border border-border bg-card/80 px-3.5 py-1.5 text-xs font-medium text-muted-foreground shadow-2xs backdrop-blur-sm transition-all hover:border-primary/40 hover:text-foreground active:scale-98"
+              className="hidden md:inline-flex min-h-11 items-center gap-2 rounded-full border border-border bg-card/80 px-4 py-2 text-xs font-medium text-muted-foreground shadow-2xs backdrop-blur-sm transition-all hover:border-primary/40 hover:text-foreground active:scale-95"
               aria-label="Open AI Stylist (Command + K)"
             >
               <Sparkles className="h-3.5 w-3.5 text-amber-500 animate-pulse" />
@@ -105,7 +108,7 @@ export const TopNav: React.FC<TopNavProps> = ({
           <button
             type="button"
             onClick={toggleTheme}
-            className="flex min-h-11 min-w-11 items-center justify-center rounded-full border border-border text-muted transition-colors hover:border-(--ink) hover:text-(--ink)"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-full border border-border bg-card/60 text-muted transition-all hover:border-(--ink) hover:text-(--ink) active:scale-95"
             aria-label="Toggle theme"
           >
             {theme === 'light' ? (
@@ -118,7 +121,7 @@ export const TopNav: React.FC<TopNavProps> = ({
           <button
             type="button"
             onClick={onOpenAddItem}
-            className="hidden sm:inline-flex min-h-11 items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-xs font-bold text-white shadow-2xs transition-transform hover:opacity-95 active:scale-95"
+            className="hidden sm:inline-flex min-h-11 items-center gap-1.5 rounded-full bg-accent px-5 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-xs transition-all hover:opacity-95 active:scale-95"
             aria-label="Add clothing piece"
           >
             <Plus className="h-3.5 w-3.5 stroke-[2.5]" />

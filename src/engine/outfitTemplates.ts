@@ -67,4 +67,19 @@ export const TEMPLATES: Template[] = [
     required: { outerwear: ['Outerwear'], top: ['Ethnic'], bottom: ['Bottoms'], footwear: ['Footwear'] },
     optional: { accessory: ['Accessories'] },
   },
+  {
+    name: 'Sherwani look',
+    required: { top: ['Ethnic'], bottom: ['Bottoms', 'Ethnic'], footwear: ['Footwear'] },
+    optional: { dupatta: ['Ethnic'], accessory: ['Accessories'] },
+  },
+  {
+    name: 'Dhoti & Kurta look',
+    required: { top: ['Ethnic', 'Tops'], bottom: ['Bottoms', 'Ethnic'], footwear: ['Footwear'] },
+    optional: { jacket: ['Ethnic', 'Outerwear'], dupatta: ['Ethnic'], accessory: ['Accessories'] },
+  },
+  {
+    name: 'Bandhgala look',
+    required: { top: ['Ethnic', 'Outerwear'], bottom: ['Bottoms', 'Ethnic'], footwear: ['Footwear'] },
+    optional: { accessory: ['Accessories'] },
+  },
 ];

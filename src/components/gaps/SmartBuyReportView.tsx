@@ -64,12 +64,12 @@ export const SmartBuyReportView: React.FC<SmartBuyReportViewProps> = ({
       )}
 
       {/* 2. Primary Decision Outcome Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-(--border) pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/80 pb-3">
         <div>
-          <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
+          <span className="editorial-kicker text-(--kumkum)">
             PURCHASE DECISION SUPPORT
           </span>
-          <h2 className="mt-0.5 font-serif text-2xl sm:text-3xl font-normal text-(--ink) tracking-tight">
+          <h2 className="mt-0.5 editorial-title text-2xl sm:text-3xl font-normal text-(--ink) tracking-tight">
             {purchaseAssessment === 'NO_PURCHASE_NEEDED'
               ? 'No purchase needed.'
               : 'Verified wardrobe gap detected.'}
@@ -78,7 +78,7 @@ export const SmartBuyReportView: React.FC<SmartBuyReportViewProps> = ({
 
         <div className="flex items-center gap-2">
           <span
-            className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+            className={`px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
               purchaseAssessment === 'NO_PURCHASE_NEEDED'
                 ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20'
                 : 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30'
@@ -93,11 +93,11 @@ export const SmartBuyReportView: React.FC<SmartBuyReportViewProps> = ({
 
       {/* 3. Occasion Readiness Summary Audit (Section 26) */}
       <section
-        className="rounded-2xl border border-(--border) bg-card p-4 sm:p-5 shadow-2xs space-y-3"
+        className="rounded-3xl glass-card specular-border p-5 sm:p-6 shadow-2xs space-y-4"
         aria-label="Occasion Readiness Audit"
       >
         <div className="flex items-center justify-between">
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted">
+          <span className="editorial-kicker text-muted">
             OCCASION READINESS AUDIT
           </span>
           <span className="text-[11px] font-medium text-muted">
@@ -114,7 +114,7 @@ export const SmartBuyReportView: React.FC<SmartBuyReportViewProps> = ({
             coverageSummary.occasionReadiness.map((readiness: OccasionReadiness) => (
             <div
               key={readiness.occasion}
-              className={`p-3 rounded-xl border flex items-center justify-between gap-2 text-xs transition-colors ${
+              className={`p-3 rounded-2xl border flex items-center justify-between gap-2 text-xs transition-colors ${
                 readiness.readiness === 'fully_ready'
                   ? 'bg-(--ivory)/60 border-(--border)/60 text-(--ink)'
                   : readiness.readiness === 'partially_ready'

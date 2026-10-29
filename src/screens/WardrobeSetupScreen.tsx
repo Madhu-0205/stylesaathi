@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Check, ArrowRight, Sparkles, Shirt } from 'lucide-react';
+import { Plus, Check, ArrowRight, Sparkles } from 'lucide-react';
 import { useWardrobeContext } from '../context/WardrobeContext';
 import { StyleSaathiLogo } from '../components/brand/StyleSaathiLogo';
 import { AddItemSheet } from '../components/wardrobe/AddItemSheet';
@@ -113,22 +113,22 @@ export const WardrobeSetupScreen: React.FC<WardrobeSetupScreenProps> = ({ onComp
         {/* Centerpiece: Progressive Wardrobe Rail */}
         <div className="my-auto py-6">
           <div className="text-center mb-6">
-            <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-(--kumkum)">
+            <span className="editorial-kicker text-(--kumkum)">
               WARDROBE INTRODUCTION
             </span>
-            <h1 className="mt-2 font-serif text-3xl sm:text-4xl font-normal text-(--ink) tracking-tight">
-              LET'S MEET YOUR WARDROBE.
+            <h1 className="mt-2 editorial-hero text-3xl sm:text-4xl font-normal text-(--ink) tracking-tight">
+              LET&apos;S MEET YOUR WARDROBE.
             </h1>
             <p className="mt-2 text-xs sm:text-sm text-muted leading-relaxed max-w-md mx-auto">
-              Add a few pieces you already love. We'll start styling from what you actually own.
+              Add a few pieces you already love. We&apos;ll start styling from what you actually own.
             </p>
-            <Badge variant="outline" className="mt-3 inline-block rounded-full bg-(--ivory) border border-border px-3 py-1 text-xs font-serif italic text-(--ink) font-normal">
-              "{getMilestoneText()}"
+            <Badge variant="outline" className="mt-3 inline-block rounded-full bg-(--ivory) border border-border px-3.5 py-1 text-xs font-serif italic text-(--ink) font-normal">
+              &ldquo;{getMilestoneText()}&rdquo;
             </Badge>
           </div>
 
           {/* Architectural Wardrobe Rail Visual */}
-          <div className="relative mx-auto max-w-md rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-xs">
+          <div className="relative mx-auto max-w-md rounded-3xl glass-card specular-border p-5 sm:p-6 shadow-xs">
             {/* Top Brass Rail */}
             <div className="relative mb-6">
               <div className="h-1 w-full rounded-full bg-linear-to-r from-(--burnished-gold)/60 via-(--ink) to-(--burnished-gold)/60" />
@@ -216,7 +216,7 @@ export const WardrobeSetupScreen: React.FC<WardrobeSetupScreenProps> = ({ onComp
             <button
               type="button"
               onClick={handleUseSample}
-              className="w-full text-center text-xs font-serif italic text-muted hover:text-(--ink) transition-colors pt-1"
+              className="w-full min-h-11 flex items-center justify-center text-center text-xs font-serif italic text-muted hover:text-(--ink) transition-colors pt-1"
             >
               Or start with curated 25-piece sample wardrobe →
             </button>
@@ -256,10 +256,10 @@ export const WardrobeSetupScreen: React.FC<WardrobeSetupScreenProps> = ({ onComp
         {/* Preferences Form */}
         <div className="my-auto py-6 space-y-6">
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-(--kumkum)">
+            <span className="editorial-kicker text-(--kumkum)">
               PERSONALIZATION
             </span>
-            <h1 className="mt-1 font-serif text-3xl font-normal text-(--ink) tracking-tight">
+            <h1 className="mt-1 editorial-hero text-3xl sm:text-4xl font-normal text-(--ink) tracking-tight">
               TELL US A LITTLE ABOUT YOUR STYLE.
             </h1>
             <p className="mt-1 text-xs text-muted leading-relaxed">
@@ -268,8 +268,8 @@ export const WardrobeSetupScreen: React.FC<WardrobeSetupScreenProps> = ({ onComp
           </div>
 
           {/* Section 1: Contexts */}
-          <div className="rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-2xs">
-            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted block mb-3">
+          <div className="rounded-3xl glass-card specular-border p-5 sm:p-6 shadow-2xs">
+            <span className="editorial-kicker text-muted block mb-3">
               I USUALLY DRESS FOR:
             </span>
             <div className="flex flex-wrap gap-2">
@@ -280,10 +280,10 @@ export const WardrobeSetupScreen: React.FC<WardrobeSetupScreenProps> = ({ onComp
                     key={ctx}
                     type="button"
                     onClick={() => handleToggleContext(ctx)}
-                    className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all active:scale-95 ${
+                    className={`inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all select-none active:scale-95 ${
                       active
                         ? 'border border-(--ink) bg-(--ink) text-(--paper) shadow-2xs'
-                        : 'border border-border bg-background text-muted hover:border-(--ink)'
+                        : 'border border-border bg-card text-muted hover:border-(--ink)'
                     }`}
                   >
                     {active && <Check className="h-3 w-3 text-(--burnished-gold)" />}
@@ -295,8 +295,8 @@ export const WardrobeSetupScreen: React.FC<WardrobeSetupScreenProps> = ({ onComp
           </div>
 
           {/* Section 2: Aesthetics */}
-          <div className="rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-2xs">
-            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted block mb-3">
+          <div className="rounded-3xl glass-card specular-border p-5 sm:p-6 shadow-2xs">
+            <span className="editorial-kicker text-muted block mb-3">
               WHAT FEELS MOST LIKE YOU?
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -307,19 +307,19 @@ export const WardrobeSetupScreen: React.FC<WardrobeSetupScreenProps> = ({ onComp
                     key={opt.id}
                     type="button"
                     onClick={() => handleToggleAesthetic(opt.id)}
-                    className={`flex flex-col text-left p-3 rounded-xl border transition-all active:scale-[0.98] ${
+                    className={`flex flex-col text-left p-3.5 rounded-2xl border transition-all active:scale-[0.98] tactile-press-sm ${
                       active
-                        ? 'border-(--ink) bg-(--ivory) text-(--ink) shadow-2xs'
-                        : 'border-border bg-background text-muted hover:border-(--ink)'
+                        ? 'border-(--kumkum) bg-(--ivory) text-(--ink) shadow-2xs'
+                        : 'border-border bg-card text-muted hover:border-(--ink)'
                     }`}
                   >
                     <div className="flex items-center justify-between w-full">
-                      <span className="text-xs font-bold uppercase tracking-wider text-(--ink)">
+                      <span className="text-xs font-serif font-semibold text-(--ink)">
                         {opt.label}
                       </span>
                       {active && <Check className="h-3.5 w-3.5 text-(--kumkum)" />}
                     </div>
-                    <span className="mt-1 text-[10px] text-muted leading-relaxed">
+                    <span className="mt-1 text-[10.5px] text-muted leading-relaxed">
                       {opt.desc}
                     </span>
                   </button>
@@ -329,8 +329,8 @@ export const WardrobeSetupScreen: React.FC<WardrobeSetupScreenProps> = ({ onComp
           </div>
 
           {/* Section 3: Styling Mode */}
-          <div className="rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-2xs">
-            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted block mb-3">
+          <div className="rounded-3xl glass-card specular-border p-5 sm:p-6 shadow-2xs">
+            <span className="editorial-kicker text-muted block mb-3">
               HOW SHOULD STYLESAATHI STYLE YOU?
             </span>
             <div className="space-y-2">
@@ -341,17 +341,17 @@ export const WardrobeSetupScreen: React.FC<WardrobeSetupScreenProps> = ({ onComp
                     key={mode.id}
                     type="button"
                     onClick={() => setStylingMode(mode.id)}
-                    className={`w-full flex items-center justify-between p-3 rounded-xl border text-left transition-all active:scale-[0.99] ${
+                    className={`w-full flex items-center justify-between p-3.5 rounded-2xl border text-left transition-all active:scale-[0.99] tactile-press-sm ${
                       active
-                        ? 'border-(--ink) bg-(--ivory) shadow-2xs'
-                        : 'border-border bg-background hover:border-(--ink)'
+                        ? 'border-(--burnished-gold) bg-(--ivory) shadow-2xs'
+                        : 'border-border bg-card hover:border-(--ink)'
                     }`}
                   >
                     <div>
-                      <span className="text-xs font-bold uppercase tracking-wider text-(--ink) block">
+                      <span className="text-xs font-semibold text-(--ink) block">
                         {mode.title}
                       </span>
-                      <span className="text-[10px] text-muted">
+                      <span className="text-[11px] text-muted">
                         {mode.desc}
                       </span>
                     </div>
@@ -375,7 +375,7 @@ export const WardrobeSetupScreen: React.FC<WardrobeSetupScreenProps> = ({ onComp
             variant="default"
             size="lg"
             onClick={handleSavePreferences}
-            className="w-full min-h-12 shadow-2xs font-semibold uppercase tracking-wider gap-2"
+            className="w-full min-h-12 shadow-2xs font-semibold uppercase tracking-wider gap-2 tactile-press"
           >
             <span>Save My Preferences</span>
             <ArrowRight className="h-4 w-4 text-(--burnished-gold)" />
@@ -400,16 +400,16 @@ export const WardrobeSetupScreen: React.FC<WardrobeSetupScreenProps> = ({ onComp
 
       {/* Main Ready Card */}
       <div className="my-auto py-8 text-center">
-        <div className="rounded-3xl border border-border bg-card p-6 sm:p-10 shadow-xs">
+        <div className="rounded-3xl glass-card specular-border p-6 sm:p-10 shadow-xs">
           <div className="mb-4 inline-flex items-center justify-center h-12 w-12 rounded-full bg-(--ivory) border border-border text-(--kumkum)">
             <Sparkles className="h-6 w-6 text-(--burnished-gold)" />
           </div>
 
-          <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-(--kumkum) block">
+          <span className="editorial-kicker text-(--kumkum) block">
             CONCIERGE ONBOARDING
           </span>
 
-          <h1 className="mt-2 font-serif text-3xl sm:text-4xl font-normal text-(--ink) tracking-tight">
+          <h1 className="mt-2 editorial-hero text-3xl sm:text-4xl font-normal text-(--ink) tracking-tight">
             YOUR STYLESPACE IS READY.
           </h1>
 
@@ -421,10 +421,10 @@ export const WardrobeSetupScreen: React.FC<WardrobeSetupScreenProps> = ({ onComp
           <div className="mt-6 -mx-2 flex justify-center gap-2 overflow-hidden px-4 py-2">
             {items.slice(0, 5).map((itm, i) => (
               <div
-                key={itm.id || i}
+                key={itm.id || `preview-${i}`}
                 className="h-20 w-16 rounded-xl border border-border bg-(--ivory) overflow-hidden shadow-2xs shrink-0"
               >
-                <ItemImage item={itm} className="h-full w-full object-contain p-1" />
+                <ItemImage item={itm} className="h-full w-full object-cover" />
               </div>
             ))}
           </div>
@@ -441,7 +441,7 @@ export const WardrobeSetupScreen: React.FC<WardrobeSetupScreenProps> = ({ onComp
           variant="default"
           size="lg"
           onClick={handleFinalFinish}
-          className="w-full min-h-12 shadow-2xs font-semibold uppercase tracking-wider gap-2"
+          className="w-full min-h-12 shadow-2xs font-semibold uppercase tracking-wider gap-2 tactile-press"
         >
           <span>Enter My Wardrobe</span>
           <ArrowRight className="h-4 w-4 text-(--burnished-gold)" />

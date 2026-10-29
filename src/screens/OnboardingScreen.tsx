@@ -52,25 +52,25 @@ export const OnboardingScreen: React.FC = () => {
   return (
     <div className="w-full max-w-lg md:max-w-xl mx-auto flex min-h-dvh flex-col justify-between p-5 sm:p-8 animate-fade-in bg-background">
       {/* Refined Brand Header */}
-      <div className="flex items-center justify-between pt-2 border-b border-border pb-3">
+      <div className="flex items-center justify-between pt-2 border-b border-border/80 pb-3">
         {step === 0 ? (
           <div className="flex items-center gap-2">
             <StyleSaathiLogo variant="mark" size="xs" />
-            <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--burnished-gold)">
+            <span className="editorial-kicker text-(--burnished-gold)">
               STYLESAATHI
             </span>
           </div>
         ) : (
           <StyleSaathiLogo variant="full" size="sm" showTagline={true} />
         )}
-        <span className="text-[11px] font-serif italic text-muted">
+        <span className="editorial-sub text-xs italic text-muted">
           0{step + 1} / 03
         </span>
       </div>
 
       {/* Main Slide Card */}
       <div className="my-auto py-6">
-        <div className="rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-xs">
+        <div className="rounded-3xl glass-card specular-border p-6 sm:p-8 shadow-xs">
           {/* Canonical Wardrobe Brand Presentation on First Slide */}
           {step === 0 && (
             <div className="mb-5 flex justify-center py-2 border-b border-(--border)/60 pb-5">
@@ -79,12 +79,12 @@ export const OnboardingScreen: React.FC = () => {
           )}
 
           {/* Kicker */}
-          <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-(--kumkum)">
+          <span className="editorial-kicker text-(--kumkum)">
             {currentSlide.kicker}
           </span>
 
           {/* Title */}
-          <h1 className="mt-2 font-serif text-3xl sm:text-4xl font-normal text-(--ink) tracking-tight leading-tight">
+          <h1 className="mt-2 editorial-hero text-3xl sm:text-4xl font-normal text-(--ink) tracking-tight leading-tight">
             {currentSlide.title}
           </h1>
 
@@ -95,8 +95,8 @@ export const OnboardingScreen: React.FC = () => {
 
           {/* Step 2 Vibe selection interactive chips */}
           {step === 1 && (
-            <div className="mt-6 pt-5 border-t border-border">
-              <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted block mb-2.5">
+            <div className="mt-6 pt-5 border-t border-border/80">
+              <label className="editorial-kicker text-muted block mb-2.5">
                 CURATE YOUR AESTHETIC VIBES:
               </label>
               <div className="flex flex-wrap gap-2">
@@ -107,13 +107,13 @@ export const OnboardingScreen: React.FC = () => {
                       key={vibe}
                       type="button"
                       onClick={() => toggleVibe(vibe)}
-                      className={`inline-flex min-h-10 items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all active:scale-95 ${
+                      className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all select-none active:scale-[0.97] tactile-press-sm ${
                         isSelected
                           ? 'border border-(--ink) bg-(--ink) text-(--paper) shadow-2xs'
                           : 'border border-border bg-card text-muted hover:border-(--ink)'
                       }`}
                     >
-                      {isSelected && <Check className="h-3 w-3 stroke-3 text-(--burnished-gold)" />}
+                      {isSelected && <Check className="h-3.5 w-3.5 stroke-3 text-(--burnished-gold)" />}
                       <span>{vibe}</span>
                     </button>
                   );
@@ -131,7 +131,7 @@ export const OnboardingScreen: React.FC = () => {
             variant="default"
             size="lg"
             onClick={() => setStep(step + 1)}
-            className="w-full min-h-12 gap-2 shadow-sm font-semibold uppercase tracking-wider"
+            className="w-full min-h-12 gap-2 shadow-2xs font-semibold uppercase tracking-wider tactile-press"
           >
             <span>Continue</span>
             <ArrowRight className="h-3.5 w-3.5 text-(--burnished-gold)" />
@@ -142,7 +142,7 @@ export const OnboardingScreen: React.FC = () => {
               variant="default"
               size="lg"
               onClick={handleFinishWithSample}
-              className="w-full min-h-12.5 gap-2 shadow-sm font-semibold uppercase tracking-wider"
+              className="w-full min-h-12 gap-2 shadow-2xs font-semibold uppercase tracking-wider tactile-press"
             >
               <Sparkles className="h-3.5 w-3.5 text-(--burnished-gold)" />
               <span>Load Sample Indian Wardrobe</span>
@@ -151,7 +151,7 @@ export const OnboardingScreen: React.FC = () => {
               variant="outline"
               size="default"
               onClick={handleFinishEmpty}
-              className="w-full min-h-11 font-semibold uppercase tracking-wider text-muted hover:text-(--ink)"
+              className="w-full min-h-11 font-semibold uppercase tracking-wider text-muted hover:text-(--ink) tactile-press"
             >
               Start Empty With My Clothes
             </Button>

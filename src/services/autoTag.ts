@@ -89,6 +89,47 @@ export async function autoTagImage(file: File): Promise<AutoTagResult> {
     fit = fn.includes('palazzo') ? 'flared' : 'slim';
     culturalContext = 'traditional';
     confidence = 0.82;
+  } else if (fn.includes('dhoti') || fn.includes('lungi') || fn.includes('mundu') || fn.includes('veshti')) {
+    category = 'Ethnic';
+    subcategory = fn.includes('lungi') ? 'lungi' : 'dhoti';
+    occasions = ['puja', 'family function', 'wedding guest', 'festive'];
+    formality = 4;
+    colors = ['cream', 'white', 'gold'];
+    fabric = fn.includes('silk') ? 'silk' : 'cotton';
+    fit = 'relaxed';
+    culturalContext = 'traditional';
+    confidence = 0.90;
+  } else if (fn.includes('sherwani') || fn.includes('achkan')) {
+    category = 'Ethnic';
+    subcategory = fn.includes('achkan') ? 'achkan' : 'sherwani';
+    occasions = ['wedding guest', 'celebration', 'festive'];
+    formality = 5;
+    colors = ['cream', 'gold', 'navy'];
+    fabric = 'silk';
+    pattern = 'embroidered';
+    fit = 'tailored';
+    culturalContext = 'ceremonial';
+    confidence = 0.92;
+  } else if (fn.includes('bandhgala')) {
+    category = 'Ethnic';
+    subcategory = 'bandhgala';
+    occasions = ['office', 'wedding guest', 'celebration', 'party'];
+    formality = 5;
+    colors = ['black', 'navy', 'grey'];
+    fabric = fn.includes('silk') ? 'silk' : 'wool';
+    fit = 'tailored';
+    culturalContext = 'fusion';
+    confidence = 0.90;
+  } else if (fn.includes('angrakha')) {
+    category = 'Ethnic';
+    subcategory = 'angrakha';
+    occasions = ['family function', 'festive', 'puja'];
+    formality = 4;
+    colors = ['mustard', 'yellow', 'white'];
+    fabric = 'cotton';
+    fit = 'flared';
+    culturalContext = 'traditional';
+    confidence = 0.88;
   } else if (fn.includes('jean') || fn.includes('denim')) {
     category = 'Bottoms';
     subcategory = 'jeans';

@@ -82,11 +82,11 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
           transform: dragOffset > 0 ? `translateY(${dragOffset}px)` : undefined,
           transition: isDragging ? 'none' : 'transform 200ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}
-        className={`relative z-10 w-full max-w-lg mx-auto overflow-hidden rounded-t-3xl sm:rounded-2xl border-t sm:border border-border bg-card shadow-2xl animate-slide-up sm:animate-fade-in ${maxHeight} sm:max-h-[85dvh] flex flex-col will-change-transform`}
+        className={`relative z-10 w-full max-w-lg mx-auto overflow-hidden rounded-t-3xl sm:rounded-2xl border-t sm:border border-border bg-card specular-border shadow-2xl animate-slide-up sm:animate-fade-in ${maxHeight} sm:max-h-[85dvh] flex flex-col will-change-transform overscroll-contain`}
       >
         {/* Mobile Drag handle (hidden on tablet/desktop) */}
         <div
-          className="sm:hidden flex justify-center pt-3 pb-2 cursor-grab touch-none"
+          className="sm:hidden flex justify-center pt-3 pb-2 cursor-grab touch-none select-none"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
@@ -97,8 +97,8 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
         </div>
 
         {/* Sheet / Dialog header */}
-        <div className="flex items-center justify-between px-5 sm:px-6 py-3 border-b border-border">
-          <h2 className="font-serif text-lg font-normal tracking-wide uppercase text-(--ink)">
+        <div className="flex items-center justify-between px-5 sm:px-6 py-3 border-b border-border/80">
+          <h2 className="editorial-title text-lg font-normal tracking-wide uppercase text-(--ink)">
             {title || ''}
           </h2>
           <button

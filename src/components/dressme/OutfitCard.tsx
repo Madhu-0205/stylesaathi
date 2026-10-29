@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bookmark, Check, RefreshCw, Plus, Calendar, ThumbsDown } from 'lucide-react';
+import { Bookmark, Check, RefreshCw, Plus, Calendar, ThumbsDown, X } from 'lucide-react';
 import { GeneratedOutfit, WardrobeItem, Occasion, RejectionReason, ContextSnapshot } from '../../types';
 import { ItemImage } from '../common/ItemImage';
 import { getOutfitWhyReasons } from '../../engine/scoring';
@@ -26,7 +26,7 @@ interface OutfitCardProps {
   context?: ContextSnapshot;
   onOpenAccessoryDrawer: () => void;
   onMarkWorn: (outfit: GeneratedOutfit, accessory: WardrobeItem | null) => Promise<void>;
-  onSaveOutfit: (outfit: GeneratedOutfit) => Promise<any>;
+  onSaveOutfit: (outfit: GeneratedOutfit) => Promise<unknown>;
   onChangeLook?: () => void;
   onPlanLook?: (outfit: GeneratedOutfit) => void;
   onRejectLook?: (outfit: GeneratedOutfit, reason?: RejectionReason) => Promise<void>;
@@ -97,26 +97,26 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
 
   const roleBadges: Record<string, { label: string; className: string }> = {
     best_match: { label: 'Best Match', className: 'text-(--burnished-gold) border-(--burnished-gold)/40 bg-(--paper)/90' },
-    alternative: { label: 'Alternative', className: 'text-(--ink)/80 border-(--border) bg-(--card)' },
+    alternative: { label: 'Alternative', className: 'text-(--ink)/80 border-border bg-card' },
     explore: { label: 'Explore', className: 'text-(--kumkum) border-(--kumkum)/30 bg-(--kumkum)/5' },
   };
 
   return (
-    <article className="group relative overflow-hidden rounded-2xl border border-border bg-card p-4 sm:p-5 transition-[border-color,box-shadow] duration-200 hover:border-muted/60 animate-fade-in shadow-2xs">
+    <article className="group relative overflow-hidden rounded-3xl glass-card specular-border p-4 sm:p-6 transition-[border-color,box-shadow] duration-200 hover:border-muted/60 animate-fade-in shadow-xs hover:shadow-md">
       {/* Top Editorial Header */}
-      <div className="mb-3 flex items-baseline justify-between border-b border-border pb-2.5">
+      <div className="mb-3 flex items-baseline justify-between border-b border-border/80 pb-2.5">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
+            <span className="editorial-kicker text-(--kumkum)">
               LOOK 0{index + 1} · {occasion}
             </span>
             {outfit.role && roleBadges[outfit.role] && (
-              <span className={`text-[8.5px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded border ${roleBadges[outfit.role].className}`}>
+              <span className={`text-[8.5px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${roleBadges[outfit.role].className}`}>
                 {roleBadges[outfit.role].label}
               </span>
             )}
           </div>
-          <h3 className="mt-0.5 font-serif text-xl sm:text-2xl font-normal text-(--ink) tracking-tight">
+          <h3 className="mt-0.5 editorial-headline text-2xl sm:text-3xl font-normal text-(--ink) tracking-tight">
             {lookTitle}
           </h3>
         </div>
@@ -135,17 +135,22 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
           <div className="grid grid-cols-12 gap-2 sm:gap-2.5">
             {/* Large Primary Hero Garment (Left ~58% width on phone, proportional on desktop) */}
             {primarySlot && primarySlot[1][0] && (
-              <div className="col-span-7 relative aspect-3/4 overflow-hidden rounded-xl border border-(--border)/80 bg-(--ivory)">
+              <div className="col-span-7 relative aspect-3/4 overflow-hidden rounded-xl border border-border/80 bg-(--ivory)">
                 <ItemImage
                   item={primarySlot[1][0]}
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-101"
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.01]"
                 />
-                <div className="absolute bottom-2 left-2 right-2 truncate rounded-md bg-(--ink)/80 px-2 py-1 text-[10px] font-medium text-(--paper) backdrop-blur-xs tracking-wide">
+                <div className="absolute bottom-2 left-2 right-2 truncate rounded-md bg-(--ink)/85 px-2 py-1 text-[10px] font-medium text-(--paper) backdrop-blur-xs tracking-wide">
                   {primarySlot[1][0].name}
                 </div>
-                <div className="absolute top-2 left-2 text-[8.5px] font-bold uppercase tracking-wider text-(--burnished-gold) bg-(--paper)/90 px-1.5 py-0.5 rounded border border-(--border)/50">
+                <div className="absolute top-2 left-2 text-[8.5px] font-bold uppercase tracking-wider text-(--burnished-gold) bg-(--paper)/95 px-1.5 py-0.5 rounded border border-border/50 shadow-2xs">
                   Hero Piece
                 </div>
+                {primarySlot[1][0].fabric && (
+                  <div className="absolute top-2 right-2 text-[8.5px] font-medium text-muted bg-(--paper)/95 px-1.5 py-0.5 rounded border border-border/50 capitalize shadow-2xs">
+                    {primarySlot[1][0].fabric}
+                  </div>
+                )}
               </div>
             )}
 
@@ -158,7 +163,7 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
                   return (
                     <div
                       key={slotName}
-                      className="relative flex-1 min-h-0 h-full overflow-hidden rounded-xl border border-(--border)/80 bg-(--ivory)"
+                      className="relative flex-1 min-h-0 h-full overflow-hidden rounded-xl border border-border/80 bg-(--ivory)"
                     >
                       <ItemImage
                         item={piece}
@@ -174,7 +179,7 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
                 <>
                   {/* First secondary piece (e.g. Kurta / Top) */}
                   {secondarySlots[0] && secondarySlots[0][1][0] && (
-                    <div className="relative flex-1 min-h-0 h-full overflow-hidden rounded-xl border border-(--border)/80 bg-(--ivory)">
+                    <div className="relative flex-1 min-h-0 h-full overflow-hidden rounded-xl border border-border/80 bg-(--ivory)">
                       <ItemImage
                         item={secondarySlots[0][1][0]}
                         className="h-full w-full object-cover"
@@ -192,7 +197,7 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
                       return (
                         <div
                           key={slotName}
-                          className="relative h-full overflow-hidden rounded-xl border border-(--border)/80 bg-(--ivory)"
+                          className="relative h-full overflow-hidden rounded-xl border border-border/80 bg-(--ivory)"
                         >
                           <ItemImage
                             item={piece}
@@ -243,29 +248,52 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
               )}
             </div>
 
-            {/* Editorial Rationale: "WHY THIS WORKS" — 2–3 concise bullets */}
-            <div className="mt-2.5 rounded-xl bg-(--ivory) p-3.5 border border-(--border)/80">
-              <span className="block text-[9px] font-bold uppercase tracking-[0.2em] text-(--burnished-gold)">
-                WHY THIS WORKS
-              </span>
-              <ul className="mt-1.5 space-y-1 text-xs text-(--ink)">
+            {/* Editorial Rationale: Transparent Output Contract */}
+            <div className="mt-2.5 rounded-2xl bg-(--ivory) p-4 border border-border/80 space-y-2.5 shadow-2xs">
+              <div className="flex items-center justify-between">
+                <span className="block text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--burnished-gold)">
+                  WHY THIS WORKS
+                </span>
+                {outfit.explanation?.confidenceLevel && (
+                  <span className="text-[8.5px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-(--paper) border border-border text-muted shadow-2xs">
+                    {outfit.explanation.confidenceLevel} CONFIDENCE
+                  </span>
+                )}
+              </div>
+              <div className="gold-accent-rule my-1" />
+              <ul className="space-y-1 text-xs text-(--ink)">
                 {whyReasons.map((reason, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-(--burnished-gold)" />
+                  <li key={`${reason}-${i}`} className="flex items-start gap-2">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-(--burnished-gold)" />
                     <span className="leading-snug text-[11.5px]">{reason}</span>
                   </li>
                 ))}
               </ul>
+              {outfit.explanation?.culturalRationale && (
+                <div className="pt-2 border-t border-border/50 text-[11px] text-(--kumkum)">
+                  <span className="font-semibold">Cultural Rationale:</span> {outfit.explanation.culturalRationale}
+                </div>
+              )}
+              {outfit.explanation?.weatherComfortRationale && (
+                <div className="pt-1.5 border-t border-border/50 text-[11px] text-muted">
+                  <span className="font-semibold text-(--ink)">Climate &amp; Comfort:</span> {outfit.explanation.weatherComfortRationale}
+                </div>
+              )}
+              {outfit.explanation?.assumptions && outfit.explanation.assumptions.length > 0 && (
+                <div className="pt-1.5 border-t border-border/50 text-[10.5px] text-muted italic">
+                  <span>Assumptions: {outfit.explanation.assumptions.join(' ')}</span>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Editorial Actions: CHANGE LOOK / WEAR TODAY / SAVE / NOT FOR ME */}
-          <div className="flex items-center gap-2 pt-2 border-t border-(--border)/60">
+          <div className="flex items-center gap-2 pt-2 border-t border-border/60">
             {onChangeLook && (
               <button
                 type="button"
                 onClick={onChangeLook}
-                className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 text-xs font-semibold text-muted transition-all hover:border-(--ink) hover:text-(--ink) active:scale-95"
+                className="flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-border bg-card px-3.5 text-xs font-semibold text-muted transition-all hover:border-(--ink) hover:text-(--ink) active:scale-95 tactile-press"
                 title="Alternative combination"
               >
                 <RefreshCw className="h-3.5 w-3.5 text-muted" />
@@ -277,7 +305,7 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
               type="button"
               onClick={handleWoreClick}
               disabled={wornToday || isWearing}
-              className={`flex-1 min-h-11 inline-flex items-center justify-center gap-1.5 rounded-xl border text-xs font-semibold tracking-wide transition-all ${
+              className={`flex-1 min-h-11 inline-flex items-center justify-center gap-1.5 rounded-full border text-xs font-semibold tracking-wide transition-all tactile-press ${
                 wornToday
                   ? 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 cursor-default'
                   : 'border-(--ink) bg-(--ink) text-(--paper) hover:bg-(--ink)/90 active:scale-98'
@@ -297,7 +325,7 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
               <button
                 type="button"
                 onClick={() => onPlanLook(outfit)}
-                className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 text-xs font-semibold text-muted transition-all hover:border-(--burnished-gold) hover:text-(--ink) active:scale-95"
+                className="flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-border bg-card px-3 text-xs font-semibold text-muted transition-all hover:border-(--burnished-gold) hover:text-(--ink) active:scale-95 tactile-press"
                 title="Plan this look on Style Calendar"
               >
                 <Calendar className="h-3.5 w-3.5 text-(--burnished-gold)" />
@@ -309,7 +337,7 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
               type="button"
               onClick={handleSaveClick}
               disabled={saved || isSaving}
-              className={`flex min-h-11 items-center justify-center gap-1.5 rounded-xl border px-3.5 text-xs font-semibold transition-all ${
+              className={`flex min-h-11 items-center justify-center gap-1.5 rounded-full border px-3.5 text-xs font-semibold transition-all tactile-press ${
                 saved
                   ? 'border-(--kumkum) bg-(--kumkum) text-white'
                   : 'border-border bg-card text-muted hover:border-(--kumkum) hover:text-(--kumkum) active:scale-95'
@@ -324,7 +352,7 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
               <button
                 type="button"
                 onClick={() => setShowFeedback((prev) => !prev)}
-                className={`flex min-h-11 items-center justify-center gap-1 rounded-xl border px-2.5 text-xs font-semibold transition-all ${
+                className={`flex min-h-11 items-center justify-center gap-1 rounded-full border px-2.5 text-xs font-semibold transition-all tactile-press ${
                   showFeedback
                     ? 'border-(--kumkum) bg-(--kumkum)/10 text-(--kumkum)'
                     : 'border-border bg-card text-muted hover:border-(--kumkum) hover:text-(--kumkum) active:scale-95'
@@ -340,18 +368,18 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
 
           {/* Structured Feedback Drawer (Low Friction 1-2 Taps) */}
           {showFeedback && onRejectLook && (
-            <div className="mt-2.5 rounded-xl border border-(--border)/80 bg-(--ivory) p-3 animate-fade-in space-y-2">
+            <div className="mt-2.5 rounded-2xl border border-border/80 bg-(--ivory) p-3.5 animate-fade-in space-y-2.5 shadow-2xs">
               <div className="flex items-center justify-between">
-                <span className="text-[9.5px] font-bold uppercase tracking-wider text-(--kumkum)">
-                  Why doesn't this look work for you?
+                <span className="editorial-kicker text-(--kumkum)">
+                  Why doesn&apos;t this look work for you?
                 </span>
                 <button
                   type="button"
                   onClick={() => setShowFeedback(false)}
-                  className="text-xs text-muted hover:text-(--ink) px-1"
+                  className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-xs text-muted hover:text-(--ink) hover:bg-card"
                   aria-label="Dismiss feedback dialog"
                 >
-                  ✕
+                  <X className="h-3.5 w-3.5" />
                 </button>
               </div>
 
@@ -364,21 +392,21 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
                       setShowFeedback(false);
                       await onRejectLook(outfit, reason);
                     }}
-                    className="min-h-8 rounded-lg border border-border bg-card px-2.5 py-1 text-[11px] font-medium text-(--ink) transition-all hover:border-(--kumkum) hover:text-(--kumkum) active:scale-95"
+                    className="min-h-11 rounded-xl border border-border bg-card px-3 py-2 text-[11px] font-semibold text-(--ink) transition-all hover:border-(--kumkum) hover:text-(--kumkum) active:scale-95 tactile-press-sm select-none"
                   >
                     {label}
                   </button>
                 ))}
               </div>
 
-              <div className="pt-1.5 flex items-center justify-between border-t border-(--border)/60 text-[10.5px]">
+              <div className="pt-2 flex items-center justify-between border-t border-border/60 text-[10.5px]">
                 <button
                   type="button"
                   onClick={async () => {
                     setShowFeedback(false);
                     await onRejectLook(outfit);
                   }}
-                  className="text-muted hover:text-(--ink) underline py-1"
+                  className="min-h-11 flex items-center text-muted hover:text-(--ink) underline py-1 tactile-press-sm"
                 >
                   Just dismiss without reason
                 </button>
