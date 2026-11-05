@@ -1,21 +1,25 @@
 import React, { useState } from 'react';
-import { RefreshCw, AlertCircle, Calendar, Pin, Bookmark, X, Sparkles } from 'lucide-react';
+import { RefreshCw, AlertCircle, Calendar, Pin, Bookmark, X, Sparkles, Layers } from 'lucide-react';
 import { useDressMe } from '../hooks/useDressMe';
 import { useWardrobeContext } from '../context/WardrobeContext';
 import { Chip } from '../components/common/Chip';
 import { OutfitCard } from '../components/dressme/OutfitCard';
+import { OutfitAtelierStage } from '../components/dressme/OutfitAtelierStage';
+import { ItemDetailSheet } from '../components/wardrobe/ItemDetailSheet';
 import { AccessoryDrawer } from '../components/dressme/AccessoryDrawer';
 import { EmptyState } from '../components/common/EmptyState';
 import { OutfitCardSkeleton } from '../components/common/Skeleton';
 import { PlanLookModal } from '../components/calendar/PlanLookModal';
 import { WeatherStatusBar } from '../components/weather/WeatherStatusBar';
-import { Occasion, Season, GeneratedOutfit } from '../types';
+import { Occasion, Season, GeneratedOutfit, WardrobeItem } from '../types';
 import { OCCASIONS, SEASONS } from '../data/taxonomy';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ItemImage } from '../components/common/ItemImage';
 import { SelectAnchorModal } from '../components/dressme/SelectAnchorModal';
 import { SavedOutfitsModal } from '../components/dressme/SavedOutfitsModal';
+import { useBackButton } from '../hooks/useBackButton';
+import { BackButtonPriority } from '../services/backButtonManager';
 
 interface DressMeScreenProps {
   onGoToWardrobe: () => void;
@@ -23,7 +27,7 @@ interface DressMeScreenProps {
 }
 
 export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, onGoToCalendar }) => {
-  const { items, theme, toggleTheme, plans, savedOutfits } = useWardrobeContext();
+  const { items, theme, toggleTheme, plans, savedOutfits, updateItem, deleteItem } = useWardrobeContext();
   const {
     occasion,
     setOccasion,
@@ -49,6 +53,18 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
   const [planningOutfit, setPlanningOutfit] = useState<GeneratedOutfit | null>(null);
   const [showAnchorModal, setShowAnchorModal] = useState(false);
   const [showSavedOutfitsModal, setShowSavedOutfitsModal] = useState(false);
+  const [viewMode, setViewMode] = useState<'daily' | 'atelier'>('daily');
+  const [inspectedItem, setInspectedItem] = useState<WardrobeItem | null>(null);
+
+  useBackButton(
+    BackButtonPriority.SCREEN_MODAL,
+    () => {
+      setInspectedItem(null);
+      return true;
+    },
+    inspectedItem !== null,
+    'Atelier Item Detail Sheet'
+  );
 
   // Tomorrow calculation
   const tomorrow = new Date();
@@ -84,6 +100,36 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
         </div>
 
         <div className="flex items-center gap-2 shrink-0 pt-1">
+          {/* Dual Experience Switcher: Daily Edit vs 3D Atelier */}
+          <div className="flex items-center rounded-full border border-border/80 bg-card/60 p-0.5 shadow-2xs">
+            <button
+              type="button"
+              onClick={() => setViewMode('daily')}
+              aria-pressed={viewMode === 'daily'}
+              className={`flex min-h-11 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-all tactile-press ${
+                viewMode === 'daily'
+                  ? 'bg-(--ink) text-(--paper) shadow-2xs'
+                  : 'text-muted hover:text-(--ink)'
+              }`}
+            >
+              <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+              <span>Daily Edit</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('atelier')}
+              aria-pressed={viewMode === 'atelier'}
+              className={`flex min-h-11 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-all tactile-press ${
+                viewMode === 'atelier'
+                  ? 'bg-(--ink) text-(--paper) shadow-2xs'
+                  : 'text-muted hover:text-(--ink)'
+              }`}
+            >
+              <Layers className="h-3.5 w-3.5 text-amber-500" />
+              <span>Atelier (3D)</span>
+            </button>
+          </div>
+
           <button
             type="button"
             onClick={toggleTheme}
@@ -194,6 +240,16 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            {viewMode === 'daily' && (
+              <button
+                type="button"
+                onClick={() => setViewMode('atelier')}
+                className="flex min-h-11 items-center gap-1 text-[11px] font-semibold text-(--burnished-gold) hover:text-(--ink) px-3 py-1.5 rounded-full border border-(--burnished-gold)/40 bg-card/70 transition-colors tactile-press"
+              >
+                <Layers className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">3D Atelier</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setShowAnchorModal(true)}
@@ -221,7 +277,10 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
           </div>
           <button
             type="button"
-            onClick={() => setShowAnchorModal(true)}
+            onClick={() => {
+              setShowAnchorModal(true);
+              setViewMode('atelier');
+            }}
             className="flex min-h-11 items-center gap-1.5 rounded-full bg-(--paper) border border-border px-3.5 py-1 text-xs font-semibold text-(--ink) shadow-2xs hover:border-(--burnished-gold) active:scale-95 transition-all"
           >
             <Sparkles className="h-3.5 w-3.5 text-(--burnished-gold)" />
@@ -283,8 +342,59 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
         </div>
       </div>
 
-      {/* Outfit Results */}
-      {isShuffling ? (
+      {/* View Content: 3D Atelier vs Daily Edit Stream */}
+      {viewMode === 'atelier' ? (
+        <div className="space-y-6">
+          <OutfitAtelierStage
+            anchorItem={anchorItem}
+            onSelectAnchor={() => setShowAnchorModal(true)}
+            onUnlockAnchor={() => setAnchorItem(null)}
+            outfit={outfits[0] || null}
+            allOutfits={outfits}
+            accessory={activeAccessories[0] || null}
+            onSelectAccessory={(acc) => setOutfitAccessory(0, acc)}
+            availableAccessories={availableAccessories}
+            occasion={occasion}
+            season={season}
+            onSaveOutfit={saveOutfit}
+            onMarkWorn={markWoreOutfit}
+            onPlanLook={(o) => setPlanningOutfit(o)}
+            onInspectItem={(item) => setInspectedItem(item)}
+            context={contextSnapshot}
+          />
+
+          {outfits.length > 1 && (
+            <div className="pt-2">
+              <div className="flex items-center justify-between mb-3">
+                <span className="editorial-kicker text-muted">
+                  COORDINATED ENSEMBLE VARIANTS ({outfits.length})
+                </span>
+                <span className="text-[11px] font-sans text-muted">
+                  Swipe or tap to explore alternative compositions
+                </span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {outfits.slice(1).map((outfit, index) => (
+                  <OutfitCard
+                    key={`${outfit.template}-${index + 1}-${season}-${occasion}-${anchorItem?.id || 'none'}`}
+                    outfit={outfit}
+                    index={index + 1}
+                    occasion={occasion}
+                    accessory={activeAccessories[index + 1] || null}
+                    context={contextSnapshot}
+                    onOpenAccessoryDrawer={() => setActiveDrawerOutfitIndex(index + 1)}
+                    onMarkWorn={markWoreOutfit}
+                    onSaveOutfit={saveOutfit}
+                    onChangeLook={handleShuffle}
+                    onPlanLook={(o) => setPlanningOutfit(o)}
+                    onRejectLook={rejectOutfit}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : isShuffling ? (
         <div className="space-y-4">
           <OutfitCardSkeleton />
           <OutfitCardSkeleton />
@@ -357,7 +467,10 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
         onClose={() => setShowAnchorModal(false)}
         items={items}
         selectedAnchor={anchorItem}
-        onSelectAnchor={(item) => setAnchorItem(item)}
+        onSelectAnchor={(item) => {
+          setAnchorItem(item);
+          setViewMode('atelier');
+        }}
         onClearAnchor={() => setAnchorItem(null)}
       />
 
@@ -366,6 +479,15 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
         isOpen={showSavedOutfitsModal}
         onClose={() => setShowSavedOutfitsModal(false)}
         onPlanLook={(savedOutfit) => setPlanningOutfit(savedOutfit)}
+      />
+
+      {/* Atelier Item Inspection Detail Sheet */}
+      <ItemDetailSheet
+        item={inspectedItem}
+        isOpen={Boolean(inspectedItem)}
+        onClose={() => setInspectedItem(null)}
+        onUpdate={updateItem}
+        onDelete={deleteItem}
       />
     </div>
   );

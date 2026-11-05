@@ -29,6 +29,13 @@ describe('Phase D — Core Screens Editorial Redesign Verification', () => {
       expect(dressMeScreenTsx).toContain('SEASONS.map');
       expect(dressMeScreenTsx).toContain('CLIMATE:');
     });
+
+    it('provides dual experience switcher between Daily Edit and 3D Atelier with OutfitAtelierStage', () => {
+      expect(dressMeScreenTsx).toContain('Daily Edit');
+      expect(dressMeScreenTsx).toContain('Atelier (3D)');
+      expect(dressMeScreenTsx).toContain('<OutfitAtelierStage');
+      expect(dressMeScreenTsx).toContain('<ItemDetailSheet');
+    });
   });
 
   describe('2. Editorial Outfit Composition (OutfitCard)', () => {

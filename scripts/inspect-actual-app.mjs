@@ -516,6 +516,141 @@ async function main() {
     await new Promise(r => setTimeout(r, 600));
     await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-anchor-studio-390.png'));
 
+    // MILESTONE C: Select Anchor Garment & Enter 3D Outfit Atelier
+    console.log('\n--- 7. MILESTONE C: LOCK ANCHOR & 3D ATELIER STAGE ---');
+    const selectAnchorResult = await cdp.eval(`(() => {
+      const modal = document.querySelector('[role="dialog"]') || document.body;
+      const itemButtons = Array.from(modal.querySelectorAll('button')).filter(b => b.querySelector('h5'));
+      if (itemButtons.length > 0) {
+        // Select an iconic hero garment: kurta, kurti, shirt, or bundi
+        const targetBtn = itemButtons.find(b => {
+          const text = b.textContent?.toLowerCase() || '';
+          return text.includes('kurta') || text.includes('kurti') || text.includes('shirt') || text.includes('jeans');
+        }) || itemButtons[0];
+
+        const name = targetBtn.querySelector('h5')?.textContent?.trim();
+        targetBtn.click();
+        return 'Selected anchor: ' + name;
+      }
+      return 'No anchor item buttons found in modal';
+    })()`);
+    console.log('[Anchor Selection Result]:', selectAnchorResult);
+    await new Promise(r => setTimeout(r, 1000));
+
+    // Inspect 3D Outfit Atelier Stage Metrics
+    const atelierMetrics = await cdp.eval(`(() => {
+      const stage = document.querySelector('section[aria-label^="Outfit Atelier Stage"]');
+      if (!stage) return { error: 'OutfitAtelierStage not mounted' };
+
+      const anchorSlot = stage.querySelector('[data-anchor="true"]');
+      const allSlots = Array.from(stage.querySelectorAll('[data-testid^="atelier-slot-"]'));
+      const headerTitle = stage.querySelector('h3')?.textContent?.trim();
+      const compatibilityBadge = stage.querySelector('span[class*="emerald"]')?.textContent?.trim();
+      const whyReasons = Array.from(stage.querySelectorAll('span')).filter(s => s.textContent?.includes('✦')).map(s => s.textContent.trim());
+
+      return {
+        hasStage: true,
+        headerTitle,
+        compatibilityBadge,
+        whyReasonsCount: whyReasons.length,
+        whyReasons,
+        slotsCount: allSlots.length,
+        anchorName: anchorSlot ? anchorSlot.querySelector('h5')?.textContent?.trim() : null,
+        anchorTransform: anchorSlot ? anchorSlot.style.transform : null,
+        anchorZIndex: anchorSlot ? anchorSlot.style.zIndex : null,
+        coordinatingTransforms: allSlots.filter(s => s !== anchorSlot).map(s => ({
+          testId: s.getAttribute('data-testid'),
+          name: s.querySelector('h5')?.textContent?.trim(),
+          transform: s.style.transform,
+          zIndex: s.style.zIndex,
+        })),
+      };
+    })()`);
+    console.log('\n--- OUTFIT ATELIER 3D STAGE METRICS ---');
+    console.log(JSON.stringify(atelierMetrics, null, 2));
+
+    // Capture Atelier Mobile (390px)
+    console.log('[Screenshot] Capturing Outfit Atelier Stage Mobile (390px)...');
+    await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-atelier-stage-390.png'));
+
+    // Switch to Desktop for Atelier Stage Desktop (1280px)
+    console.log('[Viewport] Switching to Desktop 1280x900 for Atelier Stage...');
+    await cdp.send('Emulation.setDeviceMetricsOverride', {
+      width: 1280,
+      height: 900,
+      deviceScaleFactor: 2,
+      mobile: false,
+    });
+    await new Promise(r => setTimeout(r, 1000));
+    console.log('[Screenshot] Capturing Outfit Atelier Stage Desktop (1280px)...');
+    await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-atelier-stage-desktop.png'));
+
+    // Switch back to Mobile
+    console.log('[Viewport] Switching back to Mobile 390x844...');
+    await cdp.send('Emulation.setDeviceMetricsOverride', {
+      width: 390,
+      height: 844,
+      deviceScaleFactor: 2,
+      mobile: true,
+    });
+    await new Promise(r => setTimeout(r, 600));
+
+    // Test Alternative Candidate Slot Cycling
+    console.log('\n--- 8. ATELIER SLOT CYCLING & INTERACTIVE COMPOSITION ---');
+    const cycleResult = await cdp.eval(`(() => {
+      const nextBtn = document.querySelector('button[aria-label^="Next "]');
+      if (nextBtn) {
+        const label = nextBtn.getAttribute('aria-label');
+        nextBtn.click();
+        return 'Clicked slot cycle: ' + label;
+      }
+      return 'No slot cycling button found (single candidate in slots)';
+    })()`);
+    console.log('[Slot Alternative Cycling]:', cycleResult);
+    await new Promise(r => setTimeout(r, 600));
+
+    // Capture Composed Variant Screenshot
+    console.log('[Screenshot] Capturing Outfit Atelier Composed Mobile (390px)...');
+    await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-atelier-composed-390.png'));
+
+    // Test Save to Lookbook
+    console.log('\n--- 9. SAVE TO LOOKBOOK ACTION ---');
+    const saveLookResult = await cdp.eval(`(() => {
+      const saveBtn = document.querySelector('button[aria-label="Save this outfit to your lookbook"]');
+      if (saveBtn) {
+        saveBtn.click();
+        return 'Clicked Save Look button';
+      }
+      return 'Save button not found';
+    })()`);
+    console.log('[Save Look]:', saveLookResult);
+    await new Promise(r => setTimeout(r, 600));
+
+    const saveFeedback = await cdp.eval(`(() => {
+      const btn = document.querySelector('button[aria-label="Save this outfit to your lookbook"]');
+      return btn ? btn.textContent?.trim() : null;
+    })()`);
+    console.log('[Save Look Feedback Text]:', saveFeedback);
+
+    // Test Log Wear Today
+    console.log('\n--- 10. LOG WEAR TODAY ACTION ---');
+    const wearResult = await cdp.eval(`(() => {
+      const wearBtn = document.querySelector('button[aria-label="Log that you wore this ensemble today"]');
+      if (wearBtn) {
+        wearBtn.click();
+        return 'Clicked Log Wear button';
+      }
+      return 'Wear button not found';
+    })()`);
+    console.log('[Wear Look]:', wearResult);
+    await new Promise(r => setTimeout(r, 600));
+
+    const wearFeedback = await cdp.eval(`(() => {
+      const btn = document.querySelector('button[aria-label="Log that you wore this ensemble today"]');
+      return btn ? btn.textContent?.trim() : null;
+    })()`);
+    console.log('[Wear Look Feedback Text]:', wearFeedback);
+
     cdp.close();
   } finally {
     chrome.kill();

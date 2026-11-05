@@ -15,6 +15,13 @@ interface SelectAnchorModalProps {
   onClearAnchor: () => void;
 }
 
+const isDrapedAccessory = (item: WardrobeItem): boolean => {
+  const s = (item.subcategory || '').toLowerCase();
+  const n = item.name.toLowerCase();
+  const drapedKeywords = ['dupatta', 'shawl', 'scarf', 'stole', 'chunni', 'dupatto', 'muffler'];
+  return drapedKeywords.some((kw) => s.includes(kw) || n.includes(kw));
+};
+
 export const SelectAnchorModal: React.FC<SelectAnchorModalProps> = ({
   isOpen,
   onClose,
@@ -28,6 +35,10 @@ export const SelectAnchorModal: React.FC<SelectAnchorModalProps> = ({
 
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
+      // Micro-accessories (watches, jewellery, bags) are styled via the Atelier Accessory Slot, not as structural anchors
+      if (item.category === 'Accessories' && !isDrapedAccessory(item)) {
+        return false;
+      }
       if (selectedCat !== 'All' && item.category !== selectedCat) {
         return false;
       }
