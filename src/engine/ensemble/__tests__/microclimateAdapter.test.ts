@@ -152,11 +152,11 @@ function createMockContext(overrides: Partial<WeatherSnapshot> = {}, contextOver
     humidity: 50,
     precipitationProbability: 10,
     windSpeed: 10,
-    condition: 'sunny',
+    condition: 'clear',
     observedAt: Date.now() - 5 * 60 * 1000,
     expiresAt: Date.now() + 25 * 60 * 1000,
     source: 'live',
-    location: { city: 'Mumbai', state: 'Maharashtra', country: 'India', latitude: 19.076, longitude: 72.8777 },
+    location: { city: 'Mumbai', country: 'India', source: 'manual', latitude: 19.076, longitude: 72.8777 },
     ...overrides,
   };
 
@@ -294,7 +294,7 @@ describe('StyleSaathi 3.0 — Phase 5B: Contextual Microclimate Adaptation', () 
     const context: ContextSnapshot = {
       weather: null,
       freshness: 'unavailable',
-      location: { city: 'Pune', country: 'India' },
+      location: { city: 'Pune', country: 'India', source: 'manual' },
       date: '2026-11-06',
       timeOfDay: 'morning',
       thermalContext: 'mild',
@@ -441,7 +441,7 @@ describe('StyleSaathi 3.0 — Phase 5B: Contextual Microclimate Adaptation', () 
       observedAt: Date.now() - 15 * 60 * 1000,
       expiresAt: Date.now() + 15 * 60 * 1000,
       source: 'cached',
-      location: { city: 'Bengaluru', country: 'India' },
+      location: { city: 'Bengaluru', country: 'India', source: 'manual' },
     };
 
     const context: ContextSnapshot = {
@@ -517,3 +517,4 @@ describe('StyleSaathi 3.0 — Phase 5B: Contextual Microclimate Adaptation', () 
     }
   });
 });
+

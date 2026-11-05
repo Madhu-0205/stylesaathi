@@ -42,14 +42,14 @@ describe('StyleSaathi 3.0 — Phase 5B: Microclimate Adaptation Performance Benc
       humidity: 80,
       precipitationProbability: 65,
       windSpeed: 22,
-      condition: 'rainy',
+      condition: 'rain',
       observedAt: Date.now() - 10 * 60 * 1000,
       expiresAt: Date.now() + 20 * 60 * 1000,
       source: 'live',
-      location: { city: 'Kolkata', country: 'India' },
+      location: { city: 'Kolkata', country: 'India', source: 'manual' },
     },
     freshness: 'fresh',
-    location: { city: 'Kolkata', country: 'India' },
+    location: { city: 'Kolkata', country: 'India', source: 'manual' },
     date: '2026-11-06',
     timeOfDay: 'afternoon',
     thermalContext: 'hot',
@@ -125,3 +125,4 @@ describe('StyleSaathi 3.0 — Phase 5B: Microclimate Adaptation Performance Benc
     expect(perItemMs).toBeLessThan(0.015);
   });
 });
+

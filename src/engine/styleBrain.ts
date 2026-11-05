@@ -684,9 +684,29 @@ export function derivePersonalStyleProfile(
     }
 
     // C. Granular attribute updates with contextual rejection routing
-    // Rejections with 'dislike_combination' target the pairing specifically,
-    // not individual piece attributes.
+    // StyleSaathi 3.0 — Phase 5C Attribution Rules:
+    // 1. Rejections with 'dislike_combination' target the pairing specifically, not individual piece attributes.
     if (signal.signalType === 'rejected' && signal.rejectionReason === 'dislike_combination') {
+      continue;
+    }
+
+    // 2. Passive inspection & viewing carry zero positive preference weight on attributes.
+    if (
+      signal.signalType === 'inspected' ||
+      signal.signalType === 'viewed' ||
+      signal.signalType === 'displayed'
+    ) {
+      continue;
+    }
+
+    // 3. Whole-outfit untargeted rejection/dismissal targets the ensemble level,
+    // preserving individual garment attributes against false contagion.
+    const isUntargetedMultiPieceRejection =
+      pieces.length > 1 &&
+      (signal.signalType === 'rejected' || signal.signalType === 'dismissed') &&
+      (!signal.rejectionReason || signal.rejectionReason === 'other');
+
+    if (isUntargetedMultiPieceRejection) {
       continue;
     }
 
@@ -961,17 +981,17 @@ export function derivePersonalStyleProfile(
     comfortAffinities[k] = finalizeAffinity(acc);
   });
 
-  // Identify Avoidance Model attributes (strongly negative score with evidence interactions)
+  // Identify Avoidance Model attributes (strongly negative score with evidence interactions or explicit declarations)
   const avoidedColors = Object.entries(colorAffinities)
-    .filter(([_, aff]) => aff.score <= -0.35 && aff.sampleCount >= 2 && aff.confidence >= 0.3)
+    .filter(([_, aff]) => (aff.score <= -0.35 && aff.sampleCount >= 2 && aff.confidence >= 0.3) || (aff.status === 'explicit' && aff.score <= -0.35))
     .map(([c]) => c);
 
   const avoidedFabrics = (Object.entries(fabricAffinities) as [FabricType, AttributeAffinity][])
-    .filter(([_, aff]) => aff.score <= -0.35 && aff.sampleCount >= 2 && aff.confidence >= 0.3)
+    .filter(([_, aff]) => (aff.score <= -0.35 && aff.sampleCount >= 2 && aff.confidence >= 0.3) || (aff.status === 'explicit' && aff.score <= -0.35))
     .map(([f]) => f);
 
   const avoidedPatterns = (Object.entries(patternAffinities) as [PatternType, AttributeAffinity][])
-    .filter(([_, aff]) => aff.score <= -0.35 && aff.sampleCount >= 2 && aff.confidence >= 0.3)
+    .filter(([_, aff]) => (aff.score <= -0.35 && aff.sampleCount >= 2 && aff.confidence >= 0.3) || (aff.status === 'explicit' && aff.score <= -0.35))
     .map(([p]) => p);
 
   const avoidedCombinations = Object.entries(combinationAffinities)
