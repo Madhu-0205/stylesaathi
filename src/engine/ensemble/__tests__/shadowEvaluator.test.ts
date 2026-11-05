@@ -387,3 +387,4 @@ describe('StyleSaathi 3.0 — Phase 5A: Shadow Evaluator Integration', () => {
     expect(getLastShadowComparison()).toBeNull();
   });
 });
+

@@ -5,4 +5,5 @@ export * from './candidateGenerator';
 export * from './ensembleRanker';
 export * from './ensembleEngine';
 export * from './shadowEvaluator';
+export * from './microclimateAdapter';
 

@@ -440,6 +440,11 @@ export interface StylePreferences {
   regionalInterests?: string[];
   budgetTier?: 'budget_conscious' | 'mid_range' | 'premium';
   internationalInspirations?: ('indian_first' | 'korean_contemporary_streetwear' | 'japanese_relaxed_workwear' | 'european_tailored_smart')[];
+  comfortPreferences?: {
+    warmthSensitivity?: 'runs_warm' | 'runs_cold' | 'standard';
+    prioritizeBreathability?: boolean;
+    avoidDelicateInRain?: boolean;
+  };
 }
 
 export type PlanStatus = 'planned' | 'worn' | 'cancelled';

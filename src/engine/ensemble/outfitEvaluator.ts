@@ -9,6 +9,7 @@ import {
 } from '../../types';
 import { seasonFit } from '../compatibility';
 import { calculateWeatherComfortScore } from '../contextScoring';
+import { evaluateMicroclimateAdaptation } from './microclimateAdapter';
 import { EnsembleGraph, OutfitEvaluationBreakdown, OutfitEvaluationResult } from './types';
 
 const OCCASION_FORMALITY_TARGETS: Record<string, number> = {
@@ -313,22 +314,22 @@ export function evaluateEnsembleOutfit(
   }
 
   // ==========================================================================
-  // DIMENSION G: CLIMATE & SEASONAL FIT
+  // DIMENSION G: CLIMATE & MICROCLIMATE ADAPTATION (STYLESAATHI 3.0 PHASE 5B)
   // ==========================================================================
   let climateSeasonalFit = 0.0;
-  const hasGenuineWeather =
-    context?.weather != null &&
-    context.source !== 'simulated' &&
-    context.source !== 'unavailable';
+  const microclimate = evaluateMicroclimateAdaptation(pieces, {
+    occasion,
+    season,
+    context,
+    preferences,
+  });
 
-  if (hasGenuineWeather) {
-    const comfort = calculateWeatherComfortScore(pieces, { ...context!, occasion });
-    climateSeasonalFit = comfort.scoreDelta * 0.5; // Scale to ensemble delta
-    if (comfort.scoreDelta > 0) {
-      bonusesApplied.push(...comfort.reasons);
-    } else if (comfort.scoreDelta < 0) {
-      penaltiesApplied.push(...comfort.reasons);
-    }
+  climateSeasonalFit = microclimate.scoreDelta;
+  if (microclimate.reasons.length > 0) {
+    bonusesApplied.push(...microclimate.reasons);
+  }
+  if (microclimate.warnings.length > 0) {
+    penaltiesApplied.push(...microclimate.warnings);
   }
 
   // ==========================================================================
