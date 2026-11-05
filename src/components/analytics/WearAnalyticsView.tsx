@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   TrendingUp,
   Shirt,
@@ -7,6 +7,10 @@ import {
   Coins,
   History,
   AlertCircle,
+  Layers,
+  Sparkle,
+  SparkleIcon,
+  CheckCircle2,
 } from 'lucide-react';
 import { useWearAnalytics, AnalyticsTimeframe } from '../../hooks/useWearAnalytics';
 import { RotationHealthCard } from './RotationHealthCard';
@@ -14,6 +18,7 @@ import { StyleEvolutionCard } from './StyleEvolutionCard';
 import { ItemImage } from '../common/ItemImage';
 import { WardrobeItem } from '../../types';
 import { StyleItemSheet } from '../wardrobe/StyleItemSheet';
+import { useWardrobeSafe } from '../../context/WardrobeContext';
 
 interface WearAnalyticsViewProps {
   injectedReferenceTimestamp?: number;
@@ -35,10 +40,50 @@ export const WearAnalyticsView: React.FC<WearAnalyticsViewProps> = ({
     orphans,
   } = useWearAnalytics(injectedReferenceTimestamp);
 
+  const wardrobeCtx = useWardrobeSafe();
+  const items = wardrobeCtx?.items || [];
+  const savedOutfits = wardrobeCtx?.savedOutfits || [];
+  const plans = wardrobeCtx?.plans || [];
+
   const [stylingAnchorItem, setStylingAnchorItem] = useState<WardrobeItem | null>(null);
 
   const { totalLifetimeWears, uniqueWornItemsCount } = report;
   const isGlobalColdStart = totalLifetimeWears < 5;
+
+  // Category composition breakdown
+  const categoryStats = useMemo(() => {
+    const total = items.length;
+    if (total === 0) return [];
+    const counts: Record<string, number> = {};
+    for (const item of items) {
+      counts[item.category] = (counts[item.category] || 0) + 1;
+    }
+    const colorMap: Record<string, string> = {
+      Ethnic: 'bg-(--kumkum)',
+      Tops: 'bg-(--ink)',
+      Bottoms: 'bg-stone-600',
+      Footwear: 'bg-(--burnished-gold)',
+      Accessories: 'bg-(--moss)',
+      Outerwear: 'bg-amber-700',
+    };
+    return Object.entries(counts).map(([cat, count]) => ({
+      name: cat,
+      count,
+      pct: Math.max(1, Math.round((count / total) * 100)),
+      color: colorMap[cat] || 'bg-neutral-500',
+    }));
+  }, [items]);
+
+  // Utilization and care metrics
+  const utilizationStats = useMemo(() => {
+    const total = items.length;
+    const active = items.filter((i) => (i.timesWorn || 0) > 0).length;
+    const dormant = total - active;
+    const clean = items.filter((i) => !i.status || i.status === 'clean').length;
+    const laundry = items.filter((i) => i.status === 'in_laundry' || i.status === 'needs_washing').length;
+    const rate = total > 0 ? Math.round((active / total) * 100) : 0;
+    return { total, active, dormant, clean, laundry, rate };
+  }, [items]);
 
   return (
     <div className="space-y-5 animate-fade-in pb-12">
@@ -135,6 +180,101 @@ export const WearAnalyticsView: React.FC<WearAnalyticsViewProps> = ({
           </span>
         </div>
       </div>
+
+      {/* Wardrobe Architecture Exhibition: Real Data Breakdown */}
+      {items.length > 0 && (
+        <div className="rounded-3xl glass-card specular-border p-5 sm:p-6 shadow-2xs space-y-4">
+          <div className="flex items-center justify-between border-b border-border/70 pb-3">
+            <div>
+              <span className="editorial-kicker text-(--kumkum)">
+                WARDROBE INTELLIGENCE EXHIBITION
+              </span>
+              <h3 className="editorial-sub text-lg sm:text-xl text-(--ink) tracking-tight">
+                Category Architecture &amp; Archive Utilization
+              </h3>
+            </div>
+            <span className="text-xs font-semibold text-(--ink) bg-(--ivory) px-3 py-1 rounded-full border border-border">
+              {items.length} Archival Garments
+            </span>
+          </div>
+
+          {/* Proportional Category Strip */}
+          <div className="space-y-2">
+            <div className="flex justify-between text-xs text-muted">
+              <span>Category Distribution</span>
+              <span className="font-semibold text-(--ink)">
+                {categoryStats.length} Unique Segments
+              </span>
+            </div>
+
+            <div className="h-3 w-full rounded-full bg-(--border)/40 overflow-hidden flex shadow-inner">
+              {categoryStats.map((cat) => (
+                <div
+                  key={cat.name}
+                  style={{ width: `${cat.pct}%` }}
+                  className={`h-full ${cat.color} transition-all duration-300 relative group`}
+                  title={`${cat.name}: ${cat.count} (${cat.pct}%)`}
+                />
+              ))}
+            </div>
+
+            {/* Category Chips Legend */}
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              {categoryStats.map((cat) => (
+                <div
+                  key={cat.name}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card border border-border text-[11px] shadow-2xs"
+                >
+                  <span className={`h-2 w-2 rounded-full ${cat.color}`} />
+                  <span className="font-semibold text-(--ink)">{cat.name}</span>
+                  <span className="text-muted text-[10px]">
+                    {cat.count} ({cat.pct}%)
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Dual Metrics: Utilization & Care Health */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            <div className="rounded-2xl border border-border/80 bg-(--ivory)/50 p-4 space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted block">
+                WARDROBE UTILIZATION
+              </span>
+              <div className="flex items-baseline justify-between">
+                <p className="text-2xl font-bold text-(--ink)">
+                  {utilizationStats.rate}%
+                </p>
+                <span className="text-xs text-muted">
+                  {utilizationStats.active} of {utilizationStats.total} garments activated
+                </span>
+              </div>
+              <p className="text-[11px] text-muted leading-relaxed">
+                {utilizationStats.dormant > 0
+                  ? `${utilizationStats.dormant} pieces are currently resting in your archive. Rotate them in Dress Me.`
+                  : 'Exceptional wardrobe rotation: every garment has active wear history.'}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-border/80 bg-(--ivory)/50 p-4 space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted block">
+                CARE &amp; PLANNING ACTIVITY
+              </span>
+              <div className="flex items-baseline justify-between">
+                <p className="text-2xl font-bold text-(--ink)">
+                  {utilizationStats.clean} Clean
+                </p>
+                <span className="text-xs text-muted">
+                  {utilizationStats.laundry > 0 ? `${utilizationStats.laundry} in laundry` : 'All ready to wear'}
+                </span>
+              </div>
+              <p className="text-[11px] text-muted leading-relaxed">
+                {savedOutfits.length} saved looks in Lookbook · {plans.length} upcoming or past dates in Style Calendar.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Grid Columns */}
       <div className="space-y-5 lg:space-y-0 lg:grid lg:grid-cols-12 lg:gap-6 items-start">

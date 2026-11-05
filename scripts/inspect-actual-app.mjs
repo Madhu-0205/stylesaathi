@@ -757,6 +757,158 @@ async function main() {
     })()`);
     console.log('[Wear Look Feedback Text]:', wearFeedback);
 
+    // --- 11. SPATIAL LOOKBOOK INSPECTION ---
+    console.log('\n--- 11. SPATIAL LOOKBOOK INSPECTION ---');
+    // Open Lookbook Modal
+    const openLookbook = await cdp.eval(`(() => {
+      // First switch back to daily view so we see the saved lookbook button
+      const dailyBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('Daily Edit'));
+      if (dailyBtn) dailyBtn.click();
+      const savedBtn = document.querySelector('button[aria-label="Open saved looks"]') || Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('Saved'));
+      if (savedBtn) {
+        savedBtn.click();
+        return 'Opened Lookbook Modal';
+      }
+      return 'Saved looks button not found';
+    })()`);
+    console.log('[Lookbook Open]:', openLookbook);
+    await new Promise(r => setTimeout(r, 800));
+
+    console.log('[Screenshot] Capturing Spatial Lookbook Mobile (390px)...');
+    await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-lookbook-spatial-390.png'));
+
+    // Close Lookbook Modal
+    await cdp.eval(`(() => {
+      const closeBtn = document.querySelector('button[aria-label="Close sheet"]');
+      if (closeBtn) closeBtn.click();
+    })()`);
+    await new Promise(r => setTimeout(r, 500));
+
+    // --- 12. OUTFIT CALENDAR INSPECTION ---
+    console.log('\n--- 12. OUTFIT CALENDAR INSPECTION ---');
+    const navCalendar = await cdp.eval(`(() => {
+      const calTab = document.querySelector('button[aria-label="CALENDAR"]');
+      if (calTab) {
+        calTab.click();
+        return 'Navigated to Calendar';
+      }
+      return 'Calendar tab not found';
+    })()`);
+    console.log('[Calendar Nav]:', navCalendar);
+    await new Promise(r => setTimeout(r, 800));
+
+    console.log('[Screenshot] Capturing Outfit Calendar Editorial Mobile (390px)...');
+    await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-calendar-editorial-390.png'));
+
+    // Switch to Desktop for Calendar
+    console.log('[Viewport] Switching to Desktop 1280x900 for Calendar...');
+    await cdp.send('Emulation.setDeviceMetricsOverride', {
+      width: 1280,
+      height: 900,
+      deviceScaleFactor: 2,
+      mobile: false,
+    });
+    await new Promise(r => setTimeout(r, 800));
+    console.log('[Screenshot] Capturing Outfit Calendar Desktop (1280px)...');
+    await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-calendar-desktop.png'));
+
+    // Switch back to Mobile
+    await cdp.send('Emulation.setDeviceMetricsOverride', {
+      width: 390,
+      height: 844,
+      deviceScaleFactor: 2,
+      mobile: true,
+    });
+    await new Promise(r => setTimeout(r, 600));
+
+    // --- 13. WARDROBE INTELLIGENCE EXHIBITION INSPECTION ---
+    console.log('\n--- 13. WARDROBE INTELLIGENCE EXHIBITION INSPECTION ---');
+    const navInsight = await cdp.eval(`(() => {
+      const insightTab = document.querySelector('button[aria-label="INSIGHT"]');
+      if (insightTab) {
+        insightTab.click();
+        return 'Navigated to Insights';
+      }
+      return 'Insight tab not found';
+    })()`);
+    console.log('[Insights Nav]:', navInsight);
+    await new Promise(r => setTimeout(r, 800));
+
+    // Switch to "Wear & Style Analytics" tab
+    const switchAnalytics = await cdp.eval(`(() => {
+      const btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('Wear & Style Analytics') || b.textContent?.includes('Analytics'));
+      if (btn) {
+        btn.click();
+        return 'Switched to Wear & Style Analytics';
+      }
+      return 'Analytics tab not found';
+    })()`);
+    console.log('[Analytics Tab]:', switchAnalytics);
+    await new Promise(r => setTimeout(r, 800));
+
+    console.log('[Screenshot] Capturing Wardrobe Intelligence Exhibition Mobile (390px)...');
+    await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-intelligence-exhibition-390.png'));
+
+    // Switch to Desktop for Intelligence Exhibition
+    console.log('[Viewport] Switching to Desktop 1280x900 for Wardrobe Intelligence...');
+    await cdp.send('Emulation.setDeviceMetricsOverride', {
+      width: 1280,
+      height: 900,
+      deviceScaleFactor: 2,
+      mobile: false,
+    });
+    await new Promise(r => setTimeout(r, 800));
+    console.log('[Screenshot] Capturing Wardrobe Intelligence Exhibition Desktop (1280px)...');
+    await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-intelligence-desktop.png'));
+
+    // Switch back to Mobile
+    await cdp.send('Emulation.setDeviceMetricsOverride', {
+      width: 390,
+      height: 844,
+      deviceScaleFactor: 2,
+      mobile: true,
+    });
+    await new Promise(r => setTimeout(r, 600));
+
+    // --- 14. AI STYLIST SALON INSPECTION ---
+    console.log('\n--- 14. AI STYLIST SALON INSPECTION ---');
+    const openStylist = await cdp.eval(`(() => {
+      const aiBtn = document.querySelector('button[aria-label="Open AI Saathi conversation"]') || document.querySelector('aside[aria-label="AI Companions"] button');
+      if (aiBtn) {
+        aiBtn.click();
+        return 'Opened AI Saathi Stylist Salon';
+      }
+      return 'AI Saathi button not found';
+    })()`);
+    console.log('[AI Stylist Open]:', openStylist);
+    await new Promise(r => setTimeout(r, 800));
+
+    console.log('[Screenshot] Capturing AI Stylist Salon Mobile (390px)...');
+    await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-ai-stylist-390.png'));
+
+    // Close AI Stylist
+    await cdp.eval(`(() => {
+      const closeBtn = document.querySelector('button[aria-label="Close chat"]');
+      if (closeBtn) closeBtn.click();
+    })()`);
+    await new Promise(r => setTimeout(r, 500));
+
+    // --- 15. PROFILE & FASHION IDENTITY INSPECTION ---
+    console.log('\n--- 15. PROFILE & FASHION IDENTITY INSPECTION ---');
+    const navProfile = await cdp.eval(`(() => {
+      const youTab = document.querySelector('button[aria-label="YOU"]');
+      if (youTab) {
+        youTab.click();
+        return 'Navigated to You (Profile)';
+      }
+      return 'You tab not found';
+    })()`);
+    console.log('[Profile Nav]:', navProfile);
+    await new Promise(r => setTimeout(r, 800));
+
+    console.log('[Screenshot] Capturing Profile & Fashion Identity Mobile (390px)...');
+    await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-profile-identity-390.png'));
+
     cdp.close();
   } finally {
     chrome.kill();

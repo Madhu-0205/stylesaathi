@@ -20,8 +20,8 @@ interface AISaathiChatViewProps {
 
 const QUICK_PROMPTS = [
   'What should I wear today?',
-  'Do I need to buy anything?',
   'Style my blue kurta',
+  'Do I need to buy anything?',
   'What do I wear most often?',
   'What is the weather outside today?',
 ];
@@ -92,17 +92,19 @@ export const AISaathiChatView: React.FC<AISaathiChatViewProps> = ({
       aria-modal="true"
       aria-label="AI Saathi Conversation"
     >
-      <div className="w-full h-full sm:h-[85vh] sm:max-h-180 max-w-xl bg-background rounded-none sm:rounded-3xl border-0 sm:border border-border/80 flex flex-col overflow-hidden shadow-2xl">
-        {/* Editorial Header */}
-        <header className="flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-border glass-header shrink-0">
+      <div className="w-full h-full sm:h-[85vh] sm:max-h-180 max-w-xl bg-background rounded-none sm:rounded-3xl border-0 sm:border border-border/80 flex flex-col overflow-hidden shadow-2xl specular-border">
+        {/* Luxury Editorial Header */}
+        <header className="flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-border/80 glass-header shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-full bg-(--ivory) border border-(--burnished-gold)/40 flex items-center justify-center text-(--burnished-gold) shadow-2xs">
               <Sparkles className="w-4 h-4 animate-pulse" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <h2 className="text-sm font-serif font-bold tracking-wide text-(--text)">AI SAATHI</h2>
-                <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                <h2 className="text-sm sm:text-base font-serif font-bold tracking-wide text-(--ink)">
+                  AI SAATHI
+                </h2>
+                <span className="text-[9.5px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-500/20">
                   Privacy-First Orchestrator
                 </span>
               </div>
@@ -119,7 +121,7 @@ export const AISaathiChatView: React.FC<AISaathiChatViewProps> = ({
               onClick={resetConversation}
               title="Reset conversation"
               aria-label="Reset conversation"
-              className="min-h-11 min-w-11 flex items-center justify-center rounded-full text-muted hover:text-(--text) hover:bg-(--ivory) transition-all active:scale-95"
+              className="min-h-11 min-w-11 flex items-center justify-center rounded-full text-muted hover:text-(--ink) hover:bg-(--ivory) transition-all active:scale-95"
             >
               <RotateCcw className="w-4 h-4" />
             </button>
@@ -128,7 +130,7 @@ export const AISaathiChatView: React.FC<AISaathiChatViewProps> = ({
               onClick={onClose}
               title="Close chat"
               aria-label="Close chat"
-              className="min-h-11 min-w-11 flex items-center justify-center rounded-full text-muted hover:text-(--text) hover:bg-(--ivory) transition-all active:scale-95"
+              className="min-h-11 min-w-11 flex items-center justify-center rounded-full text-muted hover:text-(--ink) hover:bg-(--ivory) transition-all active:scale-95"
             >
               <X className="w-5 h-5" />
             </button>
@@ -143,11 +145,14 @@ export const AISaathiChatView: React.FC<AISaathiChatViewProps> = ({
                 <Sparkles className="w-7 h-7" />
               </div>
               <div className="space-y-1.5 max-w-sm">
+                <span className="editorial-kicker text-(--kumkum)">
+                  PERSONAL STYLING SALON
+                </span>
                 <h3 className="editorial-headline text-2xl font-normal text-(--ink)">
                   Namaste! How can I style your day?
                 </h3>
                 <p className="text-xs text-muted leading-relaxed font-normal">
-                  Your personal fashion consultant. Ask about outfit combinations, occasion etiquette, climate comfort, or wardrobe staples.
+                  Your private personal fashion consultant. Ask about outfit combinations, occasion etiquette, climate comfort, or wardrobe staples.
                 </p>
               </div>
 
@@ -162,7 +167,7 @@ export const AISaathiChatView: React.FC<AISaathiChatViewProps> = ({
                       key={prompt}
                       type="button"
                       onClick={() => handleQuickPrompt(prompt)}
-                      className="min-h-11 px-3.5 py-2 rounded-xl border border-border bg-card hover:bg-(--ivory) text-xs text-(--text) text-left transition-all active:scale-98 shadow-2xs"
+                      className="min-h-11 px-3.5 py-2.5 rounded-xl border border-border bg-card hover:bg-(--ivory) text-xs text-(--ink) text-left transition-all active:scale-98 shadow-2xs specular-border"
                     >
                       {prompt}
                     </button>
@@ -206,7 +211,7 @@ export const AISaathiChatView: React.FC<AISaathiChatViewProps> = ({
                 key={prompt}
                 type="button"
                 onClick={() => handleQuickPrompt(prompt)}
-                className="shrink-0 min-h-9 px-3 py-1 rounded-full border border-border bg-card hover:bg-(--ivory) text-[11px] font-medium text-(--text) transition-all active:scale-95 shadow-2xs whitespace-nowrap flex items-center"
+                className="shrink-0 min-h-9 px-3 py-1 rounded-full border border-border bg-card hover:bg-(--ivory) text-[11px] font-medium text-(--ink) transition-all active:scale-95 shadow-2xs whitespace-nowrap flex items-center"
               >
                 {prompt}
               </button>
@@ -220,7 +225,7 @@ export const AISaathiChatView: React.FC<AISaathiChatViewProps> = ({
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               placeholder="Ask AI Saathi about your closet, looks, or gaps…"
-              className="flex-1 min-h-11 px-4 rounded-full border border-border bg-background text-base sm:text-xs text-(--text) placeholder:text-muted focus:outline-hidden focus:ring-1.5 focus:ring-(--burnished-gold) transition-all shadow-2xs"
+              className="flex-1 min-h-11 px-4 rounded-full border border-border bg-background text-base sm:text-xs text-(--ink) placeholder:text-muted focus:outline-hidden focus:ring-1.5 focus:ring-(--burnished-gold) transition-all shadow-2xs"
             />
             <button
               type="submit"

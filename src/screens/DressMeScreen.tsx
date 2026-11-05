@@ -659,6 +659,18 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
         isOpen={showSavedOutfitsModal}
         onClose={() => setShowSavedOutfitsModal(false)}
         onPlanLook={(savedOutfit) => setPlanningOutfit(savedOutfit)}
+        onOpenInAtelier={(savedOutfit) => {
+          const pieces = Object.values(savedOutfit.slots).flat();
+          const hero =
+            pieces.find(
+              (p) => p.category === 'Ethnic' || p.category === 'Tops' || p.category === 'Bottoms'
+            ) || pieces[0];
+          if (hero) {
+            setAnchorItem(hero);
+          }
+          setViewMode('atelier');
+          setShowSavedOutfitsModal(false);
+        }}
       />
 
       {/* Atelier Item Inspection Detail Sheet */}

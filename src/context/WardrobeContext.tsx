@@ -688,6 +688,10 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   return <WardrobeContext.Provider value={value}>{children}</WardrobeContext.Provider>;
 };
 
+export const useWardrobeSafe = (): WardrobeContextValue | null => {
+  return useContext(WardrobeContext);
+};
+
 export const useWardrobe = (): WardrobeContextValue => {
   const ctx = useContext(WardrobeContext);
   if (!ctx) {
