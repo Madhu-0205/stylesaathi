@@ -233,6 +233,7 @@ async function main() {
       const cards = railSection ? Array.from(railSection.querySelectorAll('article[aria-roledescription="slide"]')) : [];
       const activeCard = cards.find(c => c.getAttribute('data-active') === 'true');
       const inactiveCards = cards.filter(c => c.getAttribute('data-active') === 'false');
+      const materialBadges = railSection ? Array.from(railSection.querySelectorAll('.rounded-full')).map(el => el.textContent?.trim()).filter(Boolean) : [];
 
       return {
         hasRailSection: Boolean(railSection),
@@ -242,9 +243,10 @@ async function main() {
         activeCardTransform: activeCard ? activeCard.style.transform : null,
         inactiveCardTransform: inactiveCards.length > 0 ? inactiveCards[0].style.transform : null,
         activeCardName: activeCard ? activeCard.querySelector('h4')?.textContent : null,
+        materialBadges,
       };
     })()`);
-    console.log('\n--- SPATIAL RAIL INITIAL 3D METRICS ---');
+    console.log('\n--- SPATIAL RAIL INITIAL 3D & MATERIAL METRICS ---');
     console.log(railInitialMetrics);
 
     // Capture Wardrobe Mobile Screenshot with Spatial Rail (390px)
@@ -265,23 +267,53 @@ async function main() {
     console.log('[Spatial Rail Result]:', advanceResult);
 
     // Wait for smooth 3D spring transition
-    await new Promise(r => setTimeout(r, 700));
+    await new Promise(r => setTimeout(r, 600));
 
-    // Inspect Spatial Rail 3D Transforms after interaction
+    // Milestone B: Test Tactical Micro-interactions on active piece
+    console.log('[Tactical Micro-interactions] Testing Quick Wear and Favorite on active piece...');
+    const microInteractionsResult = await cdp.eval(`(() => {
+      // 1. Click Quick Wear button
+      const wearBtn = document.querySelector('button[aria-label^="Log wearing"]');
+      let wearClicked = false;
+      if (wearBtn) {
+        wearBtn.click();
+        wearClicked = true;
+      }
+
+      // 2. Click Favorite button on active card
+      const activeCard = document.querySelector('article[data-active="true"]');
+      const favBtn = activeCard ? activeCard.querySelector('button[aria-label*="favorites"]') : null;
+      let favClicked = false;
+      if (favBtn) {
+        favBtn.click();
+        favClicked = true;
+      }
+
+      return { wearClicked, favClicked };
+    })()`);
+    console.log('[Micro-interactions Result]:', microInteractionsResult);
+
+    // Wait 400ms for tactile feedback animation
+    await new Promise(r => setTimeout(r, 400));
+
+    // Inspect Spatial Rail 3D Transforms and Tactical Feedback
     const railAfterMetrics = await cdp.eval(`(() => {
       const railSection = document.querySelector('section[aria-label="Interactive 3D Spatial Garment Rail"]');
       const cards = railSection ? Array.from(railSection.querySelectorAll('article[aria-roledescription="slide"]')) : [];
       const activeCard = cards.find(c => c.getAttribute('data-active') === 'true');
+      const wearFeedbackBtn = railSection ? railSection.querySelector('button[aria-label^="Log wearing"]') : null;
 
       return {
         activeCardTransform: activeCard ? activeCard.style.transform : null,
         activeCardName: activeCard ? activeCard.querySelector('h4')?.textContent : null,
+        wearFeedbackText: wearFeedbackBtn ? wearFeedbackBtn.textContent?.trim() : null,
+        activeHeartFilled: activeCard ? Boolean(activeCard.querySelector('svg.fill-accent')) : false,
       };
     })()`);
-    console.log('\n--- SPATIAL RAIL AFTER INTERACTION METRICS ---');
+    console.log('\n--- SPATIAL RAIL AFTER INTERACTION & FEEDBACK METRICS ---');
     console.log(railAfterMetrics);
 
-    // Capture Wardrobe Mobile Screenshot with Newly Selected Focal Garment
+    // Capture Wardrobe Mobile Screenshot with Newly Selected Focal Garment & Feedback
     console.log('[Screenshot] Capturing Wardrobe Rail Selected Mobile (390px)...');
     await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-wardrobe-rail-selected-390.png'));
 

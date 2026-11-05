@@ -9,6 +9,8 @@ import {
   AlertCircle,
   Clock,
   Layers,
+  ShieldAlert,
+  RotateCw,
 } from 'lucide-react';
 import { WardrobeItem } from '../../types';
 import { ItemImage } from '../common/ItemImage';
@@ -22,6 +24,120 @@ export interface SpatialGarmentRailProps {
   className?: string;
 }
 
+export type MaterialProfileType = 'lustrous' | 'matte' | 'structured' | 'sheer' | 'neutral';
+
+export interface MaterialGlintProfile {
+  type: MaterialProfileType;
+  label: string;
+  sheenGradient: string;
+  rimHighlight: string;
+  badgeBg: string;
+  badgeText: string;
+}
+
+/**
+ * Derives restrained physical material lighting based purely on genuine garment metadata.
+ * Never invents fabric properties or simulates unsupported textures.
+ */
+export function getMaterialGlintProfile(fabric?: string, category?: string): MaterialGlintProfile {
+  const f = (fabric || '').toLowerCase();
+  const c = (category || '').toLowerCase();
+
+  // Lustrous Weaves: Silk, Chanderi, Banarasi, Tussar, Satin, Velvet, Brocade
+  if (
+    f.includes('silk') ||
+    f.includes('chanderi') ||
+    f.includes('banarasi') ||
+    f.includes('tussar') ||
+    f.includes('satin') ||
+    f.includes('velvet') ||
+    f.includes('brocade') ||
+    f.includes('zari')
+  ) {
+    return {
+      type: 'lustrous',
+      label: 'Lustrous Weave',
+      sheenGradient:
+        'linear-gradient(118deg, transparent 20%, rgba(254, 243, 199, 0.16) 45%, rgba(255, 255, 255, 0.28) 50%, rgba(254, 243, 199, 0.16) 55%, transparent 80%)',
+      rimHighlight: 'rgba(245, 158, 11, 0.35)',
+      badgeBg: 'bg-amber-500/15 border-amber-400/40 text-amber-700 dark:text-amber-300',
+      badgeText: 'Lustrous Finish',
+    };
+  }
+
+  // Matte Natural Fibres: Cotton, Linen, Khadi, Mulmul
+  if (
+    f.includes('cotton') ||
+    f.includes('linen') ||
+    f.includes('khadi') ||
+    f.includes('mulmul') ||
+    f.includes('flax')
+  ) {
+    return {
+      type: 'matte',
+      label: 'Matte Natural Fibre',
+      sheenGradient:
+        'linear-gradient(180deg, rgba(255, 255, 255, 0.10) 0%, transparent 35%, rgba(0, 0, 0, 0.10) 100%)',
+      rimHighlight: 'rgba(255, 255, 255, 0.20)',
+      badgeBg: 'bg-stone-500/15 border-stone-400/30 text-stone-700 dark:text-stone-300',
+      badgeText: 'Natural Weave',
+    };
+  }
+
+  // Structured Textures: Denim, Wool, Tweed, Corduroy, Leather, Outerwear, Footwear
+  if (
+    f.includes('denim') ||
+    f.includes('wool') ||
+    f.includes('tweed') ||
+    f.includes('corduroy') ||
+    f.includes('leather') ||
+    c.includes('footwear') ||
+    c.includes('jacket')
+  ) {
+    return {
+      type: 'structured',
+      label: 'Structured Texture',
+      sheenGradient:
+        'linear-gradient(90deg, rgba(255, 255, 255, 0.10) 0%, transparent 20%, transparent 80%, rgba(255, 255, 255, 0.08) 100%)',
+      rimHighlight: 'rgba(180, 83, 9, 0.30)',
+      badgeBg: 'bg-indigo-500/15 border-indigo-400/30 text-indigo-700 dark:text-indigo-300',
+      badgeText: 'Structured Fit',
+    };
+  }
+
+  // Fluid / Sheer Weaves: Chiffon, Georgette, Organza, Crepe, Rayon, Viscose, Modal
+  if (
+    f.includes('chiffon') ||
+    f.includes('georgette') ||
+    f.includes('organza') ||
+    f.includes('crepe') ||
+    f.includes('rayon') ||
+    f.includes('viscose') ||
+    f.includes('modal')
+  ) {
+    return {
+      type: 'sheer',
+      label: 'Airy & Draped',
+      sheenGradient:
+        'linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.04) 50%, transparent 100%)',
+      rimHighlight: 'rgba(236, 72, 153, 0.25)',
+      badgeBg: 'bg-rose-500/15 border-rose-400/30 text-rose-700 dark:text-rose-300',
+      badgeText: 'Fluid Draped',
+    };
+  }
+
+  // Neutral Fallback
+  return {
+    type: 'neutral',
+    label: 'Atelier Textile',
+    sheenGradient:
+      'linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.12) 50%, transparent 70%)',
+    rimHighlight: 'rgba(255, 255, 255, 0.15)',
+    badgeBg: 'bg-muted/20 border-border text-muted',
+    badgeText: 'Textile Plate',
+  };
+}
+
 export const SpatialGarmentRail: React.FC<SpatialGarmentRailProps> = ({
   items,
   onSelectItem,
@@ -32,7 +148,11 @@ export const SpatialGarmentRail: React.FC<SpatialGarmentRailProps> = ({
   const [activeIndex, setActiveIndex] = useState<number>(0);
   const [dragOffset, setDragOffset] = useState<number>(0);
   const [isDragging, setIsDragging] = useState<boolean>(false);
+
+  // Micro-interaction action feedback states
   const [hasWornFeedback, setHasWornFeedback] = useState<boolean>(false);
+  const [favoritePingId, setFavoritePingId] = useState<string | null>(null);
+  const [laundrySafeguardPrompt, setLaundrySafeguardPrompt] = useState<boolean>(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const startXRef = useRef<number>(0);
@@ -78,12 +198,20 @@ export const SpatialGarmentRail: React.FC<SpatialGarmentRailProps> = ({
     } else if (activeIndex >= items.length) {
       setActiveIndex(Math.max(0, items.length - 1));
     }
+    // Reset laundry prompt on garment change
+    setLaundrySafeguardPrompt(false);
   }, [items.length, activeIndex]);
 
   const activeItem = useMemo(() => {
     if (items.length === 0) return null;
     return items[Math.min(activeIndex, items.length - 1)];
   }, [items, activeIndex]);
+
+  // Active item material profile
+  const activeMaterial = useMemo(() => {
+    if (!activeItem) return null;
+    return getMaterialGlintProfile(activeItem.fabric, activeItem.category);
+  }, [activeItem]);
 
   // Card layout geometry: mobile width 240px, desktop 280px
   const cardWidth = isMobile ? 240 : 280;
@@ -98,17 +226,51 @@ export const SpatialGarmentRail: React.FC<SpatialGarmentRailProps> = ({
     setActiveIndex((prev) => Math.max(prev - 1, 0));
   }, []);
 
-  // Quick wear handler
+  // Tactical Favorite Micro-interaction
+  const handleFavoriteClick = (e: React.MouseEvent, item: WardrobeItem) => {
+    e.stopPropagation();
+    setFavoritePingId(item.id);
+    setTimeout(() => setFavoritePingId(null), 600);
+    onToggleFavorite(e, item);
+  };
+
+  // Tactical Quick Wear with Laundry Safeguard
   const handleQuickWear = async (e: React.MouseEvent, item: WardrobeItem) => {
     e.stopPropagation();
     if (!onUpdateItem) return;
+
+    // Laundry Safeguard: prevent accidental wear logging if garment is in laundry
+    if (item.status === 'in_laundry') {
+      setLaundrySafeguardPrompt(true);
+      return;
+    }
+
     try {
       await onUpdateItem(item.id, {
         timesWorn: (item.timesWorn || 0) + 1,
         lastWorn: Date.now(),
       });
       setHasWornFeedback(true);
-      setTimeout(() => setHasWornFeedback(false), 2000);
+      setLaundrySafeguardPrompt(false);
+      setTimeout(() => setHasWornFeedback(false), 2400);
+    } catch {
+      // silently handle
+    }
+  };
+
+  // 1-Tap Laundry Override: Mark Clean & Log Wear
+  const handleMarkCleanAndWear = async (e: React.MouseEvent, item: WardrobeItem) => {
+    e.stopPropagation();
+    if (!onUpdateItem) return;
+    try {
+      await onUpdateItem(item.id, {
+        status: 'clean',
+        timesWorn: (item.timesWorn || 0) + 1,
+        lastWorn: Date.now(),
+      });
+      setLaundrySafeguardPrompt(false);
+      setHasWornFeedback(true);
+      setTimeout(() => setHasWornFeedback(false), 2400);
     } catch {
       // silently handle
     }
@@ -205,7 +367,10 @@ export const SpatialGarmentRail: React.FC<SpatialGarmentRailProps> = ({
       onSelectItem(activeItem);
     } else if ((e.key === 'f' || e.key === 'F') && activeItem) {
       e.preventDefault();
-      onToggleFavorite(e as unknown as React.MouseEvent, activeItem);
+      handleFavoriteClick(e as unknown as React.MouseEvent, activeItem);
+    } else if ((e.key === 'w' || e.key === 'W') && activeItem) {
+      e.preventDefault();
+      handleQuickWear(e as unknown as React.MouseEvent, activeItem);
     }
   };
 
@@ -239,8 +404,15 @@ export const SpatialGarmentRail: React.FC<SpatialGarmentRailProps> = ({
           </div>
         </div>
 
-        {/* Counter Pill */}
+        {/* Counter Pill & Material Cue */}
         <div className="flex items-center gap-2">
+          {activeMaterial && (
+            <span
+              className={`hidden sm:inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9.5px] font-semibold tracking-wider uppercase border ${activeMaterial.badgeBg}`}
+            >
+              <span>{activeMaterial.badgeText}</span>
+            </span>
+          )}
           <span className="rounded-full bg-(--paper) border border-border/80 px-3 py-1 font-mono text-xs font-semibold text-(--ink) shadow-2xs">
             {String(activeIndex + 1).padStart(2, '0')} / {String(items.length).padStart(2, '0')}
           </span>
@@ -282,7 +454,7 @@ export const SpatialGarmentRail: React.FC<SpatialGarmentRailProps> = ({
         {/* Screen Reader Live Region */}
         <div className="sr-only" aria-live="polite">
           {activeItem
-            ? `Active garment: ${activeItem.name}, ${activeItem.category}, ${activeItem.fabric || 'Textile'}, Status: ${activeItem.status}`
+            ? `Active garment: ${activeItem.name}, ${activeItem.category}, ${activeItem.fabric || 'Textile'}, Status: ${activeItem.status}. ${activeMaterial ? activeMaterial.label : ''}`
             : ''}
         </div>
 
@@ -311,26 +483,40 @@ export const SpatialGarmentRail: React.FC<SpatialGarmentRailProps> = ({
             const normalizedDist = itemOffset / cardSpacing;
             const isActive = index === activeIndex;
 
+            // Material profile for this individual piece
+            const material = getMaterialGlintProfile(item.fabric, item.category);
+
             // CSS 3D Transformation Math
             let rotateYDeg = 0;
             let translateZPx = 0;
+            let translateYPx = 0;
             let scaleVal = 1;
             let opacityVal = 1;
+            let filterVal = 'none';
 
             if (prefersReducedMotion) {
               rotateYDeg = 0;
               translateZPx = 0;
+              translateYPx = isActive ? -4 : 0;
               scaleVal = isActive ? 1.02 : 0.95;
-              opacityVal = Math.max(0.3, 1 - Math.abs(normalizedDist) * 0.35);
+              opacityVal = Math.max(0.4, 1 - Math.abs(normalizedDist) * 0.25);
+              filterVal = 'none';
             } else {
-              // Spatial 3D Physics:
-              // - Active center: faces user at rotateY(0deg), translates forward in Z-space (+55px)
+              // Milestone B: Enhanced Spatial 3D Physics
+              // - Active center: faces user at rotateY(0deg), translates forward in Z-space (+55px), lifts slightly (-6px)
               // - Left items: angled toward right at +22deg, recessed in Z-space (-40px)
               // - Right items: angled toward left at -22deg, recessed in Z-space (-40px)
               rotateYDeg = Math.max(-28, Math.min(28, -normalizedDist * 22));
               translateZPx = Math.max(-70, 55 - Math.abs(normalizedDist) * 60);
-              scaleVal = Math.max(0.84, 1.05 - Math.abs(normalizedDist) * 0.1);
-              opacityVal = Math.max(0.25, 1 - Math.abs(normalizedDist) * 0.28);
+              translateYPx = isActive ? -6 : 0;
+              scaleVal = Math.max(0.85, 1.05 - Math.abs(normalizedDist) * 0.1);
+              // Profile garments stay visibly present without disappearing (minimum 40% opacity)
+              opacityVal = Math.max(0.40, 1 - Math.abs(normalizedDist) * 0.24);
+
+              // Restrained depth-of-field soft focus for distant pieces beyond center
+              if (Math.abs(normalizedDist) > 1.4) {
+                filterVal = 'blur(1px)';
+              }
             }
 
             const zIndexVal = Math.round(50 - Math.abs(normalizedDist) * 10);
@@ -357,9 +543,10 @@ export const SpatialGarmentRail: React.FC<SpatialGarmentRailProps> = ({
                 }`}
                 style={{
                   width: `${cardWidth}px`,
-                  transform: `translate3d(calc(${itemOffset}px), 0px, ${translateZPx}px) rotateY(${rotateYDeg}deg) scale3d(${scaleVal}, ${scaleVal}, 1)`,
+                  transform: `translate3d(calc(${itemOffset}px), ${translateYPx}px, ${translateZPx}px) rotateY(${rotateYDeg}deg) scale3d(${scaleVal}, ${scaleVal}, 1)`,
                   zIndex: zIndexVal,
                   opacity: opacityVal,
+                  filter: filterVal,
                   transition: isDragging
                     ? 'none'
                     : 'transform 480ms cubic-bezier(0.16, 1, 0.3, 1), opacity 350ms ease, filter 350ms ease',
@@ -369,9 +556,20 @@ export const SpatialGarmentRail: React.FC<SpatialGarmentRailProps> = ({
                 }}
               >
                 {/* Brass Hanger Assembly connecting rail to garment card */}
-                <div className="flex flex-col items-center shrink-0 -mb-1">
-                  {/* Brass Hook Loop */}
-                  <div className="h-6 w-5 rounded-t-full border-2 border-b-0 border-amber-400/80 bg-transparent shadow-xs" />
+                <div
+                  className="flex flex-col items-center shrink-0 -mb-1 transition-transform duration-300"
+                  style={{
+                    transform: isDragging
+                      ? `rotate(${Math.max(-4, Math.min(4, dragOffset * 0.03))}deg)`
+                      : 'rotate(0deg)',
+                  }}
+                >
+                  {/* Brass Hook Loop with highlight sheen */}
+                  <div className="relative h-6 w-5 rounded-t-full border-2 border-b-0 border-amber-400/80 bg-transparent shadow-xs">
+                    {isActive && (
+                      <div className="absolute top-0 right-0.5 h-2 w-0.5 rounded-full bg-white/70" />
+                    )}
+                  </div>
                   {/* Contoured Hanger Shoulder Bar */}
                   <div className="relative h-2 w-28 sm:w-36 rounded-full bg-gradient-to-r from-amber-800/80 via-amber-400 to-amber-800/80 shadow-xs border-t border-amber-200/50">
                     <div className="absolute left-1/2 -top-1 -translate-x-1/2 h-1.5 w-1.5 rounded-full bg-amber-300" />
@@ -382,7 +580,7 @@ export const SpatialGarmentRail: React.FC<SpatialGarmentRailProps> = ({
                 <div
                   className={`group relative flex flex-col w-full overflow-hidden rounded-2xl border transition-all duration-300 ${
                     isActive
-                      ? 'border-amber-400/60 ring-2 ring-amber-400/30 shadow-xl bg-(--card)'
+                      ? 'border-amber-400/70 ring-2 ring-amber-400/35 shadow-2xl bg-(--card)'
                       : 'border-border/70 hover:border-muted/80 bg-(--card)/90'
                   }`}
                 >
@@ -393,9 +591,27 @@ export const SpatialGarmentRail: React.FC<SpatialGarmentRailProps> = ({
                       className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
                     />
 
-                    {/* Specular Light Sheen Overlay for Active Piece */}
+                    {/* Milestone B: Material-Aware Lighting & Specular Sheen */}
                     {isActive && (
-                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-amber-200/15 mix-blend-overlay" />
+                      <>
+                        {/* Static Material Sheen Gradient */}
+                        <div
+                          className="pointer-events-none absolute inset-0 mix-blend-overlay transition-opacity duration-500"
+                          style={{ background: material.sheenGradient }}
+                        />
+
+                        {/* Restrained One-Shot Material Glint on Selection */}
+                        {!prefersReducedMotion && (
+                          <div
+                            key={`glint-${item.id}`}
+                            className="pointer-events-none absolute -inset-full animate-material-glint"
+                            style={{
+                              background:
+                                'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.25) 50%, transparent 100%)',
+                            }}
+                          />
+                        )}
+                      </>
                     )}
 
                     {/* Gradient Depth Vignette */}
@@ -421,22 +637,27 @@ export const SpatialGarmentRail: React.FC<SpatialGarmentRailProps> = ({
                       )}
                     </div>
 
-                    {/* Floating Heart Button */}
-                    <button
-                      type="button"
-                      aria-label={item.favorite ? 'Remove from favorites' : 'Add to favorites'}
-                      onPointerDown={(e) => e.stopPropagation()}
-                      onClick={(e) => onToggleFavorite(e, item)}
-                      className="absolute right-2.5 bottom-2.5 z-20 flex h-10 w-10 min-h-11 min-w-11 items-center justify-center rounded-full glass-pill text-white shadow-xs transition-transform hover:scale-110 active:scale-95 tactile-press"
-                    >
-                      <Heart
-                        className={`h-4 w-4 transition-colors ${
-                          item.favorite
-                            ? 'fill-accent stroke-accent'
-                            : 'stroke-white group-hover:stroke-accent'
-                        }`}
-                      />
-                    </button>
+                    {/* Floating Tactical Favorite Button with Ping Feedback */}
+                    <div className="absolute right-2.5 bottom-2.5 z-20">
+                      {favoritePingId === item.id && (
+                        <span className="absolute inset-0 rounded-full bg-amber-400 animate-fav-ping pointer-events-none" />
+                      )}
+                      <button
+                        type="button"
+                        aria-label={item.favorite ? 'Remove from favorites' : 'Add to favorites'}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={(e) => handleFavoriteClick(e, item)}
+                        className="relative flex h-10 w-10 min-h-11 min-w-11 items-center justify-center rounded-full glass-pill text-white shadow-xs transition-transform hover:scale-110 active:scale-90 tactile-press"
+                      >
+                        <Heart
+                          className={`h-4 w-4 transition-colors ${
+                            item.favorite
+                              ? 'fill-accent stroke-accent'
+                              : 'stroke-white group-hover:stroke-accent'
+                          }`}
+                        />
+                      </button>
+                    </div>
 
                     {/* Bottom Caption Overlay */}
                     <div className="absolute bottom-2.5 left-2.5 right-14 z-10 text-white space-y-0.5">
@@ -449,7 +670,7 @@ export const SpatialGarmentRail: React.FC<SpatialGarmentRailProps> = ({
                     </div>
                   </div>
 
-                  {/* Under-Card Metadata Strip */}
+                  {/* Under-Card Metadata Strip with Material Badge */}
                   <div className="p-2.5 sm:p-3 bg-card/95 border-t border-border/50 text-[11px] font-sans flex items-center justify-between text-muted">
                     <span className="truncate max-w-[130px]">
                       {item.fabric ? `${item.fabric}` : item.category}
@@ -497,13 +718,42 @@ export const SpatialGarmentRail: React.FC<SpatialGarmentRailProps> = ({
       {/* Active Garment Spotlight & Tactical Command Bar */}
       {activeItem && (
         <div className="mt-4 pt-4 border-t border-border/70 animate-fade-in">
+          {/* Milestone B: Laundry Safeguard Notification Banner */}
+          {laundrySafeguardPrompt && activeItem.status === 'in_laundry' && (
+            <div className="mb-3 p-3 rounded-xl border border-amber-300 bg-amber-50/90 dark:bg-amber-950/60 dark:border-amber-700 flex items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200 animate-fade-in">
+              <div className="flex items-center gap-2">
+                <ShieldAlert className="h-4 w-4 text-amber-600 shrink-0" />
+                <span>
+                  <strong>Laundry Safeguard:</strong> This piece is catalogued as in laundry.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={(e) => handleMarkCleanAndWear(e, activeItem)}
+                className="flex items-center gap-1 rounded-full bg-amber-600 px-3 py-1 text-[11px] font-bold text-white shadow-xs hover:bg-amber-700 active:scale-95 transition-all tactile-press shrink-0"
+              >
+                <RotateCw className="h-3 w-3" />
+                <span>Mark Clean & Wear</span>
+              </button>
+            </div>
+          )}
+
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-(--paper) p-4 rounded-2xl border border-border/80 shadow-2xs">
             {/* Metadata & Status */}
-            <div className="space-y-1 min-w-0">
+            <div className="space-y-1.5 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="rounded-full bg-(--burnished-gold)/15 px-2.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300 border border-amber-400/30">
                   {activeItem.category}
                 </span>
+
+                {activeMaterial && (
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-[9.5px] font-semibold tracking-wider uppercase border ${activeMaterial.badgeBg}`}
+                  >
+                    {activeMaterial.label}
+                  </span>
+                )}
+
                 {activeItem.fabric && (
                   <span className="text-[11px] text-muted font-sans">
                     Textile: <strong className="text-(--ink) font-medium">{activeItem.fabric}</strong>
@@ -545,17 +795,37 @@ export const SpatialGarmentRail: React.FC<SpatialGarmentRailProps> = ({
 
             {/* Tactical Actions */}
             <div className="flex items-center gap-2 shrink-0 pt-2 md:pt-0">
-              {/* Quick Wear Button */}
+              {/* Quick Wear Button with Laundry Safeguard */}
               {onUpdateItem && (
                 <button
                   type="button"
                   onPointerDown={(e) => e.stopPropagation()}
                   onClick={(e) => handleQuickWear(e, activeItem)}
-                  className="flex min-h-11 items-center gap-1.5 rounded-full border border-border bg-card px-4 text-xs font-semibold text-(--ink) shadow-2xs hover:border-(--ink) active:scale-95 transition-all tactile-press"
+                  className={`flex min-h-11 items-center gap-1.5 rounded-full border px-4 text-xs font-semibold shadow-2xs active:scale-95 transition-all tactile-press ${
+                    hasWornFeedback
+                      ? 'border-emerald-500 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-200'
+                      : activeItem.status === 'in_laundry'
+                      ? 'border-amber-300 bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300'
+                      : 'border-border bg-card text-(--ink) hover:border-(--ink)'
+                  }`}
                   aria-label={`Log wearing ${activeItem.name}`}
                 >
-                  <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-                  <span>{hasWornFeedback ? 'Logged Worn!' : 'Log Wear (+1)'}</span>
+                  {hasWornFeedback ? (
+                    <>
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                      <span>Worn Today (+1)</span>
+                    </>
+                  ) : activeItem.status === 'in_laundry' ? (
+                    <>
+                      <ShieldAlert className="h-3.5 w-3.5 text-amber-600" />
+                      <span>In Laundry</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                      <span>Log Wear (+1)</span>
+                    </>
+                  )}
                 </button>
               )}
 
