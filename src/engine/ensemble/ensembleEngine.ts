@@ -159,6 +159,7 @@ export class EnsembleRecommendationEngine {
       evaluations,
       telemetry,
       comparisonTelemetry,
+      allRankedCandidates,
     };
   }
 }

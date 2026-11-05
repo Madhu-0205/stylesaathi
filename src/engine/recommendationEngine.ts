@@ -38,6 +38,7 @@ import {
 import { fashionKnowledgeEngine } from './knowledge/fashionKnowledgeEngine';
 import { FashionKnowledgeContext, FashionKnowledgeSignal } from './knowledge/types';
 import { getExplanationForSignal } from './knowledge/explanations';
+import { executeShadowEvaluation, isShadowEvaluationEnabled } from './ensemble/shadowEvaluator';
 
 const OCCASION_FORMALITY_TARGETS: Record<string, number> = {
   college: 1.8,
@@ -997,7 +998,7 @@ export class RecommendationEngine {
       },
     };
 
-    return {
+    const baselineResult: RecommendationResultWithTelemetry = {
       set: recommendationSet,
       telemetry: {
         candidateCount: totalGeneratedCount,
@@ -1012,6 +1013,23 @@ export class RecommendationEngine {
         },
       },
     };
+
+    // StyleSaathi 3.0 — Phase 5A: Shadow Evaluation Integration
+    if (request.enableShadow !== false && isShadowEvaluationEnabled()) {
+      try {
+        const shadowComparison = executeShadowEvaluation(baselineResult, request);
+        if (shadowComparison) {
+          baselineResult.shadowComparison = shadowComparison;
+        }
+      } catch (err) {
+        // Shadow failure must NEVER fail or alter baseline recommendation output
+        if (typeof console !== 'undefined' && console.warn) {
+          console.warn('[ShadowEvaluator] Non-fatal shadow evaluation failure:', err);
+        }
+      }
+    }
+
+    return baselineResult;
   }
 
   private buildExplanation(

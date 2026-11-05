@@ -1001,6 +1001,7 @@ export interface RecommendationRequest {
   culturalSignals?: CulturalContextSignals;
   limit?: number; // Default 3
   anchorItemId?: string; // Phase 7: Explicit anchor constraint
+  enableShadow?: boolean; // Phase 5A: Toggle shadow ensemble evaluation (defaults to true)
 }
 
 export interface RecommendationSet {
@@ -1034,7 +1035,19 @@ export interface RecommendationPipelineTelemetry {
 export interface RecommendationResultWithTelemetry {
   set: RecommendationSet;
   telemetry: RecommendationPipelineTelemetry;
+  shadowComparison?: import('./engine/ensemble/types').ShadowComparisonReport;
 }
+
+export type {
+  ShadowComparisonReport,
+  ShadowCandidateOverlap,
+  ShadowRankingDifferences,
+  ShadowAnchorPreservation,
+  ShadowHardConstraintViolations,
+  ShadowUnknownAttributeHandling,
+  ShadowCulturalContextualConsistency,
+  ShadowExecutionLatency,
+} from './engine/ensemble/types';
 
 // ============================================================================
 // PHASE 8: WEAR ANALYTICS & STYLE EVOLUTION TYPES

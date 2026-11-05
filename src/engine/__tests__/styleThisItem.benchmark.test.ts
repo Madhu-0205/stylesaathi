@@ -98,6 +98,7 @@ describe('Phase 7: Style This Item Performance Benchmark', () => {
         season: 'summer' as const,
         localDate: '2026-10-09',
         anchorItemId: anchorId,
+        enableShadow: false,
       };
 
       // 1. 10 Warm-up iterations

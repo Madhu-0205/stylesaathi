@@ -151,4 +151,83 @@ export interface EnsembleRecommendationResult {
   evaluations: Record<string, OutfitEvaluationResult>;
   telemetry: RecommendationPipelineTelemetry;
   comparisonTelemetry?: RecommendationComparisonTelemetry;
+  allRankedCandidates?: {
+    candidate: any;
+    evaluation: OutfitEvaluationResult;
+    graph: EnsembleGraph;
+  }[];
 }
+
+// ============================================================================
+// 5. PHASE 5A: SHADOW COMPARISON TYPES
+// ============================================================================
+
+export interface ShadowCandidateOverlap {
+  baselineCount: number;
+  ensembleCount: number;
+  sharedTopCandidateIds: string[];
+  topPickJaccardOverlap: number; // 0.0 - 1.0 (garment-level intersection over union)
+  baselineTopInEnsembleRank?: number; // 1-based rank or -1 if not in ensemble pool
+  ensembleTopInBaselineRank?: number; // 1-based rank or -1 if not in baseline pool
+}
+
+export interface ShadowRankingDifferences {
+  baselineTopScore: number;
+  ensembleTopScore: number;
+  scoreDelta: number; // ensembleTopScore - baselineTopScore
+  rankInversionsCount: number;
+  explanation: string;
+}
+
+export interface ShadowAnchorPreservation {
+  anchorItemId?: string;
+  baselinePreserved: boolean;
+  ensemblePreserved: boolean;
+  isConsistent: boolean;
+}
+
+export interface ShadowHardConstraintViolations {
+  baselineViolationsDetectedByEnsemble: string[];
+  ensembleViolationsDetected: string[];
+  weakestEdgeClashesCaught: number;
+  formalitySpreadViolationsPrevented: number;
+}
+
+export interface ShadowUnknownAttributeHandling {
+  baselineUnconfirmedItemsCount: number;
+  ensembleUnconfirmedItemsCount: number;
+  uncertaintyShrinkageApplied: boolean;
+}
+
+export interface ShadowCulturalContextualConsistency {
+  culturalHarmonious: boolean;
+  culturalSignalsDetected: number;
+  culturalMismatchesCaught: string[];
+  weatherAlignmentConsistent: boolean;
+}
+
+export interface ShadowExecutionLatency {
+  baselineMs: number;
+  ensembleMs: number;
+  totalMs: number;
+}
+
+export interface ShadowComparisonReport {
+  timestamp: number;
+  requestContext: {
+    occasion: Occasion;
+    season: Season;
+    itemCount: number;
+    anchorItemId?: string;
+    hasGenuineWeather: boolean;
+    hasStyleProfile: boolean;
+  };
+  candidateOverlap: ShadowCandidateOverlap;
+  rankingDifferences: ShadowRankingDifferences;
+  anchorPreservation: ShadowAnchorPreservation;
+  hardConstraintViolations: ShadowHardConstraintViolations;
+  unknownAttributeHandling: ShadowUnknownAttributeHandling;
+  culturalContextualConsistency: ShadowCulturalContextualConsistency;
+  executionLatency: ShadowExecutionLatency;
+}
+
