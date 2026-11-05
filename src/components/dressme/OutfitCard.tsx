@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bookmark, Check, RefreshCw, Plus, Calendar, ThumbsDown, X } from 'lucide-react';
+import { Bookmark, Check, RefreshCw, Plus, Calendar, ThumbsDown, X, Layers } from 'lucide-react';
 import { GeneratedOutfit, WardrobeItem, Occasion, RejectionReason, ContextSnapshot } from '../../types';
 import { ItemImage } from '../common/ItemImage';
 import { getOutfitWhyReasons } from '../../engine/scoring';
@@ -24,12 +24,15 @@ interface OutfitCardProps {
   occasion: Occasion;
   accessory: WardrobeItem | null;
   context?: ContextSnapshot;
+  anchorItem?: WardrobeItem | null;
   onOpenAccessoryDrawer: () => void;
   onMarkWorn: (outfit: GeneratedOutfit, accessory: WardrobeItem | null) => Promise<void>;
   onSaveOutfit: (outfit: GeneratedOutfit) => Promise<unknown>;
   onChangeLook?: () => void;
   onPlanLook?: (outfit: GeneratedOutfit) => void;
   onRejectLook?: (outfit: GeneratedOutfit, reason?: RejectionReason) => Promise<void>;
+  onOpenInAtelier?: (outfit: GeneratedOutfit) => void;
+  onInspectItem?: (item: WardrobeItem) => void;
 }
 
 export const OutfitCard: React.FC<OutfitCardProps> = ({
@@ -38,12 +41,15 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
   occasion,
   accessory,
   context,
+  anchorItem,
   onOpenAccessoryDrawer,
   onMarkWorn,
   onSaveOutfit,
   onChangeLook,
   onPlanLook,
   onRejectLook,
+  onOpenInAtelier,
+  onInspectItem,
 }) => {
   const { preferences, styleProfile } = useWardrobeContext();
   const [wornToday, setWornToday] = useState(false);
@@ -135,7 +141,21 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
           <div className="grid grid-cols-12 gap-2 sm:gap-2.5">
             {/* Large Primary Hero Garment (Left ~58% width on phone, proportional on desktop) */}
             {primarySlot && primarySlot[1][0] && (
-              <div className="col-span-7 relative aspect-3/4 overflow-hidden rounded-xl border border-border/80 bg-(--ivory)">
+              <div
+                role={onInspectItem ? 'button' : undefined}
+                tabIndex={onInspectItem ? 0 : undefined}
+                onClick={() => onInspectItem?.(primarySlot[1][0])}
+                onKeyDown={(e) => {
+                  if ((e.key === 'Enter' || e.key === ' ') && onInspectItem) {
+                    e.preventDefault();
+                    onInspectItem(primarySlot[1][0]);
+                  }
+                }}
+                className={`col-span-7 relative aspect-3/4 overflow-hidden rounded-xl border border-border/80 bg-(--ivory) ${
+                  onInspectItem ? 'cursor-pointer hover:border-muted group/hero' : ''
+                }`}
+                title={onInspectItem ? `Inspect ${primarySlot[1][0].name}` : undefined}
+              >
                 <ItemImage
                   item={primarySlot[1][0]}
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.01]"
@@ -144,7 +164,7 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
                   {primarySlot[1][0].name}
                 </div>
                 <div className="absolute top-2 left-2 text-[8.5px] font-bold uppercase tracking-wider text-(--burnished-gold) bg-(--paper)/95 px-1.5 py-0.5 rounded border border-border/50 shadow-2xs">
-                  Hero Piece
+                  {anchorItem && primarySlot[1][0].id === anchorItem.id ? '✦ Anchor Piece' : 'Hero Piece'}
                 </div>
                 {primarySlot[1][0].fabric && (
                   <div className="absolute top-2 right-2 text-[8.5px] font-medium text-muted bg-(--paper)/95 px-1.5 py-0.5 rounded border border-border/50 capitalize shadow-2xs">
@@ -163,7 +183,19 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
                   return (
                     <div
                       key={slotName}
-                      className="relative flex-1 min-h-0 h-full overflow-hidden rounded-xl border border-border/80 bg-(--ivory)"
+                      role={onInspectItem ? 'button' : undefined}
+                      tabIndex={onInspectItem ? 0 : undefined}
+                      onClick={() => onInspectItem?.(piece)}
+                      onKeyDown={(e) => {
+                        if ((e.key === 'Enter' || e.key === ' ') && onInspectItem) {
+                          e.preventDefault();
+                          onInspectItem(piece);
+                        }
+                      }}
+                      className={`relative flex-1 min-h-0 h-full overflow-hidden rounded-xl border border-border/80 bg-(--ivory) ${
+                        onInspectItem ? 'cursor-pointer hover:border-muted' : ''
+                      }`}
+                      title={onInspectItem ? `Inspect ${piece.name}` : undefined}
                     >
                       <ItemImage
                         item={piece}
@@ -179,7 +211,21 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
                 <>
                   {/* First secondary piece (e.g. Kurta / Top) */}
                   {secondarySlots[0] && secondarySlots[0][1][0] && (
-                    <div className="relative flex-1 min-h-0 h-full overflow-hidden rounded-xl border border-border/80 bg-(--ivory)">
+                    <div
+                      role={onInspectItem ? 'button' : undefined}
+                      tabIndex={onInspectItem ? 0 : undefined}
+                      onClick={() => onInspectItem?.(secondarySlots[0][1][0])}
+                      onKeyDown={(e) => {
+                        if ((e.key === 'Enter' || e.key === ' ') && onInspectItem) {
+                          e.preventDefault();
+                          onInspectItem(secondarySlots[0][1][0]);
+                        }
+                      }}
+                      className={`relative flex-1 min-h-0 h-full overflow-hidden rounded-xl border border-border/80 bg-(--ivory) ${
+                        onInspectItem ? 'cursor-pointer hover:border-muted' : ''
+                      }`}
+                      title={onInspectItem ? `Inspect ${secondarySlots[0][1][0].name}` : undefined}
+                    >
                       <ItemImage
                         item={secondarySlots[0][1][0]}
                         className="h-full w-full object-cover"
@@ -197,7 +243,19 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
                       return (
                         <div
                           key={slotName}
-                          className="relative h-full overflow-hidden rounded-xl border border-border/80 bg-(--ivory)"
+                          role={onInspectItem ? 'button' : undefined}
+                          tabIndex={onInspectItem ? 0 : undefined}
+                          onClick={() => onInspectItem?.(piece)}
+                          onKeyDown={(e) => {
+                            if ((e.key === 'Enter' || e.key === ' ') && onInspectItem) {
+                              e.preventDefault();
+                              onInspectItem(piece);
+                            }
+                          }}
+                          className={`relative h-full overflow-hidden rounded-xl border border-border/80 bg-(--ivory) ${
+                            onInspectItem ? 'cursor-pointer hover:border-muted' : ''
+                          }`}
+                          title={onInspectItem ? `Inspect ${piece.name}` : undefined}
                         >
                           <ItemImage
                             item={piece}
@@ -261,6 +319,24 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
                 )}
               </div>
               <div className="gold-accent-rule my-1" />
+
+              {/* Storytelling: Anchor Garment Identification */}
+              <div className="text-[11px] text-(--ink) font-medium flex items-center gap-1.5 pb-0.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
+                <span className="truncate">
+                  <strong className="font-semibold text-(--burnished-gold)">Anchor:</strong>{' '}
+                  {anchorItem?.name || primarySlot?.[1]?.[0]?.name || 'Hero Piece'}
+                </span>
+              </div>
+
+              {/* Storytelling: Occasion & Style Calibration */}
+              <div className="text-[11px] text-muted font-sans flex items-center gap-1.5 pb-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-muted/60 shrink-0" />
+                <span>
+                  <strong className="text-(--ink)">Occasion Fit:</strong> Tailored for {occasion}
+                </span>
+              </div>
+
               <ul className="space-y-1 text-xs text-(--ink)">
                 {whyReasons.map((reason, i) => (
                   <li key={`${reason}-${i}`} className="flex items-start gap-2">
@@ -298,6 +374,19 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
               >
                 <RefreshCw className="h-3.5 w-3.5 text-muted" />
                 <span className="hidden sm:inline">Shuffle</span>
+              </button>
+            )}
+
+            {onOpenInAtelier && (
+              <button
+                type="button"
+                onClick={() => onOpenInAtelier(outfit)}
+                className="flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/10 px-3 text-xs font-semibold text-amber-900 dark:text-amber-200 transition-all hover:bg-amber-500/20 active:scale-95 tactile-press"
+                title="Open in 3D Atelier"
+                aria-label="Open in 3D Atelier"
+              >
+                <Layers className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                <span className="hidden sm:inline">3D Atelier</span>
               </button>
             )}
 

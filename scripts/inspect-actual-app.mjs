@@ -480,6 +480,112 @@ async function main() {
 
     // Capture Dress Me Screen Screenshot
     await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-dressme-390.png'));
+    await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-cinematic-spotlight-390.png'));
+
+    // MILESTONE D: Inspect Cinematic Spotlight & Storytelling Elements
+    console.log('\n--- 4.5. MILESTONE D: CINEMATIC DRESS ME EXPERIENCE ---');
+    const cinematicMetrics = await cdp.eval(`(() => {
+      const banner = document.querySelector('.editorial-kicker');
+      const spotlightBar = Array.from(document.querySelectorAll('span')).find(s => s.textContent?.includes('CINEMATIC SPOTLIGHT') || s.textContent?.includes('DAILY CURATION'));
+      const storytelling = Array.from(document.querySelectorAll('strong')).map(s => s.textContent?.trim());
+      const atelierBtn = document.querySelector('button[aria-label="Open in 3D Atelier"]');
+      const nextLookBtn = document.querySelector('button[aria-label="Next revealed look"]');
+      const feedLayoutBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.trim() === 'All Looks');
+      const parallelPills = Array.from(document.querySelectorAll('button')).filter(b => b.getAttribute('aria-label')?.includes('Switch to Look'));
+
+      return {
+        hasSpotlightBar: Boolean(spotlightBar),
+        spotlightText: spotlightBar ? spotlightBar.textContent?.trim() : null,
+        storytellingTags: storytelling,
+        hasAtelierButtonOnCard: Boolean(atelierBtn),
+        hasNextLookButton: Boolean(nextLookBtn),
+        hasFeedLayoutButton: Boolean(feedLayoutBtn),
+        parallelPillsCount: parallelPills.length,
+      };
+    })()`);
+    console.log('[Cinematic Daily Edit Metrics]:', cinematicMetrics);
+
+    // Switch to Desktop 1280x900 for Cinematic Spotlight Desktop
+    console.log('[Viewport] Switching to Desktop 1280x900 for Cinematic Spotlight...');
+    await cdp.send('Emulation.setDeviceMetricsOverride', {
+      width: 1280,
+      height: 900,
+      deviceScaleFactor: 2,
+      mobile: false,
+    });
+    await new Promise(r => setTimeout(r, 800));
+    console.log('[Screenshot] Capturing Cinematic Spotlight Desktop (1280px)...');
+    await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-cinematic-spotlight-desktop.png'));
+
+    // Switch back to mobile viewport
+    console.log('[Viewport] Switching back to Mobile 390x844...');
+    await cdp.send('Emulation.setDeviceMetricsOverride', {
+      width: 390,
+      height: 844,
+      deviceScaleFactor: 2,
+      mobile: true,
+    });
+    await new Promise(r => setTimeout(r, 600));
+
+    // Test Cinematic Look Paging (Next Look)
+    console.log('[Cinematic Reveal] Clicking Next revealed look...');
+    const pageNextResult = await cdp.eval(`(() => {
+      const nextBtn = document.querySelector('button[aria-label="Next revealed look"]');
+      if (nextBtn) {
+        nextBtn.click();
+        return 'Clicked Next revealed look button';
+      }
+      return 'Next revealed look button not found';
+    })()`);
+    console.log('[Cinematic Paging Result]:', pageNextResult);
+    await new Promise(r => setTimeout(r, 800));
+    console.log('[Screenshot] Capturing Look 02 Cinematic Reveal (390px)...');
+    await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-cinematic-revealed-look2-390.png'));
+
+    // Test Layout Switch to "All Looks" Feed
+    console.log('[Layout Switch] Switching to All Looks feed...');
+    const switchFeedResult = await cdp.eval(`(() => {
+      const feedBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.trim() === 'All Looks');
+      if (feedBtn) {
+        feedBtn.click();
+        return 'Clicked All Looks layout button';
+      }
+      return 'All Looks button not found';
+    })()`);
+    console.log('[Layout Switch Result]:', switchFeedResult);
+    await new Promise(r => setTimeout(r, 800));
+    console.log('[Screenshot] Capturing All Looks Feed layout (390px)...');
+    await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-cinematic-feed-390.png'));
+
+    // Switch back to Spotlight layout
+    await cdp.eval(`(() => {
+      const spotBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.trim() === 'Spotlight');
+      if (spotBtn) spotBtn.click();
+    })()`);
+    await new Promise(r => setTimeout(r, 500));
+
+    // Test Garment Inspection from OutfitCard
+    console.log('[Garment Inspection] Clicking hero piece image in OutfitCard...');
+    const inspectHeroResult = await cdp.eval(`(() => {
+      const heroFrame = document.querySelector('div[title^="Inspect "]');
+      if (heroFrame) {
+        const title = heroFrame.getAttribute('title');
+        heroFrame.click();
+        return 'Clicked hero frame: ' + title;
+      }
+      return 'Inspectable hero frame not found';
+    })()`);
+    console.log('[Garment Inspection Action]:', inspectHeroResult);
+    await new Promise(r => setTimeout(r, 800));
+    console.log('[Screenshot] Capturing Garment Inspection Sheet (390px)...');
+    await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-garment-inspection-390.png'));
+
+    // Close ItemDetailSheet
+    await cdp.eval(`(() => {
+      const closeBtn = document.querySelector('button[aria-label="Close dialog"]') || document.querySelector('button[aria-label="Close"]');
+      if (closeBtn) closeBtn.click();
+    })()`);
+    await new Promise(r => setTimeout(r, 400));
 
     // Test Saved Looks Modal
     console.log('\n--- 5. SAVED LOOKS MODAL INTERACTION ---');

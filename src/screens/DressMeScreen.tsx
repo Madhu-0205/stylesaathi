@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { RefreshCw, AlertCircle, Calendar, Pin, Bookmark, X, Sparkles, Layers } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { RefreshCw, AlertCircle, Calendar, Pin, Bookmark, X, Sparkles, Layers, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useDressMe } from '../hooks/useDressMe';
 import { useWardrobeContext } from '../context/WardrobeContext';
 import { Chip } from '../components/common/Chip';
@@ -27,7 +27,7 @@ interface DressMeScreenProps {
 }
 
 export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, onGoToCalendar }) => {
-  const { items, theme, toggleTheme, plans, savedOutfits, updateItem, deleteItem } = useWardrobeContext();
+  const { items, theme, toggleTheme, plans, savedOutfits, updateItem, deleteItem, styleVibes } = useWardrobeContext();
   const {
     occasion,
     setOccasion,
@@ -55,6 +55,12 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
   const [showSavedOutfitsModal, setShowSavedOutfitsModal] = useState(false);
   const [viewMode, setViewMode] = useState<'daily' | 'atelier'>('daily');
   const [inspectedItem, setInspectedItem] = useState<WardrobeItem | null>(null);
+  const [activeLookIndex, setActiveLookIndex] = useState<number>(0);
+  const [revealLayout, setRevealLayout] = useState<'showcase' | 'feed'>('showcase');
+
+  useEffect(() => {
+    setActiveLookIndex(0);
+  }, [occasion, season, anchorItem?.id]);
 
   useBackButton(
     BackButtonPriority.SCREEN_MODAL,
@@ -74,6 +80,7 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
 
   const handleShuffle = () => {
     setIsShuffling(true);
+    setActiveLookIndex(0);
     shuffle();
     setTimeout(() => setIsShuffling(false), 400);
   };
@@ -299,6 +306,23 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
 
       {/* Context Controls: Occasions + Seasons */}
       <div className="mb-4 space-y-2.5 border-b border-(--border)/70 pb-3">
+        {/* Missing Context Guidance */}
+        {(!styleVibes || styleVibes.length === 0) && (
+          <div className="flex items-center justify-between p-2.5 rounded-xl border border-dashed border-border/70 bg-card/30 text-xs text-muted">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+              <span className="text-[11px]">Set your personal style vibes to unlock deeper aesthetic curation</span>
+            </div>
+            <button
+              type="button"
+              onClick={onGoToWardrobe}
+              className="text-[10.5px] font-semibold text-(--burnished-gold) hover:underline shrink-0"
+            >
+              Refine Profile
+            </button>
+          </div>
+        )}
+
         {/* Occasion Selector Chips */}
         <div className="no-scrollbar -mx-3.5 sm:-mx-6 md:mx-0 flex gap-1.5 overflow-x-auto px-3.5 sm:px-6 md:px-0 py-0.5 md:flex-wrap">
           {OCCASIONS.map((occ) => (
@@ -414,22 +438,178 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
         />
       ) : (
         <div className="space-y-4">
-          {outfits.map((outfit, index) => (
-            <OutfitCard
-              key={`${outfit.template}-${index}-${season}-${occasion}-${anchorItem?.id || 'none'}`}
-              outfit={outfit}
-              index={index}
-              occasion={occasion}
-              accessory={activeAccessories[index] || null}
-              context={contextSnapshot}
-              onOpenAccessoryDrawer={() => setActiveDrawerOutfitIndex(index)}
-              onMarkWorn={markWoreOutfit}
-              onSaveOutfit={saveOutfit}
-              onChangeLook={handleShuffle}
-              onPlanLook={(o) => setPlanningOutfit(o)}
-              onRejectLook={rejectOutfit}
-            />
-          ))}
+          {/* Cinematic Reveal Controller Bar */}
+          <div className="flex items-center justify-between px-2.5 py-1.5 rounded-2xl bg-card/70 border border-border/80 backdrop-blur-xs">
+            <div className="flex items-center gap-2">
+              <span className="editorial-kicker text-(--burnished-gold) tracking-[0.16em]">
+                {revealLayout === 'showcase'
+                  ? `LOOK 0${Math.min(activeLookIndex + 1, outfits.length)} OF 0${outfits.length} · CINEMATIC SPOTLIGHT`
+                  : `DAILY CURATION (${outfits.length} LOOKS)`}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {revealLayout === 'showcase' && outfits.length > 1 && (
+                <div className="flex items-center rounded-full border border-border bg-card p-0.5 shadow-2xs">
+                  <button
+                    type="button"
+                    onClick={() => setActiveLookIndex((p) => Math.max(0, p - 1))}
+                    disabled={activeLookIndex === 0}
+                    aria-label="Previous revealed look"
+                    className="flex h-7 w-7 min-h-11 min-w-11 items-center justify-center rounded-full text-muted hover:text-(--ink) disabled:opacity-30 transition-all tactile-press"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <span className="px-1.5 font-mono text-[11px] font-semibold text-(--ink)">
+                    {activeLookIndex + 1}/{outfits.length}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setActiveLookIndex((p) => Math.min(outfits.length - 1, p + 1))}
+                    disabled={activeLookIndex >= outfits.length - 1}
+                    aria-label="Next revealed look"
+                    className="flex h-7 w-7 min-h-11 min-w-11 items-center justify-center rounded-full text-muted hover:text-(--ink) disabled:opacity-30 transition-all tactile-press"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+
+              {/* View Layout Switcher: Spotlight vs All Looks */}
+              <div className="flex items-center rounded-full border border-border bg-card p-0.5 text-[10.5px] font-bold uppercase tracking-wider shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => setRevealLayout('showcase')}
+                  aria-pressed={revealLayout === 'showcase'}
+                  className={`min-h-11 px-3 rounded-full transition-colors tactile-press ${
+                    revealLayout === 'showcase'
+                      ? 'bg-(--ink) text-(--paper) shadow-2xs'
+                      : 'text-muted hover:text-(--ink)'
+                  }`}
+                >
+                  Spotlight
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRevealLayout('feed')}
+                  aria-pressed={revealLayout === 'feed'}
+                  className={`min-h-11 px-3 rounded-full transition-colors tactile-press ${
+                    revealLayout === 'feed'
+                      ? 'bg-(--ink) text-(--paper) shadow-2xs'
+                      : 'text-muted hover:text-(--ink)'
+                  }`}
+                >
+                  All Looks
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {revealLayout === 'showcase' ? (
+            <div className="space-y-4">
+              {/* Spotlight Revealed Outfit Card */}
+              {outfits[activeLookIndex] && (
+                <div key={`spotlight-${activeLookIndex}-${outfits[activeLookIndex].template}`} className="animate-fade-in">
+                  <OutfitCard
+                    outfit={outfits[activeLookIndex]}
+                    index={activeLookIndex}
+                    occasion={occasion}
+                    accessory={activeAccessories[activeLookIndex] || null}
+                    context={contextSnapshot}
+                    anchorItem={anchorItem}
+                    onOpenAccessoryDrawer={() => setActiveDrawerOutfitIndex(activeLookIndex)}
+                    onMarkWorn={markWoreOutfit}
+                    onSaveOutfit={saveOutfit}
+                    onChangeLook={handleShuffle}
+                    onPlanLook={(o) => setPlanningOutfit(o)}
+                    onRejectLook={rejectOutfit}
+                    onOpenInAtelier={(o) => {
+                      const heroPiece = Object.values(o.slots)[0]?.[0];
+                      if (heroPiece) setAnchorItem(heroPiece);
+                      setViewMode('atelier');
+                    }}
+                    onInspectItem={(item) => setInspectedItem(item)}
+                  />
+                </div>
+              )}
+
+              {/* Parallel Looks Cinematic Navigation Ribbon */}
+              {outfits.length > 1 && (
+                <div className="pt-2">
+                  <div className="flex items-center justify-between mb-2 px-1">
+                    <span className="editorial-kicker text-muted">
+                      PARALLEL CURATIONS ({outfits.length})
+                    </span>
+                    <span className="text-[10.5px] text-muted font-sans">
+                      Select thumbnail to reveal full styling
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                    {outfits.map((look, i) => {
+                      const isSelected = i === activeLookIndex;
+                      const heroPiece = Object.values(look.slots)[0]?.[0];
+                      return (
+                        <button
+                          key={`${look.template}-${i}`}
+                          type="button"
+                          onClick={() => setActiveLookIndex(i)}
+                          aria-label={`Switch to Look 0${i + 1}: ${look.template}`}
+                          className={`group relative flex items-center gap-2.5 p-2 rounded-2xl border text-left transition-all active:scale-[0.98] ${
+                            isSelected
+                              ? 'border-amber-400 bg-amber-500/10 ring-2 ring-amber-400/30'
+                              : 'border-border bg-card/70 hover:border-muted'
+                          }`}
+                        >
+                          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-border bg-(--ivory)">
+                            {heroPiece && (
+                              <ItemImage item={heroPiece} className="h-full w-full object-cover" />
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <span className="text-[9px] uppercase tracking-wider font-bold text-(--burnished-gold) block">
+                              Look 0{i + 1}
+                            </span>
+                            <span className="font-serif text-xs font-normal text-(--ink) truncate block">
+                              {look.template.replace(/_/g, ' ')}
+                            </span>
+                            <span className="text-[9.5px] text-muted truncate block">
+                              {Object.values(look.slots).flat().length} pieces
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {outfits.map((outfit, index) => (
+                <OutfitCard
+                  key={`${outfit.template}-${index}-${season}-${occasion}-${anchorItem?.id || 'none'}`}
+                  outfit={outfit}
+                  index={index}
+                  occasion={occasion}
+                  accessory={activeAccessories[index] || null}
+                  context={contextSnapshot}
+                  anchorItem={anchorItem}
+                  onOpenAccessoryDrawer={() => setActiveDrawerOutfitIndex(index)}
+                  onMarkWorn={markWoreOutfit}
+                  onSaveOutfit={saveOutfit}
+                  onChangeLook={handleShuffle}
+                  onPlanLook={(o) => setPlanningOutfit(o)}
+                  onRejectLook={rejectOutfit}
+                  onOpenInAtelier={(o) => {
+                    const heroPiece = Object.values(o.slots)[0]?.[0];
+                    if (heroPiece) setAnchorItem(heroPiece);
+                    setViewMode('atelier');
+                  }}
+                  onInspectItem={(item) => setInspectedItem(item)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 

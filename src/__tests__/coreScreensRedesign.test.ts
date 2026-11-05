@@ -36,6 +36,13 @@ describe('Phase D — Core Screens Editorial Redesign Verification', () => {
       expect(dressMeScreenTsx).toContain('<OutfitAtelierStage');
       expect(dressMeScreenTsx).toContain('<ItemDetailSheet');
     });
+
+    it('features Milestone D cinematic daily reveal with spotlight layout and parallel curation strip', () => {
+      expect(dressMeScreenTsx).toContain('CINEMATIC SPOTLIGHT');
+      expect(dressMeScreenTsx).toContain('Spotlight');
+      expect(dressMeScreenTsx).toContain('All Looks');
+      expect(dressMeScreenTsx).toContain('PARALLEL CURATIONS');
+    });
   });
 
   describe('2. Editorial Outfit Composition (OutfitCard)', () => {
