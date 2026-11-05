@@ -226,9 +226,64 @@ async function main() {
     // Wait a brief moment for images and styles to paint
     await new Promise(r => setTimeout(r, 1000));
 
-    // Capture Wardrobe Mobile Screenshot (390px)
+    // Inspect Spatial Rail 3D Transforms before interaction
+    const railInitialMetrics = await cdp.eval(`(() => {
+      const railSection = document.querySelector('section[aria-label="Interactive 3D Spatial Garment Rail"]');
+      const stage = railSection ? railSection.querySelector('div[role="region"]') : null;
+      const cards = railSection ? Array.from(railSection.querySelectorAll('article[aria-roledescription="slide"]')) : [];
+      const activeCard = cards.find(c => c.getAttribute('data-active') === 'true');
+      const inactiveCards = cards.filter(c => c.getAttribute('data-active') === 'false');
+
+      return {
+        hasRailSection: Boolean(railSection),
+        stagePerspective: stage ? window.getComputedStyle(stage).perspective : null,
+        stageTransformStyle: stage ? window.getComputedStyle(stage).transformStyle : null,
+        totalRailCards: cards.length,
+        activeCardTransform: activeCard ? activeCard.style.transform : null,
+        inactiveCardTransform: inactiveCards.length > 0 ? inactiveCards[0].style.transform : null,
+        activeCardName: activeCard ? activeCard.querySelector('h4')?.textContent : null,
+      };
+    })()`);
+    console.log('\n--- SPATIAL RAIL INITIAL 3D METRICS ---');
+    console.log(railInitialMetrics);
+
+    // Capture Wardrobe Mobile Screenshot with Spatial Rail (390px)
     console.log('[Screenshot] Capturing Wardrobe Mobile (390px)...');
     await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-wardrobe-390.png'));
+    await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-wardrobe-rail-390.png'));
+
+    // Interact with Spatial Rail: Advance to next garment
+    console.log('[Spatial Rail] Clicking Next garment in rail...');
+    const advanceResult = await cdp.eval(`(() => {
+      const nextBtn = document.querySelector('button[aria-label="Next garment in rail"]');
+      if (nextBtn) {
+        nextBtn.click();
+        return 'Clicked Next button';
+      }
+      return 'Next button not found';
+    })()`);
+    console.log('[Spatial Rail Result]:', advanceResult);
+
+    // Wait for smooth 3D spring transition
+    await new Promise(r => setTimeout(r, 700));
+
+    // Inspect Spatial Rail 3D Transforms after interaction
+    const railAfterMetrics = await cdp.eval(`(() => {
+      const railSection = document.querySelector('section[aria-label="Interactive 3D Spatial Garment Rail"]');
+      const cards = railSection ? Array.from(railSection.querySelectorAll('article[aria-roledescription="slide"]')) : [];
+      const activeCard = cards.find(c => c.getAttribute('data-active') === 'true');
+
+      return {
+        activeCardTransform: activeCard ? activeCard.style.transform : null,
+        activeCardName: activeCard ? activeCard.querySelector('h4')?.textContent : null,
+      };
+    })()`);
+    console.log('\n--- SPATIAL RAIL AFTER INTERACTION METRICS ---');
+    console.log(railAfterMetrics);
+
+    // Capture Wardrobe Mobile Screenshot with Newly Selected Focal Garment
+    console.log('[Screenshot] Capturing Wardrobe Rail Selected Mobile (390px)...');
+    await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-wardrobe-rail-selected-390.png'));
 
     // Switch to Desktop viewport to capture Wardrobe Desktop (1280px)
     console.log('[Viewport] Switching to Desktop 1280x900...');
@@ -241,6 +296,7 @@ async function main() {
     await new Promise(r => setTimeout(r, 1000));
     console.log('[Screenshot] Capturing Wardrobe Desktop (1280px)...');
     await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-wardrobe-desktop.png'));
+    await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-wardrobe-rail-desktop.png'));
 
     // Inspect Wardrobe Desktop elements & images
     const wardrobeInspection = await cdp.eval(`(() => {

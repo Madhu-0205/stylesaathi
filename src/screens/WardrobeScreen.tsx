@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, Sparkles, Heart, ArrowUpRight } from 'lucide-react';
+import { Search, Plus, Sparkles, Heart, ArrowUpRight, Layers, LayoutGrid } from 'lucide-react';
 import { useWardrobe } from '../hooks/useWardrobe';
 import { Chip } from '../components/common/Chip';
 import { ItemCard } from '../components/wardrobe/ItemCard';
 import { ItemDetailSheet } from '../components/wardrobe/ItemDetailSheet';
+import { SpatialGarmentRail } from '../components/wardrobe/SpatialGarmentRail';
 import { EmptyState } from '../components/common/EmptyState';
 import { WardrobeItemSkeleton } from '../components/common/Skeleton';
 import { CATEGORIES } from '../data/taxonomy';
@@ -41,6 +42,7 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
   } = useWardrobe();
 
   const [selectedItem, setSelectedItem] = useState<WardrobeItem | null>(null);
+  const [viewMode, setViewMode] = useState<'rail' | 'grid'>('rail');
 
   useBackButton(
     BackButtonPriority.SCREEN_MODAL,
@@ -349,16 +351,49 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
       </section>
 
       {/* Catalog Registry Header */}
-      <div className="mb-4 flex items-baseline justify-between border-b border-border/60 pb-2 mt-4 sm:mt-6">
+      <div className="mb-4 flex flex-col sm:flex-row sm:items-baseline justify-between border-b border-border/60 pb-3 mt-4 sm:mt-6 gap-2">
         <div>
           <span className="editorial-kicker text-muted">ARCHIVAL REGISTRY</span>
           <h3 className="font-serif text-lg sm:text-xl text-(--ink) font-normal tracking-tight">
             All Garments & Swatches
           </h3>
         </div>
-        <span className="text-[11px] font-sans font-medium text-muted">
-          {filteredItems.length} {filteredItems.length === 1 ? 'Piece' : 'Pieces'}
-        </span>
+
+        <div className="flex items-center gap-3">
+          {/* Dual View Mode Switcher */}
+          <div className="flex items-center rounded-full border border-border/80 bg-card/60 p-0.5 shadow-2xs">
+            <button
+              type="button"
+              onClick={() => setViewMode('rail')}
+              aria-pressed={viewMode === 'rail'}
+              className={`flex min-h-11 items-center gap-1.5 rounded-full px-3.5 text-xs font-semibold transition-all tactile-press ${
+                viewMode === 'rail'
+                  ? 'bg-(--ink) text-(--paper) shadow-2xs'
+                  : 'text-muted hover:text-(--ink)'
+              }`}
+            >
+              <Layers className="h-3.5 w-3.5" />
+              <span>Studio Rail</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('grid')}
+              aria-pressed={viewMode === 'grid'}
+              className={`flex min-h-11 items-center gap-1.5 rounded-full px-3.5 text-xs font-semibold transition-all tactile-press ${
+                viewMode === 'grid'
+                  ? 'bg-(--ink) text-(--paper) shadow-2xs'
+                  : 'text-muted hover:text-(--ink)'
+              }`}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+              <span>Grid</span>
+            </button>
+          </div>
+
+          <span className="text-[11px] font-sans font-medium text-muted hidden sm:inline">
+            {filteredItems.length} {filteredItems.length === 1 ? 'Piece' : 'Pieces'}
+          </span>
+        </div>
       </div>
 
       {/* Loading Skeletons */}
@@ -399,8 +434,48 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
         />
       )}
 
-      {/* The Archival Catalog Grid */}
-      {!loading && filteredItems.length > 0 && (
+      {/* Spatial Studio Rail View (Default) */}
+      {!loading && filteredItems.length > 0 && viewMode === 'rail' && (
+        <div className="space-y-8">
+          <SpatialGarmentRail
+            items={filteredItems}
+            onSelectItem={setSelectedItem}
+            onToggleFavorite={handleToggleFavorite}
+            onUpdateItem={updateItem}
+          />
+
+          {/* Connected Catalog Overview Strip */}
+          <div className="pt-4 border-t border-border/50">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <span className="editorial-kicker text-muted">COMPLETE CATALOG</span>
+                <h4 className="font-serif text-lg text-(--ink) font-normal">All Wardrobe Pieces</h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewMode('grid')}
+                className="text-xs font-semibold text-(--burnished-gold) hover:underline flex items-center gap-1 min-h-11 px-2"
+              >
+                <span>View full grid ({filteredItems.length})</span>
+                <LayoutGrid className="h-3 w-3" />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
+              {filteredItems.map((item) => (
+                <ItemCard
+                  key={item.id}
+                  item={item}
+                  onSelect={setSelectedItem}
+                  onToggleFavorite={handleToggleFavorite}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Complete Archival Grid View */}
+      {!loading && filteredItems.length > 0 && viewMode === 'grid' && (
         <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
           {filteredItems.map((item) => (
             <ItemCard
