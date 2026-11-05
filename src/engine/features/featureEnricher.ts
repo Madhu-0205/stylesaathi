@@ -211,3 +211,4 @@ export function getEnrichedAttributeScoreDelta(
 
   return Math.round(affinity.score * affinity.confidence * 100) / 100;
 }
+

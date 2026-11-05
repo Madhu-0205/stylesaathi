@@ -57,29 +57,29 @@ const NEUTRAL_COLORS_MAP = new Set([
 export function getColorFamily(color: string): ColorFamily {
   const c = color.toLowerCase().trim().replace(/[-\s]/g, '_');
 
-  if (['white', 'black', 'grey', 'gray', 'charcoal', 'cream', 'ivory', 'beige', 'tan', 'khaki'].includes(c)) {
-    return 'neutrals';
-  }
-  if (['blue', 'navy', 'indigo', 'sky_blue', 'royal_blue', 'powder_blue'].includes(c)) {
+  if (c.includes('blue') || c.includes('navy') || c.includes('indigo') || c.includes('cyan')) {
     return 'blues';
   }
-  if (['red', 'crimson', 'maroon', 'scarlet', 'pink', 'rose', 'fuchsia', 'coral', 'magenta'].includes(c)) {
-    return 'reds_pinks';
-  }
-  if (['yellow', 'mustard', 'orange', 'tangerine', 'peach', 'amber'].includes(c)) {
-    return 'yellows_oranges';
-  }
-  if (['green', 'emerald', 'olive', 'mint', 'sage', 'forest_green', 'teal', 'turquoise'].includes(c)) {
+  if (c.includes('green') || c.includes('emerald') || c.includes('olive') || c.includes('mint') || c.includes('sage') || c.includes('teal') || c.includes('turquoise')) {
     return 'greens';
   }
-  if (['purple', 'violet', 'lavender', 'plum', 'mauve'].includes(c)) {
+  if (c.includes('red') || c.includes('crimson') || c.includes('maroon') || c.includes('scarlet') || c.includes('pink') || c.includes('rose') || c.includes('fuchsia') || c.includes('coral') || c.includes('magenta')) {
+    return 'reds_pinks';
+  }
+  if (c.includes('yellow') || c.includes('mustard') || c.includes('orange') || c.includes('tangerine') || c.includes('peach') || c.includes('amber')) {
+    return 'yellows_oranges';
+  }
+  if (c.includes('purple') || c.includes('violet') || c.includes('lavender') || c.includes('plum') || c.includes('mauve')) {
     return 'purples';
   }
-  if (['brown', 'rust', 'terracotta', 'ochre', 'camel', 'copper'].includes(c)) {
+  if (c.includes('brown') || c.includes('rust') || c.includes('terracotta') || c.includes('ochre') || c.includes('camel') || c.includes('copper')) {
     return 'earth_tones';
   }
-  if (['gold', 'silver', 'bronze', 'zari', 'metallic'].includes(c)) {
+  if (c.includes('gold') || c.includes('silver') || c.includes('bronze') || c.includes('zari') || c.includes('metallic')) {
     return 'metallics';
+  }
+  if (['white', 'black', 'grey', 'gray', 'charcoal', 'cream', 'ivory', 'beige', 'tan', 'khaki'].some((n) => c.includes(n))) {
+    return 'neutrals';
   }
 
   return 'neutrals';
@@ -90,9 +90,16 @@ export function getColorFamily(color: string): ColorFamily {
  */
 export function getColorTone(color: string): ColorTone {
   const c = color.toLowerCase().trim().replace(/[-\s]/g, '_');
-  if (NEUTRAL_COLORS_MAP.has(c)) return 'neutral';
-  if (WARM_COLORS.has(c)) return 'warm';
-  if (COOL_COLORS.has(c)) return 'cool';
+
+  const neutralBases = ['white', 'black', 'grey', 'gray', 'charcoal', 'cream', 'ivory', 'beige', 'tan', 'silver'];
+  if (neutralBases.some((n) => c.includes(n))) return 'neutral';
+
+  const warmBases = ['red', 'crimson', 'maroon', 'scarlet', 'coral', 'orange', 'tangerine', 'peach', 'rust', 'yellow', 'mustard', 'gold', 'amber', 'terracotta', 'brown', 'ochre'];
+  if (warmBases.some((w) => c.includes(w))) return 'warm';
+
+  const coolBases = ['blue', 'navy', 'indigo', 'sky', 'teal', 'cyan', 'turquoise', 'green', 'emerald', 'olive', 'mint', 'sage', 'purple', 'violet', 'lavender', 'magenta', 'plum'];
+  if (coolBases.some((k) => c.includes(k))) return 'cool';
+
   return 'neutral';
 }
 

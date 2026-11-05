@@ -207,8 +207,9 @@ function updateAccumulator(
   isInferredEvent: boolean = false
 ): void {
   // Statistical Audit Correction: Inviolability of explicit user preferences.
-  // Passive skips and impressions must never erode explicit onboarding declarations.
-  if (acc.isExplicit && (signalType === 'skipped' || signalType === 'viewed' || signalType === 'displayed')) {
+  // Passive skips, impressions, and untargeted card dismissals must never erode explicit onboarding declarations.
+  // Explicit declarations can only be penalized by structured diagnostic rejections (e.g. wrong_color) or user edits.
+  if (acc.isExplicit && (signalType === 'skipped' || signalType === 'viewed' || signalType === 'displayed' || signalType === 'dismissed')) {
     return;
   }
 
@@ -322,7 +323,7 @@ function finalizeAffinity(acc: BayesianAccumulator): AttributeAffinity {
     }
   } else if (acc.sampleCount === 0 || totalEvidence < 0.1) {
     status = 'unknown';
-  } else if (acc.effectivePositive >= 1.5 && acc.effectiveNegative >= 1.5 && balance < 0.35) {
+  } else if (acc.effectivePositive >= 1.5 && acc.effectiveNegative >= 1.5 && balance < 0.45) {
     status = 'contradictory';
   } else if (acc.isObserved) {
     status = 'observed';
@@ -595,8 +596,12 @@ export function derivePersonalStyleProfile(
   // --------------------------------------------------------------------------
   // STEP 4: PROCESS BEHAVIORAL STYLE SIGNALS
   // Differentiates worn, favorited, saved, planned, liked, selected, inspected,
-  // displayed, skipped, dismissed, and rejected with ensemble bundle discounting.
+  // displayed, skipped, dismissed, and rejected with ensemble bundle discounting
+  // and polarity-aware sublinear session-level repeated interaction dampening.
   // --------------------------------------------------------------------------
+  const itemPosSignalCounts = new Map<string, number>();
+  const itemNegSignalCounts = new Map<string, number>();
+
   for (const signal of signals) {
     const baseWeight = STYLE_SIGNAL_WEIGHTS[signal.signalType] ?? 0;
     const recency = calculateRecencyWeight(signal.createdAt, now);
@@ -608,6 +613,7 @@ export function derivePersonalStyleProfile(
       signal.signalType === 'favorited' ||
       signal.signalType === 'rejected';
     const isPassiveExposure = signal.signalType === 'viewed' || signal.signalType === 'displayed';
+    const isNegative = baseWeight < 0;
 
     // Anti-correlation discounting: when an ensemble of M pieces is evaluated,
     // attributes co-occur. Normalize by 1 / sqrt(M) to avoid pseudo-replication.
@@ -616,12 +622,22 @@ export function derivePersonalStyleProfile(
 
     // A. Item-level and Pairwise combination affinity
     for (const p of pieces) {
+      let count: number;
+      if (isNegative) {
+        count = (itemNegSignalCounts.get(p.id) || 0) + 1;
+        itemNegSignalCounts.set(p.id, count);
+      } else {
+        count = (itemPosSignalCounts.get(p.id) || 0) + 1;
+        itemPosSignalCounts.set(p.id, count);
+      }
+      const sessionDampening = 1 / Math.sqrt(count);
+
       updateAccumulator(
         getOrInit(itemAcc, p.id),
         signal.signalType,
         baseWeight,
         recency,
-        1.0,
+        sessionDampening,
         timestamp,
         signal.occasion,
         isDirectPhysical,
@@ -668,7 +684,19 @@ export function derivePersonalStyleProfile(
     }
 
     // C. Granular attribute updates with contextual rejection routing
+    // Rejections with 'dislike_combination' target the pairing specifically,
+    // not individual piece attributes.
+    if (signal.signalType === 'rejected' && signal.rejectionReason === 'dislike_combination') {
+      continue;
+    }
+
     for (const p of pieces) {
+      const count = isNegative
+        ? itemNegSignalCounts.get(p.id) || 1
+        : itemPosSignalCounts.get(p.id) || 1;
+      const pieceDampening = 1 / Math.sqrt(count);
+      const effectiveFactor = ensembleFactor * pieceDampening;
+
       let colorWeight = baseWeight;
       let fabricWeight = baseWeight;
       let patternWeight = baseWeight;
@@ -686,7 +714,7 @@ export function derivePersonalStyleProfile(
                 'rejected',
                 cWeight,
                 recency,
-                ensembleFactor,
+                effectiveFactor,
                 timestamp,
                 signal.occasion,
                 true
@@ -743,17 +771,17 @@ export function derivePersonalStyleProfile(
           case 'too_bold':
             for (const c of p.colors) {
               if (!NEUTRAL_COLORS.includes(c.toLowerCase())) {
-                updateAccumulator(getOrInit(colorAcc, c.toLowerCase()), 'rejected', -2.0, recency, ensembleFactor, timestamp, signal.occasion);
+                updateAccumulator(getOrInit(colorAcc, c.toLowerCase()), 'rejected', -2.0, recency, effectiveFactor, timestamp, signal.occasion);
               }
             }
             if (p.pattern && p.pattern !== 'solid') {
-              updateAccumulator(getOrInit(patternAcc, p.pattern), 'rejected', -2.0, recency, ensembleFactor, timestamp, signal.occasion);
+              updateAccumulator(getOrInit(patternAcc, p.pattern), 'rejected', -2.0, recency, effectiveFactor, timestamp, signal.occasion);
             }
             updateAccumulator(getOrInit(styleFamilyAcc, 'statement'), 'rejected', -2.0, recency, 1.0, timestamp, signal.occasion);
             continue;
           case 'too_plain':
             if (p.pattern === 'solid') {
-              updateAccumulator(getOrInit(patternAcc, 'solid'), 'rejected', -1.8, recency, ensembleFactor, timestamp, signal.occasion);
+              updateAccumulator(getOrInit(patternAcc, 'solid'), 'rejected', -1.8, recency, effectiveFactor, timestamp, signal.occasion);
             }
             updateAccumulator(getOrInit(styleFamilyAcc, 'minimal'), 'rejected', -1.5, recency, 1.0, timestamp, signal.occasion);
             break;
@@ -767,7 +795,7 @@ export function derivePersonalStyleProfile(
           signal.signalType,
           baseWeight * 0.7,
           recency,
-          ensembleFactor,
+          effectiveFactor,
           timestamp,
           signal.occasion,
           isDirectPhysical,
@@ -782,7 +810,7 @@ export function derivePersonalStyleProfile(
           signal.signalType,
           colorWeight,
           recency,
-          ensembleFactor,
+          effectiveFactor,
           timestamp,
           signal.occasion,
           isDirectPhysical,
@@ -799,7 +827,7 @@ export function derivePersonalStyleProfile(
           signal.signalType,
           fabricWeight,
           recency,
-          ensembleFactor,
+          effectiveFactor,
           timestamp,
           signal.occasion,
           isDirectPhysical,
@@ -814,7 +842,7 @@ export function derivePersonalStyleProfile(
           signal.signalType,
           patternWeight,
           recency,
-          ensembleFactor,
+          effectiveFactor,
           timestamp,
           signal.occasion,
           isDirectPhysical,
@@ -829,7 +857,7 @@ export function derivePersonalStyleProfile(
           signal.signalType,
           fitWeight,
           recency,
-          ensembleFactor,
+          effectiveFactor,
           timestamp,
           signal.occasion,
           isDirectPhysical,
@@ -845,7 +873,7 @@ export function derivePersonalStyleProfile(
           signal.signalType,
           fitWeight,
           recency,
-          ensembleFactor,
+          effectiveFactor,
           timestamp,
           signal.occasion,
           isDirectPhysical,
@@ -855,11 +883,11 @@ export function derivePersonalStyleProfile(
 
       // Apply Cultural & Style Family Context
       if (p.category === 'Ethnic') {
-        updateAccumulator(getOrInit(culturalAcc, 'traditional'), signal.signalType, baseWeight * 0.8, recency, ensembleFactor, timestamp, signal.occasion);
-        updateAccumulator(getOrInit(styleFamilyAcc, 'traditional'), signal.signalType, baseWeight * 0.8, recency, ensembleFactor, timestamp, signal.occasion);
+        updateAccumulator(getOrInit(culturalAcc, 'traditional'), signal.signalType, baseWeight * 0.8, recency, effectiveFactor, timestamp, signal.occasion);
+        updateAccumulator(getOrInit(styleFamilyAcc, 'traditional'), signal.signalType, baseWeight * 0.8, recency, effectiveFactor, timestamp, signal.occasion);
       } else {
-        updateAccumulator(getOrInit(culturalAcc, 'contemporary'), signal.signalType, baseWeight * 0.8, recency, ensembleFactor, timestamp, signal.occasion);
-        updateAccumulator(getOrInit(styleFamilyAcc, 'contemporary'), signal.signalType, baseWeight * 0.8, recency, ensembleFactor, timestamp, signal.occasion);
+        updateAccumulator(getOrInit(culturalAcc, 'contemporary'), signal.signalType, baseWeight * 0.8, recency, effectiveFactor, timestamp, signal.occasion);
+        updateAccumulator(getOrInit(styleFamilyAcc, 'contemporary'), signal.signalType, baseWeight * 0.8, recency, effectiveFactor, timestamp, signal.occasion);
       }
     }
   }

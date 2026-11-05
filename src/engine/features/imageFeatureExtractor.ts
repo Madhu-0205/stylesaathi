@@ -85,7 +85,7 @@ export interface ImageFeatureExtractionResult {
 // KEYWORD REGEX DICTIONARIES FOR CLIENT-SIDE INFERENCE
 // ============================================================================
 
-const GENERIC_CAMERA_FILE_REGEX = /^(img|dsc|photo|image|pxl|pic|screenshot|scan|upload|temp|file)[-_]?[0-9a-z_.]*$/i;
+const GENERIC_CAMERA_FILE_REGEX = /^(img|dsc|photo|image|pxl|pic|screenshot|scan|upload|camera|capture|snapshot|temp|file|\d+)[-_]?[0-9a-z_.]*$/i;
 
 const MULTI_GARMENT_KEYWORDS = [
   'flatlay',
@@ -602,15 +602,16 @@ export async function extractGarmentFeaturesFromImage(
   let needsUserConfirmation = false;
   let fabricVerificationStatus: AttributeVerificationStatus;
 
-  if (isGeneric && !matchedRule && detectedColors.length === 0 && !detectedFabric) {
-    // True unlabelled ambiguous photo
+  if (!matchedRule && detectedColors.length === 0 && !detectedFabric) {
+    // True unlabelled ambiguous photo with zero fashion cues
     overallConfidence = 0.20;
     confidenceLevel = 'LOW';
     needsUserConfirmation = true;
     fabricVerificationStatus = 'unknown';
   } else if (!matchedRule) {
-    overallConfidence = 0.50;
-    confidenceLevel = 'MEDIUM';
+    // Partial metadata (e.g. only a color or only a fabric token), but unknown garment cut
+    overallConfidence = 0.40;
+    confidenceLevel = 'LOW';
     needsUserConfirmation = true;
     fabricVerificationStatus = detectedFabric ? 'inferred' : 'unknown';
   } else {
