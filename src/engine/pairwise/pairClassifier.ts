@@ -91,12 +91,9 @@ export function classifyGarmentPair(itemA: WardrobeItem, itemB: WardrobeItem): G
     return 'structural_duplicate_conflict';
   }
 
-  // Two full-length dresses/sarees
-  if (
-    (subA === 'saree' && subB === 'saree') ||
-    (subA === 'dress' && subB === 'dress') ||
-    (subA === 'western dress' && subB === 'western dress')
-  ) {
+  // Two full-length dresses/sarees/anarkalis (competing full-body garments)
+  const fullBodySubs = ['saree', 'dress', 'western dress', 'anarkali'];
+  if (fullBodySubs.includes(subA) && fullBodySubs.includes(subB)) {
     return 'structural_duplicate_conflict';
   }
 

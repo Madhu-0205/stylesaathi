@@ -8,3 +8,4 @@ export * from './dimensions/fabricDimension';
 export * from './dimensions/patternDimension';
 export * from './dimensions/formalityDimension';
 export * from './pairwiseCompatibilityEngine';
+

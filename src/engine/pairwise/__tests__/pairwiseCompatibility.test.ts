@@ -462,4 +462,57 @@ describe('StyleSaathi 3.0 — Pairwise Garment Compatibility Engine', () => {
       expect(elapsed).toBeLessThan(25.0); // Target <25ms for 100 evaluations
     });
   });
+
+  // ==========================================================================
+  // 13. COMMUTATIVITY & ORDER-INVARIANCE AUDIT
+  // ==========================================================================
+  describe('Commutativity & Order-Invariance Audit', () => {
+    it('guarantees identical scores, classification, and compatibility regardless of garment argument order', () => {
+      for (const testCase of PAIRWISE_EVALUATION_DATASET) {
+        const opts = {
+          occasion: testCase.occasion,
+          season: testCase.season,
+          context: testCase.context,
+          preferences: testCase.preferences,
+          styleProfile: testCase.styleProfile,
+        };
+
+        const resAB = pairwiseCompatibilityEngine.evaluate(testCase.itemA, testCase.itemB, opts);
+        const resBA = pairwiseCompatibilityEngine.evaluate(testCase.itemB, testCase.itemA, opts);
+
+        // 1. Commutativity of compatibility score
+        expect(resAB.overallScore).toBeCloseTo(resBA.overallScore, 4);
+
+        // 2. Commutativity of classification
+        expect(resAB.classification).toBe(resBA.classification);
+
+        // 3. Commutativity of hard incompatibility status
+        expect(resAB.isHardIncompatible).toBe(resBA.isHardIncompatible);
+
+        // 4. Commutativity of pair classification type
+        expect(resAB.pairType).toBe(resBA.pairType);
+      }
+    });
+
+    it('rejects cross-category full-body garment collisions symmetrically (e.g. Saree + Western Dress)', () => {
+      const saree = PAIR_ITEMS.kanjivaramSareeRed;
+      const dress = {
+        ...PAIR_ITEMS.basicWhiteTee,
+        id: 'western-dress-01',
+        category: 'Dresses' as const,
+        subcategory: 'western dress' as const,
+        name: 'Floral Midi Dress',
+      };
+
+      const resSD = pairwiseCompatibilityEngine.evaluate(saree, dress);
+      const resDS = pairwiseCompatibilityEngine.evaluate(dress, saree);
+
+      expect(resSD.pairType).toBe('structural_duplicate_conflict');
+      expect(resDS.pairType).toBe('structural_duplicate_conflict');
+      expect(resSD.isHardIncompatible).toBe(true);
+      expect(resDS.isHardIncompatible).toBe(true);
+      expect(resSD.overallScore).toBe(0.0);
+      expect(resDS.overallScore).toBe(0.0);
+    });
+  });
 });
