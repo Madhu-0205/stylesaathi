@@ -777,6 +777,27 @@ async function main() {
     console.log('[Screenshot] Capturing Spatial Lookbook Mobile (390px)...');
     await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-lookbook-spatial-390.png'));
 
+    // Switch to Desktop for Lookbook
+    console.log('[Viewport] Switching to Desktop 1280x900 for Lookbook...');
+    await cdp.send('Emulation.setDeviceMetricsOverride', {
+      width: 1280,
+      height: 900,
+      deviceScaleFactor: 2,
+      mobile: false,
+    });
+    await new Promise(r => setTimeout(r, 600));
+    console.log('[Screenshot] Capturing Spatial Lookbook Desktop (1280px)...');
+    await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-lookbook-spatial-desktop.png'));
+
+    // Switch back to Mobile
+    await cdp.send('Emulation.setDeviceMetricsOverride', {
+      width: 390,
+      height: 844,
+      deviceScaleFactor: 2,
+      mobile: true,
+    });
+    await new Promise(r => setTimeout(r, 500));
+
     // Close Lookbook Modal
     await cdp.eval(`(() => {
       const closeBtn = document.querySelector('button[aria-label="Close sheet"]');
@@ -886,6 +907,27 @@ async function main() {
     console.log('[Screenshot] Capturing AI Stylist Salon Mobile (390px)...');
     await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-ai-stylist-390.png'));
 
+    // Switch to Desktop for AI Stylist
+    console.log('[Viewport] Switching to Desktop 1280x900 for AI Stylist...');
+    await cdp.send('Emulation.setDeviceMetricsOverride', {
+      width: 1280,
+      height: 900,
+      deviceScaleFactor: 2,
+      mobile: false,
+    });
+    await new Promise(r => setTimeout(r, 600));
+    console.log('[Screenshot] Capturing AI Stylist Salon Desktop (1280px)...');
+    await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-ai-stylist-desktop.png'));
+
+    // Switch back to Mobile
+    await cdp.send('Emulation.setDeviceMetricsOverride', {
+      width: 390,
+      height: 844,
+      deviceScaleFactor: 2,
+      mobile: true,
+    });
+    await new Promise(r => setTimeout(r, 500));
+
     // Close AI Stylist
     await cdp.eval(`(() => {
       const closeBtn = document.querySelector('button[aria-label="Close chat"]');
@@ -908,6 +950,18 @@ async function main() {
 
     console.log('[Screenshot] Capturing Profile & Fashion Identity Mobile (390px)...');
     await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-profile-identity-390.png'));
+
+    // Switch to Desktop for Profile
+    console.log('[Viewport] Switching to Desktop 1280x900 for Profile...');
+    await cdp.send('Emulation.setDeviceMetricsOverride', {
+      width: 1280,
+      height: 900,
+      deviceScaleFactor: 2,
+      mobile: false,
+    });
+    await new Promise(r => setTimeout(r, 600));
+    console.log('[Screenshot] Capturing Profile Desktop (1280px)...');
+    await cdp.captureScreenshot(path.join(DIST_DIR, 'screenshot-profile-desktop.png'));
 
     cdp.close();
   } finally {
