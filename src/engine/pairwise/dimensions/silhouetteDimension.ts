@@ -149,6 +149,8 @@ export function evaluateSilhouetteDimension(
       const preferredAesthetics = (preferences?.preferredAesthetics || []).map((a) => a.toLowerCase());
       const isVoluminousAesthetic =
         preferredAesthetics.includes('korean relaxed') ||
+        preferredAesthetics.includes('korean_aesthetic') ||
+        preferredAesthetics.includes('korean aesthetic') ||
         preferredAesthetics.includes('streetwear') ||
         preferredAesthetics.includes('japanese workwear') ||
         preferredAesthetics.includes('relaxed');

@@ -13,3 +13,5 @@ export * from './diversification';
 export * from './explorationModel';
 export * from './recommendationEngine';
 export * from './knowledge';
+export * from './pairwise';
+export * from './ensemble';

@@ -156,7 +156,8 @@ export class PairwiseCompatibilityEngine {
       (d) =>
         (d.dimension === 'color_harmony' ||
           d.dimension === 'pattern_interaction' ||
-          d.dimension === 'fabric_texture') &&
+          d.dimension === 'fabric_texture' ||
+          (d.dimension === 'formality_alignment' && d.score <= -0.6)) &&
         d.score <= -0.4 &&
         d.confidence >= 0.7
     );
