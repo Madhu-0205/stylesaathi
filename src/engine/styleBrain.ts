@@ -18,6 +18,7 @@ import {
   PatternType,
   SilhouetteFit,
   CulturalContext,
+  SilhouetteType,
 } from '../types';
 
 export const STYLE_BRAIN_VERSION = 4;
@@ -89,6 +90,30 @@ const LIGHT_BREATHABLE_FABRICS: FabricType[] = [
   'chanderi',
   'modal',
 ];
+
+/**
+ * Disentangles legacy SilhouetteFit into geometric SilhouetteType.
+ */
+export function mapFitToSilhouette(fit: SilhouetteFit): SilhouetteType {
+  switch (fit) {
+    case 'a_line':
+      return 'a_line';
+    case 'flared':
+      return 'flared';
+    case 'anarkali':
+      return 'anarkali';
+    case 'straight':
+      return 'straight';
+    case 'slim':
+    case 'tailored':
+      return 'fitted';
+    case 'relaxed':
+    case 'oversized':
+      return 'boxy';
+    default:
+      return 'straight';
+  }
+}
 
 /**
  * Deterministic pairwise combination key generator.
@@ -181,6 +206,12 @@ function updateAccumulator(
   isObservedEvent: boolean = false,
   isInferredEvent: boolean = false
 ): void {
+  // Statistical Audit Correction: Inviolability of explicit user preferences.
+  // Passive skips and impressions must never erode explicit onboarding declarations.
+  if (acc.isExplicit && (signalType === 'skipped' || signalType === 'viewed' || signalType === 'displayed')) {
+    return;
+  }
+
   const weighted = rawWeight * recency * correlationFactor;
   if (weighted >= 0) {
     acc.effectivePositive += weighted;
@@ -369,6 +400,7 @@ export function derivePersonalStyleProfile(
 
   // Additional dimensions required by StyleSaathi 3.0
   const categoryAcc = new Map<Category, BayesianAccumulator>();
+  const silhouetteAcc = new Map<SilhouetteType, BayesianAccumulator>();
   const formalityAcc = new Map<string, BayesianAccumulator>();
   const styleFamilyAcc = new Map<string, BayesianAccumulator>();
   const comfortAcc = new Map<string, BayesianAccumulator>();
@@ -426,6 +458,12 @@ export function derivePersonalStyleProfile(
     if (item.fit) {
       getOrInit(fitAcc, item.fit);
     }
+    if (item.silhouette || item.fit) {
+      const sil = item.silhouette || (item.fit ? mapFitToSilhouette(item.fit) : undefined);
+      if (sil) {
+        getOrInit(silhouetteAcc, sil);
+      }
+    }
   }
 
   if (declaredPrefs) {
@@ -439,9 +477,11 @@ export function derivePersonalStyleProfile(
       setExplicitPrior(fabricAcc, f, 0.5, 6.0);
     }
 
-    // Explicit Preferred Fits
+    // Explicit Preferred Fits & Silhouettes
     for (const fit of declaredPrefs.preferredFits || []) {
       setExplicitPrior(fitAcc, fit, 4.0, 1.0);
+      const sil = mapFitToSilhouette(fit);
+      setExplicitPrior(silhouetteAcc, sil, 4.0, 1.0);
     }
 
     // Explicit Preferred Aesthetics / Style Families
@@ -507,9 +547,13 @@ export function derivePersonalStyleProfile(
       updateAccumulator(getOrInit(patternAcc, item.pattern), 'worn', weight, recency, 1.0, timestamp, undefined, true);
     }
 
-    // Fit
+    // Fit & Silhouette
     if (item.fit) {
       updateAccumulator(getOrInit(fitAcc, item.fit), 'worn', weight, recency, 1.0, timestamp, undefined, true);
+    }
+    const sil = item.silhouette || (item.fit ? mapFitToSilhouette(item.fit) : undefined);
+    if (sil) {
+      updateAccumulator(getOrInit(silhouetteAcc, sil), 'worn', weight, recency, 1.0, timestamp, undefined, true);
     }
 
     // Cultural context
@@ -540,6 +584,10 @@ export function derivePersonalStyleProfile(
       }
       if (item.fabric && item.fabric !== 'unknown') {
         updateAccumulator(getOrInit(fabricAcc, item.fabric), 'favorited', weight * 0.5, recency, 1.0, now, undefined, true);
+      }
+      const sil = item.silhouette || (item.fit ? mapFitToSilhouette(item.fit) : undefined);
+      if (sil) {
+        updateAccumulator(getOrInit(silhouetteAcc, sil), 'favorited', weight * 0.5, recency, 1.0, now, undefined, true);
       }
     }
   }
@@ -789,6 +837,22 @@ export function derivePersonalStyleProfile(
         );
       }
 
+      // Apply Silhouette Weights
+      const sil = p.silhouette || (p.fit ? mapFitToSilhouette(p.fit) : undefined);
+      if (sil) {
+        updateAccumulator(
+          getOrInit(silhouetteAcc, sil),
+          signal.signalType,
+          fitWeight,
+          recency,
+          ensembleFactor,
+          timestamp,
+          signal.occasion,
+          isDirectPhysical,
+          isPassiveExposure
+        );
+      }
+
       // Apply Cultural & Style Family Context
       if (p.category === 'Ethnic') {
         updateAccumulator(getOrInit(culturalAcc, 'traditional'), signal.signalType, baseWeight * 0.8, recency, ensembleFactor, timestamp, signal.occasion);
@@ -821,6 +885,11 @@ export function derivePersonalStyleProfile(
   const fitAffinities: Record<SilhouetteFit, AttributeAffinity> = {} as any;
   fitAcc.forEach((acc, k) => {
     fitAffinities[k] = finalizeAffinity(acc);
+  });
+
+  const silhouetteAffinities: Record<SilhouetteType, AttributeAffinity> = {} as any;
+  silhouetteAcc.forEach((acc, k) => {
+    silhouetteAffinities[k] = finalizeAffinity(acc);
   });
 
   const culturalAffinities: Record<CulturalContext, AttributeAffinity> = {} as any;
@@ -1021,6 +1090,7 @@ export function derivePersonalStyleProfile(
 
     // Backward-compatible StyleSaathi 3.0 Bayesian Extensions
     categoryAffinities,
+    silhouetteAffinities,
     formalityAffinities,
     styleFamilyAffinities,
     comfortAffinities,

@@ -146,6 +146,130 @@ export type CulturalContext =
 
 export type ConfidenceLevel = 'UNKNOWN' | 'LOW' | 'MEDIUM' | 'HIGH' | 'VERIFIED';
 
+export type ColorFamily =
+  | 'neutrals'
+  | 'blues'
+  | 'reds_pinks'
+  | 'yellows_oranges'
+  | 'greens'
+  | 'purples'
+  | 'earth_tones'
+  | 'pastels'
+  | 'metallics'
+  | 'monochrome';
+
+export type ColorTone = 'warm' | 'cool' | 'neutral';
+
+export type SleeveType =
+  | 'sleeveless'
+  | 'cap_sleeve'
+  | 'short_sleeve'
+  | 'three_quarter'
+  | 'full_sleeve'
+  | 'bell_sleeve'
+  | 'unknown';
+
+export type NecklineType =
+  | 'round'
+  | 'v_neck'
+  | 'collared'
+  | 'mandarin_collar'
+  | 'boat_neck'
+  | 'square'
+  | 'sweetheart'
+  | 'halter'
+  | 'cowl'
+  | 'unknown';
+
+export type GarmentLength =
+  | 'cropped'
+  | 'waist_length'
+  | 'hip_length'
+  | 'knee_length'
+  | 'midi'
+  | 'maxi'
+  | 'ankle_length'
+  | 'floor_length'
+  | 'unknown';
+
+export type LayeringRole =
+  | 'base'
+  | 'mid'
+  | 'outer'
+  | 'standalone'
+  | 'drape'
+  | 'accessory';
+
+export type FabricTexture =
+  | 'smooth'
+  | 'rough'
+  | 'crisp'
+  | 'soft'
+  | 'textured'
+  | 'sheer'
+  | 'heavy'
+  | 'embossed'
+  | 'ribbed'
+  | 'unknown';
+
+export type FabricWeight =
+  | 'lightweight'
+  | 'medium_weight'
+  | 'heavyweight'
+  | 'unknown';
+
+export type BreathabilityTier =
+  | 'high'
+  | 'medium'
+  | 'low'
+  | 'unknown';
+
+export type AttributeVerificationStatus =
+  | 'user_confirmed'
+  | 'image_detected'
+  | 'imported'
+  | 'inferred'
+  | 'unknown';
+
+export type SilhouetteType =
+  | 'straight'
+  | 'a_line'
+  | 'flared'
+  | 'anarkali'
+  | 'asymmetric'
+  | 'draped'
+  | 'boxy'
+  | 'tapered'
+  | 'fitted'
+  | 'unknown';
+
+export type FitType =
+  | 'slim'
+  | 'regular'
+  | 'relaxed'
+  | 'oversized'
+  | 'tailored'
+  | 'unknown';
+
+export type StyleFamily =
+  | 'traditional_indian'
+  | 'contemporary_casual'
+  | 'indo_western_fusion'
+  | 'smart_tailored'
+  | 'minimalist'
+  | 'streetwear'
+  | 'korean_relaxed'
+  | 'japanese_workwear'
+  | 'festive_ceremonial'
+  | 'unknown';
+
+export interface AttributeProvenanceRecord {
+  source: AttributeVerificationStatus;
+  confidence: number; // 0.0 to 1.0
+  verifiedAt?: number;
+  notes?: string;
+}
+
 export interface AttributeProvenance {
   source: 'user' | 'ai' | 'system' | 'imported';
   confidence?: number;
@@ -189,6 +313,33 @@ export interface WardrobeItem {
   aiConfidence?: number;
   userVerified?: boolean;
   provenance?: Record<string, AttributeProvenance>;
+
+  // StyleSaathi 3.0 Rich Garment Attribute Model (backward-compatible)
+  primaryColor?: string;
+  secondaryColor?: string;
+  accentColors?: string[];
+  colorFamily?: ColorFamily;
+  colorTone?: ColorTone;
+  colorConfidence?: number;
+  patternRelatedColorAmbiguity?: boolean;
+
+  garmentType?: string;
+  sleeveType?: SleeveType;
+  neckline?: NecklineType;
+  length?: GarmentLength;
+  layeringRole?: LayeringRole;
+
+  materialComposition?: string;
+  texture?: FabricTexture;
+  weight?: FabricWeight;
+  breathability?: BreathabilityTier;
+  fabricVerificationStatus?: AttributeVerificationStatus;
+
+  silhouette?: SilhouetteType;
+  fitType?: FitType;
+  styleFamily?: StyleFamily;
+  regionalTradition?: string;
+  attributeProvenance?: Record<string, AttributeProvenanceRecord>;
 }
 
 // Backward-compatible alias for existing code
@@ -479,6 +630,7 @@ export interface PersonalStyleProfile {
 
   // StyleSaathi 3.0 Dimensional Extensions (backward-compatible optional fields):
   categoryAffinities?: Record<Category, AttributeAffinity>;
+  silhouetteAffinities?: Record<SilhouetteType, AttributeAffinity>;
   formalityAffinities?: Record<string, AttributeAffinity>;
   styleFamilyAffinities?: Record<string, AttributeAffinity>;
   comfortAffinities?: Record<string, AttributeAffinity>;
