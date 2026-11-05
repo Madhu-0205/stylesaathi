@@ -348,7 +348,10 @@ export type StyleSignalType =
   | 'skipped'
   | 'dismissed'
   | 'rejected'
-  | 'viewed';
+  | 'viewed'
+  | 'displayed'
+  | 'inspected'
+  | 'selected';
 
 export type RejectionReason =
   | 'too_hot'
@@ -381,11 +384,54 @@ export interface StyleSignalEvent {
   createdAt: number; // Epoch timestamp (ms)
 }
 
+export type PreferenceStatus =
+  | 'explicit'       // Declared directly by user in settings/onboarding
+  | 'observed'       // Direct physical wear, favorite, or structured rejection
+  | 'inferred'       // Secondary association or ensemble co-occurrence
+  | 'unknown'        // Insufficient or zero evidence
+  | 'contradictory'; // Conflicting positive and negative signals with high variance
+
+export interface PreferenceEvidenceProvenance {
+  status: PreferenceStatus;
+  observationCount: number;
+  alpha: number; // Beta prior + effective positive evidence
+  beta: number;  // Beta prior + effective negative evidence
+  variance: number; // Beta distribution variance
+  uncertainty: number; // 0.0 (certain) to 1.0 (uninformative/uncertain)
+  credibleInterval: [number, number]; // 95% Bayesian credible interval in [-1.0, 1.0] score space
+  signalCounts: Partial<Record<StyleSignalType, number>>;
+  lastInteractedAt: number;
+  isExplicitOverride?: boolean;
+}
+
+export interface ContextualPreferenceSlice {
+  occasion: Occasion;
+  preferredColors: string[];
+  avoidedColors: string[];
+  preferredFabrics: FabricType[];
+  formalityTarget?: number;
+  colorScores: Record<string, number>;
+  fabricScores: Partial<Record<FabricType, number>>;
+}
+
+export interface ContextualPreferences {
+  byOccasion: Partial<Record<Occasion, ContextualPreferenceSlice>>;
+}
+
 export interface AttributeAffinity {
   score: number; // -1.0 to +1.0 normalized affinity
   confidence: number; // 0.0 to 1.0 confidence based on sample count & consistency
   sampleCount: number; // number of signals contributing
   lastInteractedAt: number; // Epoch timestamp (ms)
+
+  // StyleSaathi 3.0 Adaptive Bayesian Extensions (backward-compatible)
+  status?: PreferenceStatus;
+  alpha?: number;
+  beta?: number;
+  variance?: number;
+  uncertainty?: number;
+  provenance?: PreferenceEvidenceProvenance;
+  contextualScores?: Partial<Record<Occasion, number>>;
 }
 
 export interface PersonalStyleProfile {
@@ -430,6 +476,13 @@ export interface PersonalStyleProfile {
   fabricSensitivities?: FabricType[];
   regionalInterests?: string[];
   budgetTier?: 'budget_conscious' | 'mid_range' | 'premium';
+
+  // StyleSaathi 3.0 Dimensional Extensions (backward-compatible optional fields):
+  categoryAffinities?: Record<Category, AttributeAffinity>;
+  formalityAffinities?: Record<string, AttributeAffinity>;
+  styleFamilyAffinities?: Record<string, AttributeAffinity>;
+  comfortAffinities?: Record<string, AttributeAffinity>;
+  contextualPreferences?: ContextualPreferences;
 }
 
 export interface StyleSignalsRepository {

@@ -35,13 +35,16 @@ describe('needleTools validation and normalization', () => {
 
   describe('normalizeDate', () => {
     it('normalizes relative dates', () => {
-      const todayISO = new Date().toISOString().split('T')[0];
-      expect(normalizeDate('today')).toBe(todayISO);
+      const now = new Date();
+      const formatLocal = (d: Date) =>
+        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const todayLocal = formatLocal(now);
+      expect(normalizeDate('today')).toBe(todayLocal);
 
-      const tomorrow = new Date();
+      const tomorrow = new Date(now);
       tomorrow.setDate(tomorrow.getDate() + 1);
-      const tomorrowISO = tomorrow.toISOString().split('T')[0];
-      expect(normalizeDate('tomorrow')).toBe(tomorrowISO);
+      const tomorrowLocal = formatLocal(tomorrow);
+      expect(normalizeDate('tomorrow')).toBe(tomorrowLocal);
     });
 
     it('validates ISO dates', () => {
