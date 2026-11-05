@@ -96,4 +96,35 @@ describe('StyleSaathi 3.0 — Ensemble Graph Architecture', () => {
     expect(graph.hasHardIncompatibility).toBe(true);
     expect(graph.hardIncompatibilityReasons[0]).toContain('Duplicate');
   });
+
+  it('guarantees permutation invariance (order-independence) across graph construction and evaluation', () => {
+    const piecesOriginal = [
+      ENSEMBLE_FIXTURE_ITEMS.mustardKurtiCotton,
+      ENSEMBLE_FIXTURE_ITEMS.slimBlueJeans,
+      ENSEMBLE_FIXTURE_ITEMS.whiteSneakers,
+    ];
+    const piecesReversed = [...piecesOriginal].reverse();
+    const piecesPermuted = [piecesOriginal[1], piecesOriginal[2], piecesOriginal[0]];
+
+    const graphA = buildEnsembleGraph(piecesOriginal, { occasion: 'college' });
+    const graphB = buildEnsembleGraph(piecesReversed, { occasion: 'college' });
+    const graphC = buildEnsembleGraph(piecesPermuted, { occasion: 'college' });
+
+    // Edge metrics must be identical
+    expect(graphA.edgeCount).toBe(3);
+    expect(graphB.edgeCount).toBe(3);
+    expect(graphC.edgeCount).toBe(3);
+
+    expect(graphA.weightedPairwiseScore).toBeCloseTo(graphB.weightedPairwiseScore, 4);
+    expect(graphA.weightedPairwiseScore).toBeCloseTo(graphC.weightedPairwiseScore, 4);
+
+    expect(graphA.minimumPairwiseScore).toBeCloseTo(graphB.minimumPairwiseScore, 4);
+    expect(graphA.minimumPairwiseScore).toBeCloseTo(graphC.minimumPairwiseScore, 4);
+
+    // Verify exactly n(n-1)/2 unique undirected edges (no self or duplicate edges)
+    const edgePairsA = new Set(
+      graphA.edges.map((e) => [e.sourceId, e.targetId].sort().join('--'))
+    );
+    expect(edgePairsA.size).toBe(3);
+  });
 });

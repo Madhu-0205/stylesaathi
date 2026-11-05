@@ -165,4 +165,28 @@ describe('StyleSaathi 3.0 — Whole-Outfit Evaluator (Dimensions A through J)', 
 
     expect(passedCount).toBe(COMPLETE_OUTFIT_EVALUATION_DATASET.length);
   });
+
+  it('guarantees identical evaluation results regardless of garment array ordering', () => {
+    const piecesA = [
+      ENSEMBLE_FIXTURE_ITEMS.kanjivaramSareeRed,
+      ENSEMBLE_FIXTURE_ITEMS.silkBlouseGold,
+      ENSEMBLE_FIXTURE_ITEMS.goldJuttis,
+    ];
+    const piecesB = [
+      ENSEMBLE_FIXTURE_ITEMS.goldJuttis,
+      ENSEMBLE_FIXTURE_ITEMS.kanjivaramSareeRed,
+      ENSEMBLE_FIXTURE_ITEMS.silkBlouseGold,
+    ];
+
+    const graphA = buildEnsembleGraph(piecesA, { occasion: 'wedding guest' });
+    const graphB = buildEnsembleGraph(piecesB, { occasion: 'wedding guest' });
+
+    const evalA = evaluateEnsembleOutfit(graphA, { occasion: 'wedding guest' });
+    const evalB = evaluateEnsembleOutfit(graphB, { occasion: 'wedding guest' });
+
+    expect(evalA.score).toBeCloseTo(evalB.score, 4);
+    expect(evalA.classification).toBe(evalB.classification);
+    expect(evalA.isValid).toBe(evalB.isValid);
+    expect(evalA.breakdown.totalScore).toBeCloseTo(evalB.breakdown.totalScore, 4);
+  });
 });

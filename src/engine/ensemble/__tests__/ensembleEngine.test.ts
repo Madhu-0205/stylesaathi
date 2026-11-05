@@ -89,3 +89,4 @@ describe('StyleSaathi 3.0 — Ensemble Recommendation Engine Integration', () =>
     expect(outfits[0].score).toBeGreaterThan(0);
   });
 });
+

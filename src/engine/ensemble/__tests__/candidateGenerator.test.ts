@@ -106,4 +106,43 @@ describe('StyleSaathi 3.0 — Anchor-Based Candidate Generator', () => {
 
     expect(candidates.length).toBeLessThanOrEqual(100);
   });
+
+  it('guarantees anchor presence and zero anchor replacement across reversed wardrobe input order', () => {
+    const anchor = ENSEMBLE_FIXTURE_ITEMS.mustardKurtiCotton;
+    const forwardWardrobe = [...sampleWardrobe];
+    const reversedWardrobe = [...sampleWardrobe].reverse();
+
+    const candsFwd = generateEnsembleCandidates(forwardWardrobe, {
+      anchor: {
+        item: anchor,
+        role: 'top',
+        isLocked: true,
+        origin: 'user_selected',
+      },
+      occasion: 'college',
+      season: 'summer',
+    });
+
+    const candsRev = generateEnsembleCandidates(reversedWardrobe, {
+      anchor: {
+        item: anchor,
+        role: 'top',
+        isLocked: true,
+        origin: 'user_selected',
+      },
+      occasion: 'college',
+      season: 'summer',
+    });
+
+    expect(candsFwd.length).toBeGreaterThan(0);
+    expect(candsRev.length).toBeGreaterThan(0);
+
+    for (const c of candsFwd) {
+      expect(c.pieces.some((p) => p.id === anchor.id)).toBe(true);
+    }
+    for (const c of candsRev) {
+      expect(c.pieces.some((p) => p.id === anchor.id)).toBe(true);
+    }
+  });
 });
+

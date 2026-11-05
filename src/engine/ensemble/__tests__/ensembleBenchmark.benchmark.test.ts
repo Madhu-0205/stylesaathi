@@ -87,4 +87,40 @@ describe('StyleSaathi 3.0 — Phase 4: Ensemble Recommendation Benchmark', () =>
     expect(elapsed).toBeLessThan(100.0);
     console.log(`[Ensemble Benchmark Tier 3] 150 items: ${elapsed.toFixed(3)}ms (Target: < 15.0ms)`);
   });
+
+  it('Tier 4: 500 items — Target: < 25.0ms', () => {
+    const wardrobe = generateWardrobe(500);
+    const iterations = 3;
+    const t0 = performance.now();
+    for (let i = 0; i < iterations; i++) {
+      engine.recommend({
+        items: wardrobe,
+        occasion: 'party',
+        season: 'summer',
+        localDate: '2026-11-06',
+      });
+    }
+    const elapsed = (performance.now() - t0) / iterations;
+
+    expect(elapsed).toBeLessThan(120.0);
+    console.log(`[Ensemble Benchmark Tier 4] 500 items: ${elapsed.toFixed(3)}ms (Target: < 25.0ms)`);
+  });
+
+  it('Tier 5: 1,000 items — Target: < 35.0ms', () => {
+    const wardrobe = generateWardrobe(1000);
+    const iterations = 3;
+    const t0 = performance.now();
+    for (let i = 0; i < iterations; i++) {
+      engine.recommend({
+        items: wardrobe,
+        occasion: 'festive',
+        season: 'winter',
+        localDate: '2026-11-06',
+      });
+    }
+    const elapsed = (performance.now() - t0) / iterations;
+
+    expect(elapsed).toBeLessThan(150.0);
+    console.log(`[Ensemble Benchmark Tier 5] 1,000 items: ${elapsed.toFixed(3)}ms (Target: < 35.0ms)`);
+  });
 });
