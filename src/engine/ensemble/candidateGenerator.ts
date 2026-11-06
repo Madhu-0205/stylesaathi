@@ -124,11 +124,10 @@ export function generateEnsembleCandidates(
   const anchorItem = anchor?.item;
   const isAnchorLocked = anchor?.isLocked ?? false;
 
-  // Filter available companion pool
+  // Filter available companion pool (companion pieces must strictly be clean and season-appropriate)
   const eligiblePool = items.filter((i) => {
     if (anchorItem && i.id === anchorItem.id) return false;
-    const isClean = i.status === 'clean' || (allowPlanningMode && (i.status === 'in_laundry' || i.status === 'needs_washing'));
-    return isClean && seasonFit(i, season);
+    return i.status === 'clean' && seasonFit(i, season);
   });
 
   // Group by category for quick lookup

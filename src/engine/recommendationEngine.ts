@@ -152,6 +152,7 @@ export class RecommendationEngine {
       culturalSignals,
       limit = 3,
       anchorItemId,
+      allowPlanningMode,
     } = request;
 
     // Filter templates for occasion and presentation preferences
@@ -218,14 +219,16 @@ export class RecommendationEngine {
     let totalGeneratedCount = 0;
 
     const anchorItem = anchorItemId ? items.find((i) => i.id === anchorItemId) : undefined;
+    const isPlanningMode = Boolean(
+      allowPlanningMode ||
+      (anchorItem && (anchorItem.status === 'needs_washing' || anchorItem.status === 'in_laundry'))
+    );
 
     // If anchor was specified but does not exist or has an un-plannable status (e.g. archived/donated)
     if (
       anchorItemId &&
       (!anchorItem ||
-        (anchorItem.status !== 'clean' &&
-          anchorItem.status !== 'needs_washing' &&
-          anchorItem.status !== 'in_laundry'))
+        (anchorItem.status !== 'clean' && !isPlanningMode))
     ) {
       const tEnd = typeof performance !== 'undefined' ? performance.now() : 0;
       return {
@@ -657,6 +660,7 @@ export class RecommendationEngine {
     for (const cand of rawCandidates) {
       let hardCheck;
       if (
+        isPlanningMode &&
         anchorItem &&
         (anchorItem.status === 'needs_washing' || anchorItem.status === 'in_laundry')
       ) {
@@ -1017,7 +1021,10 @@ export class RecommendationEngine {
     // StyleSaathi 3.0 — Phase 5A: Shadow Evaluation Integration
     if (request.enableShadow !== false && isShadowEvaluationEnabled()) {
       try {
-        const shadowComparison = executeShadowEvaluation(baselineResult, request);
+        const shadowComparison = executeShadowEvaluation(baselineResult, {
+          ...request,
+          allowPlanningMode: isPlanningMode,
+        });
         if (shadowComparison) {
           baselineResult.shadowComparison = shadowComparison;
         }
@@ -1154,6 +1161,9 @@ export class RecommendationEngine {
     }
     if (preferences?.internationalInspirations && preferences.internationalInspirations.length > 0) {
       assumptions.push(`International style inspiration active: ${preferences.internationalInspirations.join(', ')}.`);
+    }
+    if (anchorItem && (anchorItem.status === 'needs_washing' || anchorItem.status === 'in_laundry')) {
+      assumptions.push('Planning look: includes garments that need washing before wear.');
     }
 
     // Garment coordination mapping

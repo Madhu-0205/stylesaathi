@@ -12,6 +12,7 @@ import {
   GeneratedOutfit,
 } from '../types';
 import { recommendOutfitsWithTelemetry, deriveSeasonalContext } from '../engine';
+import { validateOutfitWearability } from '../engine/hardConstraints';
 
 export interface UseStyleThisItemResult {
   anchorItem: WardrobeItem | null;
@@ -109,6 +110,7 @@ export function useStyleThisItem(
       context: contextSnapshot,
       limit: 3,
       anchorItemId: anchorItem.id,
+      allowPlanningMode: Boolean(anchorItem.status === 'needs_washing' || anchorItem.status === 'in_laundry'),
     });
   }, [
     anchorItem,
@@ -163,6 +165,10 @@ export function useStyleThisItem(
       if (markOutfitWornOnDate) {
         await markOutfitWornOnDate(outfit, todayStr);
       } else {
+        const wearCheck = validateOutfitWearability(outfit);
+        if (!wearCheck.canWear) {
+          throw new Error(wearCheck.error);
+        }
         const allPieces = Object.values(outfit.slots).flat();
         const now = Date.now();
         for (const piece of allPieces) {

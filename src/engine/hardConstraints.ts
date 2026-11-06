@@ -4,6 +4,7 @@ import {
   ContextSnapshot,
   StylePreferences,
   CulturalContextSignals,
+  GeneratedOutfit,
 } from '../types';
 import { OutfitTemplate } from './outfitTemplates';
 
@@ -14,6 +15,45 @@ import { OutfitTemplate } from './outfitTemplates';
 export interface HardConstraintResult {
   valid: boolean;
   reason?: string;
+}
+
+export interface WearValidationResult {
+  canWear: boolean;
+  uncleanPieces: WardrobeItem[];
+  error?: string;
+}
+
+/**
+ * Validates that all pieces in an outfit (and optional accessory) are clean
+ * before permitting actual wear logging or confirmation.
+ *
+ * This is an unconditional non-compensable hard constraint: planning mode
+ * permits styling exploration with unwashed anchors, but actual wear confirmation
+ * strictly requires that every garment is clean.
+ */
+export function validateOutfitWearability(
+  outfit: GeneratedOutfit | { slots: Record<string, WardrobeItem[]> },
+  accessory?: WardrobeItem | null
+): WearValidationResult {
+  const allPieces = Object.values(outfit.slots).flat();
+  if (accessory) {
+    allPieces.push(accessory);
+  }
+  const uncleanPieces = allPieces.filter(
+    (piece) => piece.status === 'needs_washing' || piece.status === 'in_laundry'
+  );
+  if (uncleanPieces.length > 0) {
+    const names = uncleanPieces.map((p) => p.name).join(', ');
+    return {
+      canWear: false,
+      uncleanPieces,
+      error: `Cannot log wear: ${names} ${uncleanPieces.length === 1 ? 'needs' : 'need'} washing before wearing.`,
+    };
+  }
+  return {
+    canWear: true,
+    uncleanPieces: [],
+  };
 }
 
 /**

@@ -3,6 +3,7 @@ import { useWardrobeContext } from '../context/WardrobeContext';
 import { useWeather } from '../context/WeatherContext';
 import { Occasion, Season, GeneratedOutfit, WardrobeItem, RejectionReason, ContextSnapshot } from '../types';
 import { generateOutfits, recommendOutfits, deriveSeasonalContext } from '../engine';
+import { validateOutfitWearability } from '../engine/hardConstraints';
 
 export function useDressMe(providedContext?: ContextSnapshot) {
   const {
@@ -67,6 +68,7 @@ export function useDressMe(providedContext?: ContextSnapshot) {
       context: contextSnapshot,
       limit: 3,
       anchorItemId: anchorItem?.id,
+      allowPlanningMode: Boolean(anchorItem && (anchorItem.status === 'needs_washing' || anchorItem.status === 'in_laundry')),
     });
   }, [items, occasion, season, localDate, explorationSeedOffset, preferences, styleProfile, contextSnapshot, anchorItem]);
 
@@ -113,6 +115,10 @@ export function useDressMe(providedContext?: ContextSnapshot) {
       if (markOutfitWornOnDate) {
         await markOutfitWornOnDate(outfit, todayStr, accessory);
       } else {
+        const wearCheck = validateOutfitWearability(outfit, accessory);
+        if (!wearCheck.canWear) {
+          throw new Error(wearCheck.error);
+        }
         const allPieces = Object.values(outfit.slots).flat();
         if (accessory) {
           allPieces.push(accessory);

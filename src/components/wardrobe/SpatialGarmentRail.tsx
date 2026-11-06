@@ -239,8 +239,8 @@ export const SpatialGarmentRail: React.FC<SpatialGarmentRailProps> = ({
     e.stopPropagation();
     if (!onUpdateItem) return;
 
-    // Laundry Safeguard: prevent accidental wear logging if garment is in laundry
-    if (item.status === 'in_laundry') {
+    // Laundry Safeguard: prevent accidental wear logging if garment is in laundry or needs washing
+    if (item.status === 'in_laundry' || item.status === 'needs_washing') {
       setLaundrySafeguardPrompt(true);
       return;
     }
@@ -719,12 +719,15 @@ export const SpatialGarmentRail: React.FC<SpatialGarmentRailProps> = ({
       {activeItem && (
         <div className="mt-4 pt-4 border-t border-border/70 animate-fade-in">
           {/* Milestone B: Laundry Safeguard Notification Banner */}
-          {laundrySafeguardPrompt && activeItem.status === 'in_laundry' && (
+          {laundrySafeguardPrompt && (activeItem.status === 'in_laundry' || activeItem.status === 'needs_washing') && (
             <div className="mb-3 p-3 rounded-xl border border-amber-300 bg-amber-50/90 dark:bg-amber-950/60 dark:border-amber-700 flex items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200 animate-fade-in">
               <div className="flex items-center gap-2">
                 <ShieldAlert className="h-4 w-4 text-amber-600 shrink-0" />
                 <span>
-                  <strong>Laundry Safeguard:</strong> This piece is catalogued as in laundry.
+                  <strong>Laundry Safeguard:</strong>{' '}
+                  {activeItem.status === 'in_laundry'
+                    ? 'This piece is catalogued as in laundry.'
+                    : 'This piece needs washing before wear.'}
                 </span>
               </div>
               <button
@@ -804,7 +807,7 @@ export const SpatialGarmentRail: React.FC<SpatialGarmentRailProps> = ({
                   className={`flex min-h-11 items-center gap-1.5 rounded-full border px-4 text-xs font-semibold shadow-2xs active:scale-95 transition-all tactile-press ${
                     hasWornFeedback
                       ? 'border-emerald-500 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-200'
-                      : activeItem.status === 'in_laundry'
+                      : activeItem.status === 'in_laundry' || activeItem.status === 'needs_washing'
                       ? 'border-amber-300 bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300'
                       : 'border-border bg-card text-(--ink) hover:border-(--ink)'
                   }`}
@@ -819,6 +822,11 @@ export const SpatialGarmentRail: React.FC<SpatialGarmentRailProps> = ({
                     <>
                       <ShieldAlert className="h-3.5 w-3.5 text-amber-600" />
                       <span>In Laundry</span>
+                    </>
+                  ) : activeItem.status === 'needs_washing' ? (
+                    <>
+                      <ShieldAlert className="h-3.5 w-3.5 text-amber-600" />
+                      <span>Needs Washing</span>
                     </>
                   ) : (
                     <>

@@ -122,9 +122,18 @@ export function executeShadowEvaluation(
   const tStart = typeof performance !== 'undefined' ? performance.now() : 0;
   isExecutingShadow = true;
 
+  const anchorItem = request.anchorItemId
+    ? request.items.find((i) => i.id === request.anchorItemId)
+    : undefined;
+  const isPlanningMode = Boolean(
+    request.allowPlanningMode ||
+    (anchorItem && (anchorItem.status === 'needs_washing' || anchorItem.status === 'in_laundry'))
+  );
+
   try {
     const ensembleEngine = new EnsembleRecommendationEngine();
     const ensembleResult = ensembleEngine.recommend(request, {
+      allowPlanningMode: isPlanningMode,
       compareWithBaseline: false,
     });
 
@@ -272,7 +281,10 @@ export function executeShadowEvaluation(
     for (const bOutfit of baselineOutfits) {
       const pieces = extractAllPieces(bOutfit);
       if (pieces.length >= 2) {
-        const graph = buildEnsembleGraph(pieces);
+        const graph = buildEnsembleGraph(pieces, {
+          allowPlanningMode: isPlanningMode,
+          anchorItemId: request.anchorItemId,
+        });
         const evalResult = evaluateEnsembleOutfit(graph, {
           occasion: request.occasion,
           season: request.season,
@@ -280,6 +292,7 @@ export function executeShadowEvaluation(
           preferences: request.preferences,
           styleProfile: request.styleProfile,
           culturalSignals: request.culturalSignals,
+          allowPlanningMode: isPlanningMode,
         });
 
         if (graph.minimumPairwiseScore < 4.0) {
@@ -303,7 +316,10 @@ export function executeShadowEvaluation(
     for (const eOutfit of ensembleOutfits) {
       const pieces = extractAllPieces(eOutfit);
       if (pieces.length >= 2) {
-        const graph = buildEnsembleGraph(pieces);
+        const graph = buildEnsembleGraph(pieces, {
+          allowPlanningMode: isPlanningMode,
+          anchorItemId: request.anchorItemId,
+        });
         if (graph.hasHardIncompatibility) {
           ensembleViolationsDetected.push(
             `Ensemble outfit ${eOutfit.id} triggered unexpected hard incompatibility: ${graph.hardIncompatibilityReasons.join(

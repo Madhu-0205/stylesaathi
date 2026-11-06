@@ -152,8 +152,12 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
 
   const handleWearToday = async (plan: OutfitPlan = selectedPlan!) => {
     if (!plan) return;
-    await markOutfitWornOnDate(plan.outfit, plan.date, plan.accessory);
-    showToast('Look marked as worn! Recency updated.');
+    try {
+      await markOutfitWornOnDate(plan.outfit, plan.date, plan.accessory);
+      showToast('Look marked as worn! Recency updated.');
+    } catch {
+      // Rejection handled by markOutfitWornOnDate safeguard toast
+    }
   };
 
   const handleConfirmDeletePlan = async () => {

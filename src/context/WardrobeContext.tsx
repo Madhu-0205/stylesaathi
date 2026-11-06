@@ -16,6 +16,7 @@ import { calendarRepository } from '../repositories/LocalStorageCalendarReposito
 import { wearEventsRepository } from '../repositories/LocalStorageWearEventsRepository';
 import { styleSignalsRepository } from '../repositories/LocalStorageStyleSignalsRepository';
 import { derivePersonalStyleProfile } from '../engine/styleBrain';
+import { validateOutfitWearability } from '../engine/hardConstraints';
 import { sampleWardrobe } from '../data/sampleWardrobe';
 import { clearImages, deleteImage } from '../services/imageStore';
 import { migrateLegacyPhotos } from '../services/migration';
@@ -495,6 +496,15 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (accessory) {
         allPieces.push(accessory);
       }
+
+      // LAUNDRY HARD CONSTRAINT: Actual wear logging is strictly blocked for unwashed garments.
+      // Planning mode allows styling exploration, but wear confirmation requires clean garments.
+      const wearCheck = validateOutfitWearability(outfit, accessory);
+      if (!wearCheck.canWear) {
+        showToast(wearCheck.error!);
+        throw new Error(wearCheck.error);
+      }
+
       const now = Date.now();
       const user = syncService.getCurrentUser();
       const userId = user?.id || 'local';

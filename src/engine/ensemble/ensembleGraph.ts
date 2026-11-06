@@ -141,11 +141,16 @@ export function buildEnsembleGraph(
 
   // Check node-level cleanliness/wearability
   const hardIncompatibilityReasons: string[] = [];
-  if (!allowPlanningMode) {
-    for (const node of nodes) {
-      if (node.status === 'in_laundry' || node.status === 'needs_washing') {
+  for (const node of nodes) {
+    if (node.status === 'in_laundry' || node.status === 'needs_washing') {
+      const isPermittedAnchor = allowPlanningMode && node.isAnchor;
+      if (!isPermittedAnchor) {
         hardIncompatibilityReasons.push(
           `Item "${node.item.name}" is unwearable (${node.status.replace('_', ' ')}).`
+        );
+      } else {
+        node.uncertaintyNotes.push(
+          `Item "${node.item.name}" is in planning mode (needs washing before wear).`
         );
       }
     }

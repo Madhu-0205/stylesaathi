@@ -49,12 +49,42 @@ export class EnsembleRecommendationEngine {
     } = request;
 
     const {
-      allowPlanningMode = false,
+      allowPlanningMode,
       compareWithBaseline = false,
       diversityThreshold = 0.35,
     } = options;
 
     const anchorItem = anchorItemId ? items.find((i) => i.id === anchorItemId) : undefined;
+    const effectivePlanningMode = Boolean(
+      allowPlanningMode ??
+      request.allowPlanningMode ??
+      (anchorItem && (anchorItem.status === 'needs_washing' || anchorItem.status === 'in_laundry'))
+    );
+
+    // If anchor was specified but does not exist or has an un-plannable status
+    if (
+      anchorItemId &&
+      (!anchorItem || (anchorItem.status !== 'clean' && !effectivePlanningMode))
+    ) {
+      const tEnd = typeof performance !== 'undefined' ? performance.now() : 0;
+      return {
+        outfits: [],
+        evaluations: {},
+        telemetry: {
+          candidateCount: 0,
+          validCandidateCount: 0,
+          timings: {
+            candidateGenerationMs: 0,
+            hardFilteringMs: 0,
+            compatibilityMs: 0,
+            scoringMs: 0,
+            diversificationMs: 0,
+            totalMs: Math.max(0, tEnd - t0),
+          },
+        },
+        allRankedCandidates: [],
+      };
+    }
 
     // 1. Candidate Generation
     const tGen0 = typeof performance !== 'undefined' ? performance.now() : 0;
@@ -73,7 +103,7 @@ export class EnsembleRecommendationEngine {
       preferences,
       styleProfile,
       culturalSignals,
-      allowPlanningMode,
+      allowPlanningMode: effectivePlanningMode,
       maxCandidates: 300,
     });
     const tGen1 = typeof performance !== 'undefined' ? performance.now() : 0;
@@ -90,7 +120,7 @@ export class EnsembleRecommendationEngine {
         styleProfile,
         culturalSignals,
         localDate,
-        allowPlanningMode,
+        allowPlanningMode: effectivePlanningMode,
         limit,
         diversityThreshold,
         explorationSeedOffset,

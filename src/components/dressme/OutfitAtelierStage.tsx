@@ -278,6 +278,8 @@ export const OutfitAtelierStage: React.FC<OutfitAtelierStageProps> = ({
       await onMarkWorn(currentComposedOutfit, accessory);
       setWornToday(true);
       setTimeout(() => setWornToday(false), 3500);
+    } catch {
+      // Rejection handled by onMarkWorn / markOutfitWornOnDate safeguard toast
     } finally {
       setIsWearing(false);
     }

@@ -178,4 +178,67 @@ describe('NeedleService', () => {
     expect(result.executionStatus).toBe('rejected');
     expect(result.message).toContain('clarify');
   }, 15000);
+
+  it('rejects record_wear when garment needs washing or is in laundry', async () => {
+    await service.initialize();
+
+    const dirtyItems: WardrobeItem[] = [
+      {
+        ...sampleItems[0],
+        id: 'dirty-1',
+        name: 'Muddy White T-Shirt',
+        status: 'needs_washing',
+      },
+      {
+        ...sampleItems[1],
+        id: 'laundry-2',
+        name: 'Dry Clean Black Jeans',
+        status: 'in_laundry',
+      },
+    ];
+
+    const mockUpdateItem = vi.fn().mockResolvedValue(undefined);
+
+    // 1. Garment needing wash is rejected
+    const dirtyResult = await service.executeCommand('I wore my Muddy White T-Shirt today', {
+      items: dirtyItems,
+      updateItem: mockUpdateItem,
+    });
+
+    expect(dirtyResult.executionStatus).toBe('rejected');
+    expect(dirtyResult.message).toContain('needs washing');
+    expect(dirtyResult.reasoning).toContain('needs washing');
+    expect(mockUpdateItem).not.toHaveBeenCalled();
+
+    // 2. Garment in laundry is rejected
+    const laundryResult = await service.executeCommand('I wore my Dry Clean Black Jeans today', {
+      items: dirtyItems,
+      updateItem: mockUpdateItem,
+    });
+
+    expect(laundryResult.executionStatus).toBe('rejected');
+    expect(laundryResult.message).toContain('in laundry');
+    expect(laundryResult.reasoning).toContain('in laundry');
+    expect(mockUpdateItem).not.toHaveBeenCalled();
+  }, 15000);
+
+  it('executes record_wear and updates item when garment is clean', async () => {
+    await service.initialize();
+
+    const mockUpdateItem = vi.fn().mockResolvedValue(undefined);
+
+    const result = await service.executeCommand('I wore my Casual White T-Shirt today', {
+      items: sampleItems,
+      updateItem: mockUpdateItem,
+    });
+
+    expect(result.executionStatus).toBe('executed');
+    expect(result.message).toContain('Logged wear');
+    expect(mockUpdateItem).toHaveBeenCalledWith(
+      'item-1',
+      expect.objectContaining({
+        timesWorn: 4,
+      })
+    );
+  }, 15000);
 });

@@ -435,6 +435,23 @@ export class NeedleService {
           i.name.toLowerCase().includes(args.itemName.toLowerCase())
         );
 
+        // Laundry Safeguard: prevent recording wear for garments that are not clean
+        if (matchingItem && (matchingItem.status === 'needs_washing' || matchingItem.status === 'in_laundry')) {
+          const statusDesc = matchingItem.status === 'in_laundry' ? 'in laundry' : 'needs washing';
+          return {
+            query,
+            toolCall,
+            executionStatus: 'rejected',
+            engine: toolCall.engine,
+            reasoning: `Cannot log wear: "${matchingItem.name}" is marked as ${statusDesc}. Garments must be clean before wear can be logged.`,
+            data: {
+              items: [matchingItem],
+              message: `Garment is ${statusDesc}.`,
+            },
+            message: `Cannot log wear for "${matchingItem.name}" because it is ${statusDesc}. Please wash or mark it clean first.`,
+          };
+        }
+
         if (matchingItem && context?.updateItem) {
           await context.updateItem(matchingItem.id, {
             timesWorn: (matchingItem.timesWorn || 0) + 1,

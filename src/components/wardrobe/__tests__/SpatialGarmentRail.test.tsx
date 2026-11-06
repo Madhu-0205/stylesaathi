@@ -360,5 +360,67 @@ describe('SpatialGarmentRail — Milestone B: Material Glint & Tactical Micro-in
         })
       );
     });
+
+    it('enforces Laundry Safeguard when attempting to wear a garment that needs washing', async () => {
+      // Navigate to item-3 which is 'needs_washing'
+      await act(async () => {
+        root.render(
+          <SpatialGarmentRail
+            items={mockItems}
+            onSelectItem={onSelectItem}
+            onToggleFavorite={onToggleFavorite}
+            onUpdateItem={onUpdateItem}
+          />
+        );
+      });
+
+      const stage = container.querySelector('div[role="region"]') as HTMLElement;
+
+      // Advance to item-3 (2 steps: item 1 -> 2 -> 3)
+      await act(async () => {
+        stage.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+      });
+      await act(async () => {
+        stage.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+      });
+
+      expect(container.querySelector('[data-testid="spatial-card-item-3"]')?.getAttribute('data-active')).toBe('true');
+
+      // Check button text shows "Needs Washing"
+      const needsWashingWearBtn = container.querySelector('button[aria-label="Log wearing Tailored Indigo Trousers"]') as HTMLButtonElement;
+      expect(needsWashingWearBtn).toBeTruthy();
+      expect(needsWashingWearBtn.textContent).toContain('Needs Washing');
+
+      // Click wear button on garment needing wash
+      await act(async () => {
+        needsWashingWearBtn.click();
+      });
+
+      // Does not immediately wear without washing
+      expect(onUpdateItem).not.toHaveBeenCalled();
+
+      // Safeguard prompt appears
+      expect(container.textContent).toContain('Laundry Safeguard');
+      expect(container.textContent).toContain('needs washing before wear');
+
+      // Click "Mark Clean & Wear" override action
+      const markCleanBtn = Array.from(container.querySelectorAll('button')).find((b) =>
+        b.textContent?.includes('Mark Clean & Wear')
+      );
+      expect(markCleanBtn).toBeTruthy();
+
+      await act(async () => {
+        markCleanBtn?.click();
+      });
+
+      // Now onUpdateItem is called with status clean AND timesWorn incremented
+      expect(onUpdateItem).toHaveBeenCalledWith(
+        'item-3',
+        expect.objectContaining({
+          status: 'clean',
+          timesWorn: 4,
+        })
+      );
+    });
   });
 });

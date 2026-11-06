@@ -41,8 +41,12 @@ export const SavedOutfitsModal: React.FC<SavedOutfitsModalProps> = ({
 
   const handleWearToday = async (outfit: GeneratedOutfit) => {
     const todayStr = new Date().toISOString().split('T')[0];
-    await markOutfitWornOnDate(outfit, todayStr);
-    showToast('LOOK WORN · Logged into your wear history');
+    try {
+      await markOutfitWornOnDate(outfit, todayStr);
+      showToast('LOOK WORN · Logged into your wear history');
+    } catch {
+      // Rejection handled by markOutfitWornOnDate safeguard toast
+    }
   };
 
   const handleDelete = async (id: string) => {

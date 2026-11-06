@@ -1006,6 +1006,7 @@ export interface RecommendationRequest {
   culturalSignals?: CulturalContextSignals;
   limit?: number; // Default 3
   anchorItemId?: string; // Phase 7: Explicit anchor constraint
+  allowPlanningMode?: boolean; // Phase 5D: Permits unwashed anchor garments for styling exploration
   enableShadow?: boolean; // Phase 5A: Toggle shadow ensemble evaluation (defaults to true)
 }
 

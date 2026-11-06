@@ -77,9 +77,14 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
   const handleWoreClick = async () => {
     if (wornToday) return;
     setIsWearing(true);
-    await onMarkWorn(outfit, accessory);
-    setIsWearing(false);
-    setWornToday(true);
+    try {
+      await onMarkWorn(outfit, accessory);
+      setWornToday(true);
+    } catch {
+      // Rejection handled by onMarkWorn / markOutfitWornOnDate safeguard toast
+    } finally {
+      setIsWearing(false);
+    }
   };
 
   const handleSaveClick = async () => {

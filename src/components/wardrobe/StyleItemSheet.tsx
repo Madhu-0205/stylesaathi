@@ -68,9 +68,13 @@ export const StyleItemSheet: React.FC<StyleItemSheetProps> = ({
 
   const handleWearToday = async () => {
     if (!activeOutfit) return;
-    await woreToday(activeOutfit);
-    setWornSuccess(true);
-    setTimeout(() => setWornSuccess(false), 2500);
+    try {
+      await woreToday(activeOutfit);
+      setWornSuccess(true);
+      setTimeout(() => setWornSuccess(false), 2500);
+    } catch {
+      // Rejection handled by woreToday / markOutfitWornOnDate safeguard toast
+    }
   };
 
   const handleSaveLook = async () => {

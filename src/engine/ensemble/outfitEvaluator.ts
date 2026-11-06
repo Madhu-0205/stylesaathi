@@ -128,7 +128,7 @@ export function evaluateEnsembleOutfit(
   }
 
   // 1. Hard Non-Compensatory Short-Circuit
-  if (graph.hasHardIncompatibility && !allowPlanningMode) {
+  if (graph.hasHardIncompatibility) {
     return {
       outfitId: graph.outfitId,
       isValid: false,

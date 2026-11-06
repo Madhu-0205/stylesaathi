@@ -53,10 +53,14 @@ function buildEnsembleExplanation(
 ): RecommendationExplanation {
   const evidenceSources: ExplanationEvidenceSource[] = ['compatibility'];
   const reasons: string[] = [];
+  const assumptions: string[] = [];
 
   // Anchor explanation
   if (anchorItem) {
     reasons.push(`Anchored around your ${anchorItem.name} with coordinated pieces`);
+    if (anchorItem.status === 'needs_washing' || anchorItem.status === 'in_laundry') {
+      assumptions.push('Planning look: includes garments that need washing before wear.');
+    }
   }
 
   // Add top evaluation bonuses
@@ -93,6 +97,7 @@ function buildEnsembleExplanation(
     reasons,
     evidenceSources: Array.from(new Set(evidenceSources)),
     confidenceLevel: evalResult.needsUserConfirmation ? 'MEDIUM' : 'HIGH',
+    assumptions: assumptions.length > 0 ? assumptions : undefined,
     culturalRationale: evalResult.breakdown.bonusesApplied.find((b) => b.toLowerCase().includes('ethnic') || b.toLowerCase().includes('ceremonial') || b.toLowerCase().includes('fusion')),
   };
 }
