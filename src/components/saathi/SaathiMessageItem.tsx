@@ -13,8 +13,65 @@ interface SaathiMessageItemProps {
   onConfirm?: () => void;
   onCancel?: () => void;
   onPlanLook?: (outfit: any) => void;
+  onOpenInAtelier?: (outfit: any) => void;
+  onShowAlternative?: () => void;
+  onAssessPurchase?: () => void;
+  onStyleThis?: (item: any) => void;
   isLatest?: boolean;
   disabled?: boolean;
+}
+
+function renderEditorialText(text: string) {
+  const lines = text.split('\n');
+  return lines.map((line, lineIdx) => {
+    const isBullet = /^\s*[-*•]\s+(.*)$/.test(line);
+    const content = isBullet ? line.replace(/^\s*[-*•]\s+/, '') : line;
+
+    const parts: React.ReactNode[] = [];
+    const regex = /(\*\*.*?\*\*|\*.*?\*)/g;
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = regex.exec(content)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(content.substring(lastIndex, match.index));
+      }
+      const matchedStr = match[0];
+      if (matchedStr.startsWith('**') && matchedStr.endsWith('**')) {
+        parts.push(
+          <strong key={`${lineIdx}-${match.index}`} className="font-semibold text-(--ink)">
+            {matchedStr.slice(2, -2)}
+          </strong>
+        );
+      } else if (matchedStr.startsWith('*') && matchedStr.endsWith('*')) {
+        parts.push(
+          <em key={`${lineIdx}-${match.index}`} className="italic text-(--ink)/90">
+            {matchedStr.slice(1, -1)}
+          </em>
+        );
+      }
+      lastIndex = regex.lastIndex;
+    }
+
+    if (lastIndex < content.length) {
+      parts.push(content.substring(lastIndex));
+    }
+
+    if (isBullet) {
+      return (
+        <div key={lineIdx} className="flex items-start gap-1.5 my-0.5 ml-1">
+          <span className="text-(--burnished-gold) font-bold text-xs select-none">•</span>
+          <span className="flex-1">{parts.length > 0 ? parts : content}</span>
+        </div>
+      );
+    }
+
+    return (
+      <span key={lineIdx} className="block min-h-[1.1em]">
+        {parts.length > 0 ? parts : content || '\u00A0'}
+      </span>
+    );
+  });
 }
 
 export const SaathiMessageItem: React.FC<SaathiMessageItemProps> = ({
@@ -25,6 +82,10 @@ export const SaathiMessageItem: React.FC<SaathiMessageItemProps> = ({
   onConfirm,
   onCancel,
   onPlanLook,
+  onOpenInAtelier,
+  onShowAlternative,
+  onAssessPurchase,
+  onStyleThis,
   isLatest = true,
   disabled = false,
 }) => {
@@ -51,19 +112,30 @@ export const SaathiMessageItem: React.FC<SaathiMessageItemProps> = ({
             : 'bg-card border border-(--border) text-(--ink) rounded-bl-xs shadow-2xs'
         }`}
       >
-        <p className="whitespace-pre-line">{message.text}</p>
+        <div className="space-y-0.5">
+          {renderEditorialText(message.text)}
+        </div>
 
         {/* Embedded Domain Recommendation Cards */}
         {message.domainResult?.outfits && message.domainResult.outfits.length > 0 && (
           <SaathiRecommendationCard
             outfit={message.domainResult.outfits[0]}
             onPlanLook={onPlanLook}
+            onOpenInAtelier={onOpenInAtelier}
+            onShowAlternative={onShowAlternative}
+            onAssessPurchase={onAssessPurchase}
+            onStyleThis={onStyleThis}
           />
         )}
 
         {/* Embedded Smart Buy Report Cards */}
-        {message.domainResult?.gapReport && (
-          <SaathiSmartBuyCard report={message.domainResult.gapReport} />
+        {(message.domainResult?.type === 'PURCHASE_ASSESSMENT' ||
+          message.domainResult?.type === 'WARDROBE_GAPS' ||
+          message.domainResult?.purchaseAssessment) && (
+          <SaathiSmartBuyCard
+            report={message.domainResult.gapReport}
+            assessment={message.domainResult.purchaseAssessment || message.domainResult.gapReport?.purchaseAssessment}
+          />
         )}
 
         {/* Clarification Request Options */}

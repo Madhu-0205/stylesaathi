@@ -175,7 +175,8 @@ describe('Phase 10: AI Saathi UI Components', () => {
       const html = renderToString(<SaathiRecommendationCard outfit={outfit} onPlanLook={vi.fn()} />);
 
       expect(html).toContain('Smart Casual');
-      expect(html).toContain('92% Match');
+      expect(html).toContain('Experimental Pairing');
+      expect(html).not.toContain('% Match');
       expect(html).toContain('Linen Shirt');
       expect(html).toContain('Chino Trousers');
       expect(html).toContain('Breathable cotton for 28°C');

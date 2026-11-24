@@ -6,7 +6,7 @@ interface CandidateDef {
   subcategory: CandidateItem['subcategory'];
   colors: string[];
   formality: number;
-  priceRange: string;
+  priceRange?: string;
   reason?: string;
 }
 
@@ -17,8 +17,7 @@ const candidateDefs: CandidateDef[] = [
     subcategory: 'trousers',
     colors: ['black'],
     formality: 4,
-    priceRange: '₹1,200–₹2,500',
-    reason: 'Pairs with your white tee, linen shirt, and blazers for office and dates.',
+    reason: 'Versatile neutral foundation that anchors structured office and smart-casual looks.',
   },
   {
     name: 'White leather sneakers',
@@ -26,8 +25,7 @@ const candidateDefs: CandidateDef[] = [
     subcategory: 'sneakers',
     colors: ['white'],
     formality: 2,
-    priceRange: '₹1,500–₹3,500',
-    reason: 'Instantly modernizes kurtas, jeans, and casual dresses.',
+    reason: 'Contemporary neutral footwear that transitions smoothly between ethnic, casual, and travel looks.',
   },
   {
     name: 'Beige linen palazzo',
@@ -35,8 +33,7 @@ const candidateDefs: CandidateDef[] = [
     subcategory: 'palazzo',
     colors: ['beige'],
     formality: 2,
-    priceRange: '₹900–₹1,800',
-    reason: 'Fills the ethnic bottoms gap for both college and festive occasions.',
+    reason: 'Breathable wide-leg bottom that expands styling flexibility for relaxed and daytime occasions.',
   },
   {
     name: 'Classic denim jacket',
@@ -44,8 +41,7 @@ const candidateDefs: CandidateDef[] = [
     subcategory: 'jacket',
     colors: ['blue'],
     formality: 3,
-    priceRange: '₹1,500–₹3,000',
-    reason: 'Adds layering depth to dresses, kurtas, and casual tees.',
+    reason: 'Adds versatile layering structure across dresses, tops, and casual silhouettes.',
   },
   {
     name: 'Cream embroidered dupatta',
@@ -53,8 +49,7 @@ const candidateDefs: CandidateDef[] = [
     subcategory: 'dupatta',
     colors: ['cream'],
     formality: 3,
-    priceRange: '₹600–₹1,400',
-    reason: 'Unlocks complete festive sets with your existing solid kurtas.',
+    reason: 'Completes traditional multi-piece festive silhouettes with existing plain kurtas.',
   },
   {
     name: 'Olive straight trousers',
@@ -62,8 +57,7 @@ const candidateDefs: CandidateDef[] = [
     subcategory: 'trousers',
     colors: ['olive'],
     formality: 3,
-    priceRange: '₹1,200–₹2,400',
-    reason: 'Adds an earthy neutral to rotate with jeans and black pants.',
+    reason: 'Adds an earthy neutral bottom option to diversify daily rotations.',
   },
   {
     name: 'Black structured blazer',
@@ -71,8 +65,7 @@ const candidateDefs: CandidateDef[] = [
     subcategory: 'blazer',
     colors: ['black'],
     formality: 4,
-    priceRange: '₹2,200–₹4,500',
-    reason: 'Elevates casual outfits into office and evening ready looks.',
+    reason: 'Sharp tailoring piece that elevates casual separates into formal and evening looks.',
   },
   {
     name: 'Pastel green cotton kurta',
@@ -80,8 +73,7 @@ const candidateDefs: CandidateDef[] = [
     subcategory: 'kurta',
     colors: ['green'],
     formality: 3,
-    priceRange: '₹800–₹1,800',
-    reason: 'Matches with white churidar, cream palazzo, or blue straight jeans.',
+    reason: 'Breathable daytime ethnic upper for everyday wear and casual gatherings.',
   },
   {
     name: 'Black leather pointed flats',
@@ -89,8 +81,7 @@ const candidateDefs: CandidateDef[] = [
     subcategory: 'flats',
     colors: ['black'],
     formality: 3,
-    priceRange: '₹900–₹2,000',
-    reason: 'Versatile low-profile footwear for ethnic, office, and date looks.',
+    reason: 'Low-profile footwear bridging formal tailoring and traditional ethnic ensembles.',
   },
   {
     name: 'Blue straight-fit jeans',
@@ -98,8 +89,7 @@ const candidateDefs: CandidateDef[] = [
     subcategory: 'jeans',
     colors: ['blue'],
     formality: 2,
-    priceRange: '₹1,400–₹2,800',
-    reason: 'Essential staple that pairs with all tops, shirts, and kurtis.',
+    reason: 'Essential denim foundation anchoring everyday and casual looks.',
   },
   {
     name: 'Embroidered festive juttis',
@@ -107,8 +97,7 @@ const candidateDefs: CandidateDef[] = [
     subcategory: 'juttis',
     colors: ['gold', 'mustard'],
     formality: 4,
-    priceRange: '₹1,200–₹2,500',
-    reason: 'Completes traditional Indian outfits for Diwali, weddings, and pujas.',
+    reason: 'Traditional handcrafted footwear for festive occasions, weddings, and cultural celebrations.',
   },
   {
     name: 'Black tailored kurta',
@@ -116,8 +105,7 @@ const candidateDefs: CandidateDef[] = [
     subcategory: 'kurta',
     colors: ['black'],
     formality: 3,
-    priceRange: '₹900–₹1,900',
-    reason: 'Sleek Indo-western foundation piece for evening outings.',
+    reason: 'Sleek modern foundation piece for Indo-western evening styling.',
   },
   {
     name: 'White linen button-down shirt',
@@ -125,8 +113,7 @@ const candidateDefs: CandidateDef[] = [
     subcategory: 'shirt',
     colors: ['white'],
     formality: 3,
-    priceRange: '₹1,100–₹2,400',
-    reason: 'Timeless smart-casual piece wearable open or tucked.',
+    reason: 'Timeless breathable upper wearable as a standalone shirt or lightweight layer.',
   },
   {
     name: 'Tan leather sandals',
@@ -134,8 +121,7 @@ const candidateDefs: CandidateDef[] = [
     subcategory: 'sandals',
     colors: ['brown'],
     formality: 2,
-    priceRange: '₹800–₹1,600',
-    reason: 'Breezy everyday footwear for summer and casual outings.',
+    reason: 'Warm-weather footwear for warm days and casual outings.',
   },
   {
     name: 'Navy Nehru jacket',
@@ -143,8 +129,7 @@ const candidateDefs: CandidateDef[] = [
     subcategory: 'nehru jacket',
     colors: ['navy'],
     formality: 4,
-    priceRange: '₹1,800–₹3,500',
-    reason: 'Instantly formalizes any plain kurta for family functions.',
+    reason: 'Traditional layering vest that formalizes solid kurtas for family celebrations.',
   },
   {
     name: 'Gold statement jewellery set',
@@ -152,8 +137,7 @@ const candidateDefs: CandidateDef[] = [
     subcategory: 'jewellery',
     colors: ['gold'],
     formality: 4,
-    priceRange: '₹600–₹1,800',
-    reason: 'Brings festive sparkle to sarees, lehengas, and kurtas.',
+    reason: 'Accent accessory adding festive refinement to celebratory outfits.',
   },
   {
     name: 'White fitted churidar',
@@ -161,8 +145,7 @@ const candidateDefs: CandidateDef[] = [
     subcategory: 'churidar',
     colors: ['white'],
     formality: 3,
-    priceRange: '₹600–₹1,200',
-    reason: 'Traditional bottom pairing for straight-cut ethnic kurtas.',
+    reason: 'Classic fitted ethnic bottom designed to pair with knee-length kurtas.',
   },
   {
     name: 'Beige structured shoulder bag',
@@ -170,8 +153,7 @@ const candidateDefs: CandidateDef[] = [
     subcategory: 'bag',
     colors: ['beige'],
     formality: 3,
-    priceRange: '₹1,200–₹2,800',
-    reason: 'Polished accessory for college, office, and weekend dates.',
+    reason: 'Functional structured accessory complementing campus, office, and weekend engagements.',
   },
 ];
 
@@ -209,4 +191,4 @@ export const candidates = (season: Season): CandidateItem[] =>
 
 export const candidatePrice = (name: string): string =>
   candidateDefs.find((x) => x.name.toLowerCase() === name.toLowerCase())?.priceRange ??
-  '₹900–₹2,200';
+  'Essential Staple';

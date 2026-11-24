@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useWardrobeContext } from '../context/WardrobeContext';
-import { Category, Status } from '../types';
+import { Category, Status, Season, Occasion } from '../types';
 import { CATEGORIES } from '../data/taxonomy';
 
 export function useWardrobe() {
@@ -9,6 +9,31 @@ export function useWardrobe() {
   const [selectedCategory, setSelectedCategory] = useState<Category | 'All'>('All');
   const [statusFilter, setStatusFilter] = useState<Status | 'All'>('All');
   const [favoriteOnly, setFavoriteOnly] = useState(false);
+  const [colorFilter, setColorFilter] = useState<string>('All');
+  const [seasonFilter, setSeasonFilter] = useState<Season | 'All'>('All');
+  const [occasionFilter, setOccasionFilter] = useState<Occasion | 'All'>('All');
+
+  const resetFilters = useCallback(() => {
+    setSearch('');
+    setSelectedCategory('All');
+    setStatusFilter('All');
+    setFavoriteOnly(false);
+    setColorFilter('All');
+    setSeasonFilter('All');
+    setOccasionFilter('All');
+  }, []);
+
+  const hasActiveFilters = useMemo(() => {
+    return Boolean(
+      search.trim() ||
+      selectedCategory !== 'All' ||
+      statusFilter !== 'All' ||
+      favoriteOnly ||
+      colorFilter !== 'All' ||
+      seasonFilter !== 'All' ||
+      occasionFilter !== 'All'
+    );
+  }, [search, selectedCategory, statusFilter, favoriteOnly, colorFilter, seasonFilter, occasionFilter]);
 
   const filteredItems = useMemo(() => {
     return context.items.filter((item) => {
@@ -24,19 +49,64 @@ export function useWardrobe() {
       if (favoriteOnly && !item.favorite) {
         return false;
       }
-      // Search match (name, subcategory, color)
+      // Color match
+      if (colorFilter !== 'All') {
+        const itemColorsLower = (item.colors || []).map((c) => c.toLowerCase());
+        if (!itemColorsLower.includes(colorFilter.toLowerCase())) {
+          return false;
+        }
+      }
+      // Season match
+      if (seasonFilter !== 'All') {
+        if (!item.seasons || !item.seasons.includes(seasonFilter)) {
+          return false;
+        }
+      }
+      // Occasion match
+      if (occasionFilter !== 'All') {
+        if (!item.occasions || !item.occasions.includes(occasionFilter)) {
+          return false;
+        }
+      }
+      // Search match (operates on real garment attributes and existing metadata)
       if (search.trim()) {
         const query = search.toLowerCase();
-        const matchesName = item.name.toLowerCase().includes(query);
-        const matchesSub = item.subcategory?.toLowerCase().includes(query);
-        const matchesColor = item.colors.some((c) => c.toLowerCase().includes(query));
-        if (!matchesName && !matchesSub && !matchesColor) {
+        const matchesName = (item.name || '').toLowerCase().includes(query);
+        const matchesSub = (item.subcategory || '').toLowerCase().includes(query);
+        const matchesCat = (item.category || '').toLowerCase().includes(query);
+        const matchesColor = (item.colors || []).some((c) => c.toLowerCase().includes(query));
+        const matchesFabric = (item.fabric || '').toLowerCase().includes(query);
+        const matchesNote = (item.note || '').toLowerCase().includes(query);
+        const matchesOccasion = (item.occasions || []).some((occ) => occ.toLowerCase().includes(query));
+        const matchesSeason = (item.seasons || []).some((s) => s.toLowerCase().includes(query));
+        const matchesBrand = (item.brand || '').toLowerCase().includes(query);
+
+        if (
+          !matchesName &&
+          !matchesSub &&
+          !matchesCat &&
+          !matchesColor &&
+          !matchesFabric &&
+          !matchesNote &&
+          !matchesOccasion &&
+          !matchesSeason &&
+          !matchesBrand
+        ) {
           return false;
         }
       }
       return true;
     });
-  }, [context.items, selectedCategory, statusFilter, favoriteOnly, search]);
+  }, [
+    context.items,
+    selectedCategory,
+    statusFilter,
+    favoriteOnly,
+    colorFilter,
+    seasonFilter,
+    occasionFilter,
+    search,
+  ]);
 
   const stats = useMemo(() => {
     const counts: Record<Category, number> = {
@@ -51,6 +121,17 @@ export function useWardrobe() {
     for (const cat of CATEGORIES) {
       counts[cat] = context.items.filter((i) => i.category === cat).length;
     }
+
+    // Extract unique colors present in actual wardrobe
+    const colorSet = new Set<string>();
+    for (const item of context.items) {
+      for (const col of item.colors || []) {
+        if (col && col.trim()) {
+          colorSet.add(col.trim().toLowerCase());
+        }
+      }
+    }
+
     return {
       total: context.items.length,
       clean: context.items.filter((i) => i.status === 'clean').length,
@@ -58,6 +139,7 @@ export function useWardrobe() {
       inLaundry: context.items.filter((i) => i.status === 'in_laundry').length,
       favorites: context.items.filter((i) => i.favorite).length,
       byCategory: counts,
+      availableColors: Array.from(colorSet).sort(),
     };
   }, [context.items]);
 
@@ -71,6 +153,14 @@ export function useWardrobe() {
     setStatusFilter,
     favoriteOnly,
     setFavoriteOnly,
+    colorFilter,
+    setColorFilter,
+    seasonFilter,
+    setSeasonFilter,
+    occasionFilter,
+    setOccasionFilter,
+    resetFilters,
+    hasActiveFilters,
     filteredItems,
     stats,
   };

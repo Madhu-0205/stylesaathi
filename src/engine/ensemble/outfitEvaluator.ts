@@ -161,7 +161,9 @@ export function evaluateEnsembleOutfit(
   // ==========================================================================
   let individualSuitability = 0.0;
   for (const item of pieces) {
-    if (!seasonFit(item, season)) {
+    // StyleSaathi 4.0.2 (P2-B): only verified season mismatches incur penalty.
+    // Unknown / missing season metadata (null) remains neutral.
+    if (seasonFit(item, season) === false) {
       individualSuitability -= 0.35;
       penaltiesApplied.push(`"${item.name}" is out of season for ${season}.`);
     }

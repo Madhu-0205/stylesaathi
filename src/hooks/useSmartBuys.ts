@@ -39,6 +39,16 @@ export function useSmartBuys(season: Season = 'summer') {
     if (items.length === 0) return [];
 
     const candidateList = candidates(season);
+    // Grounding: Filter out candidates where the user already owns equivalent pieces (same category & subcategory)
+    const eligibleCandidates = candidateList.filter((cand) => {
+      const ownsEquivalent = items.some(
+        (i) =>
+          i.category === cand.category &&
+          i.subcategory?.toLowerCase() === cand.subcategory?.toLowerCase()
+      );
+      return !ownsEquivalent;
+    });
+
     const baselineSignatures = new Set(
       OCCASIONS.flatMap((o) =>
         generateOutfits(items, o, season, 50, 0).map((outfit) => signature(outfit))
@@ -47,7 +57,7 @@ export function useSmartBuys(season: Season = 'summer') {
 
     const recommendations: SmartBuyRecommendation[] = [];
 
-    for (const cand of candidateList) {
+    for (const cand of eligibleCandidates) {
       const delta = simulateBuy(items, cand, OCCASIONS, season);
       if (delta > 0) {
         // Calculate preview outfits that specifically include the candidate
@@ -80,6 +90,12 @@ export function useSmartBuys(season: Season = 'summer') {
               : true)
         ).slice(0, 4);
 
+        const companionText =
+          compatibleItems.length > 0
+            ? ` Pairs directly with your ${compatibleItems.slice(0, 2).map((i) => i.name).join(' and ')}.`
+            : '';
+        const groundedReason = `${cand.note || 'Fills a versatile wardrobe gap across Indian occasions.'}${companionText}`;
+
         recommendations.push({
           candidate: cand,
           baselineOutfitCount: baselineSignatures.size,
@@ -87,7 +103,7 @@ export function useSmartBuys(season: Season = 'summer') {
           newOutfitsUnlocked: delta,
           compatibleExistingItems: compatibleItems,
           previewOutfits: unlockedPreviews,
-          reason: cand.note || 'Fills a versatile wardrobe gap across Indian occasions.',
+          reason: groundedReason,
         });
       }
     }

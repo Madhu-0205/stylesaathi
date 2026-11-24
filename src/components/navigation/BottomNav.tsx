@@ -1,18 +1,24 @@
 import React from 'react';
-import { Shirt, Sparkles, Compass, User, Calendar, type LucideIcon } from 'lucide-react';
+import { Sun, Shirt, Sparkles, User, Calendar, type LucideIcon } from 'lucide-react';
 
-export type NavTab = 'Wardrobe' | 'Dress' | 'Calendar' | 'Insight' | 'You';
+export type NavTab = 'Today' | 'Wardrobe' | 'Dress' | 'Calendar' | 'Insight' | 'You';
 
+/**
+ * Mobile Navigation:
+ * Streamlined 5-tab editorial layout (Today, Wardrobe, Dress, Calendar, You).
+ * Note: INSIGHT (Smart Buy & Wear Analytics) is seamlessly accessible via the "You"
+ * personal archive tab and contextual links on Today, preserving full NavTab routing.
+ */
 interface BottomNavProps {
   currentTab: NavTab;
   onChangeTab: (tab: NavTab) => void;
 }
 
 const TABS: { id: NavTab; label: string; icon: LucideIcon }[] = [
+  { id: 'Today', label: 'TODAY', icon: Sun },
   { id: 'Wardrobe', label: 'WARDROBE', icon: Shirt },
   { id: 'Dress', label: 'DRESS', icon: Sparkles },
   { id: 'Calendar', label: 'CALENDAR', icon: Calendar },
-  { id: 'Insight', label: 'INSIGHT', icon: Compass },
   { id: 'You', label: 'YOU', icon: User },
 ];
 
@@ -44,9 +50,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onChangeTab })
               onClick={() => handleTabClick(tab.id)}
               aria-label={tab.label}
               aria-current={isActive ? 'page' : undefined}
-              className={`flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-full px-1 py-1 text-center transition-[transform,background-color,color] duration-200 ease-out select-none active:scale-95 tactile-press-sm focus-editorial ${
+              className={`flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-full px-1 py-1 text-center transition-all duration-200 ease-out select-none active:scale-95 tactile-press-sm focus-editorial ${
                 isActive
-                  ? 'bg-(--ivory) dark:bg-white/10 text-(--ink) font-bold shadow-2xs'
+                  ? 'bg-(--paper) dark:bg-white/10 text-(--ink) font-bold shadow-xs border border-border/70'
                   : 'text-muted font-medium hover:text-(--ink) hover:bg-(--ivory)/50'
               }`}
             >
@@ -57,7 +63,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onChangeTab })
                   }`}
                 />
               </div>
-              <span className={`text-[8.5px] tracking-wider transition-colors uppercase ${isActive ? 'text-(--ink)' : 'text-muted'}`}>
+              <span className={`text-[10px] tracking-wider transition-colors uppercase font-semibold ${isActive ? 'text-(--ink)' : 'text-muted'}`}>
                 {tab.label}
               </span>
               <div

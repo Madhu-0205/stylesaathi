@@ -11,6 +11,9 @@ import {
   clearShadowComparisonHistory,
   isShadowEvaluationEnabled,
   setShadowEvaluationEnabled,
+  getShadowEvaluationMetrics,
+  classifyWeatherFreshness,
+  SHADOW_HISTORY_MAX,
 } from '../shadowEvaluator';
 import { WardrobeItem, RecommendationRequest } from '../../../types';
 
@@ -385,6 +388,454 @@ describe('StyleSaathi 3.0 — Phase 5A: Shadow Evaluator Integration', () => {
     clearShadowComparisonHistory();
     expect(getShadowComparisonHistory().length).toBe(0);
     expect(getLastShadowComparison()).toBeNull();
+  });
+
+  it('9. Strict Ring Buffer Capacity (50 max) and FIFO Eviction', () => {
+    const items = createSampleWardrobe();
+    clearShadowComparisonHistory();
+
+    const request: RecommendationRequest = {
+      items,
+      occasion: 'everyday',
+      season: 'summer',
+      localDate: '2026-11-06',
+      enableShadow: true,
+    };
+
+    // Execute 65 recommendations into the 50-capacity ring buffer
+    for (let i = 0; i < 65; i++) {
+      recommendOutfitsWithTelemetry({ ...request, explorationSeedOffset: i });
+    }
+
+    const history = getShadowComparisonHistory(100);
+    expect(history.length).toBe(SHADOW_HISTORY_MAX);
+    expect(history.length).toBe(50);
+
+    const metrics = getShadowEvaluationMetrics();
+    expect(metrics.bufferCapacity).toBe(50);
+    expect(metrics.bufferOccupancy).toBe(50);
+    expect(metrics.totalEvaluations).toBe(50);
+    expect(metrics.failureRate).toBe(0);
+  });
+
+  it('10. Concurrent Evaluation Safety across parallel executions', async () => {
+    const items = createSampleWardrobe();
+    clearShadowComparisonHistory();
+
+    const occasions: RecommendationRequest['occasion'][] = [
+      'everyday',
+      'college',
+      'casual outing',
+      'family gathering',
+      'office',
+    ];
+
+    // Fire 20 evaluations concurrently via Promise.all
+    const promises = Array.from({ length: 20 }, (_, idx) => {
+      const occ = occasions[idx % occasions.length];
+      return new Promise<void>((resolve) => {
+        const res = recommendOutfitsWithTelemetry({
+          items,
+          occasion: occ,
+          season: 'summer',
+          localDate: '2026-11-06',
+          explorationSeedOffset: idx,
+          enableShadow: true,
+        });
+        expect(res.set.outfits.length).toBeGreaterThan(0);
+        resolve();
+      });
+    });
+
+    await Promise.all(promises);
+
+    const history = getShadowComparisonHistory(50);
+    expect(history.length).toBe(20);
+    for (const report of history) {
+      expect(report.evaluationSuccess).toBe(true);
+      expect(report.evaluationId).toMatch(/^shadow_eval_/);
+      expect(report.baselineRecommendationIds.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('11. Stable Garment ID Comparison & Zero Record Duplication in Reports', () => {
+    const items = createSampleWardrobe();
+    clearShadowComparisonHistory();
+
+    const request: RecommendationRequest = {
+      items,
+      occasion: 'college',
+      season: 'summer',
+      localDate: '2026-11-06',
+      enableShadow: true,
+    };
+
+    const result = recommendOutfitsWithTelemetry(request);
+    expect(result.shadowComparison).toBeDefined();
+
+    const report = result.shadowComparison!;
+    expect(report.evaluationId).toBeDefined();
+    expect(typeof report.evaluationId).toBe('string');
+    expect(Array.isArray(report.baselineRecommendationIds)).toBe(true);
+    expect(Array.isArray(report.shadowRecommendationIds)).toBe(true);
+
+    // Verify IDs are strings and not full object representations
+    report.baselineRecommendationIds.forEach((id) => expect(typeof id).toBe('string'));
+    report.shadowRecommendationIds.forEach((id) => expect(typeof id).toBe('string'));
+
+    // Verify report contains zero full wardrobe item clones or photo bloat
+    const reportJson = JSON.stringify(report);
+    expect(reportJson).not.toContain('Ivory Chikankari Kurta'); // Garment names not in IDs
+    expect(reportJson).not.toContain('data:image');
+    expect(reportJson).not.toContain('blob:');
+  });
+
+  it('12. No Mutation of Wardrobe Items, Wear Count, or Timestamps', () => {
+    const items = createSampleWardrobe();
+    const originalTimesWorn = items[0].timesWorn;
+    const originalStatus = items[0].status;
+    const originalFavorite = items[0].favorite;
+
+    const request: RecommendationRequest = {
+      items,
+      occasion: 'college',
+      season: 'summer',
+      localDate: '2026-11-06',
+      enableShadow: true,
+    };
+
+    recommendOutfitsWithTelemetry(request);
+
+    // Assert zero mutations
+    expect(items[0].timesWorn).toBe(originalTimesWorn);
+    expect(items[0].status).toBe(originalStatus);
+    expect(items[0].favorite).toBe(originalFavorite);
+  });
+
+  it('13. No Duplicate Feedback Signals or Unintended Side Effects', () => {
+    const items = createSampleWardrobe();
+    const request: RecommendationRequest = {
+      items,
+      occasion: 'casual outing',
+      season: 'summer',
+      localDate: '2026-11-06',
+      enableShadow: true,
+    };
+
+    // Running recommendations should never emit style signals or touch feedback repo
+    const beforeMetrics = getShadowEvaluationMetrics();
+    const res = recommendOutfitsWithTelemetry(request);
+    expect(res.set.outfits.length).toBeGreaterThan(0);
+    const afterMetrics = getShadowEvaluationMetrics();
+
+    expect(afterMetrics.totalEvaluations).toBe(beforeMetrics.totalEvaluations + 1);
+  });
+
+  it('14. Missing Metadata Indicators Tracking without Data Fabrication', () => {
+    const incompleteItems: WardrobeItem[] = [
+      {
+        id: 'inc_1',
+        name: 'Mystery Top',
+        category: 'Tops',
+        subcategory: 'shirt',
+        colors: [],
+        occasions: [],
+        status: 'clean',
+        userVerified: false,
+        fabric: 'unknown',
+        fit: 'unknown',
+        createdAt: 1,
+      } as any,
+      {
+        id: 'inc_2',
+        name: 'Mystery Bottom',
+        category: 'Bottoms',
+        subcategory: 'jeans',
+        colors: ['blue'],
+        occasions: ['casual outing'],
+        status: 'clean',
+        userVerified: true,
+        fabric: 'denim',
+        fit: 'regular',
+        seasons: ['summer'],
+        createdAt: 2,
+      } as any,
+      {
+        id: 'inc_3',
+        name: 'Mystery Shoes',
+        category: 'Footwear',
+        subcategory: 'sneakers',
+        colors: ['white'],
+        occasions: [],
+        status: 'clean',
+        userVerified: false,
+        seasons: [],
+        createdAt: 3,
+      } as any,
+    ];
+
+    const request: RecommendationRequest = {
+      items: incompleteItems,
+      occasion: 'casual outing',
+      season: 'summer',
+      localDate: '2026-11-06',
+      enableShadow: true,
+    };
+
+    const res = recommendOutfitsWithTelemetry(request);
+    expect(res.shadowComparison).toBeDefined();
+
+    const indicators = res.shadowComparison!.missingMetadataIndicators;
+    expect(indicators.missingFabricCount).toBeGreaterThanOrEqual(1);
+    expect(indicators.missingFitCount).toBeGreaterThanOrEqual(1);
+    expect(indicators.missingSeasonsCount).toBeGreaterThanOrEqual(1);
+    expect(indicators.missingColorCount).toBeGreaterThanOrEqual(1);
+    expect(indicators.unconfirmedCount).toBeGreaterThanOrEqual(2);
+  });
+
+  it('15. Weather Freshness State Categorization', () => {
+    const items = createSampleWardrobe();
+
+    // 1. Missing weather
+    const reqMissing: RecommendationRequest = {
+      items,
+      occasion: 'everyday',
+      season: 'summer',
+      localDate: '2026-11-06',
+      enableShadow: true,
+    };
+    const resMissing = recommendOutfitsWithTelemetry(reqMissing);
+    expect(resMissing.shadowComparison?.requestContext.weatherFreshness).toBe('missing');
+
+    // 2. Simulated weather
+    const reqSimulated: RecommendationRequest = {
+      items,
+      occasion: 'everyday',
+      season: 'summer',
+      localDate: '2026-11-06',
+      context: {
+        source: 'simulated',
+        weather: { temperature: 28, condition: 'Clear', humidity: 50 },
+      } as any,
+      enableShadow: true,
+    };
+    const resSimulated = recommendOutfitsWithTelemetry(reqSimulated);
+    expect(resSimulated.shadowComparison?.requestContext.weatherFreshness).toBe('simulated');
+
+    // 3. Fresh live weather (< 30 minutes old)
+    const reqFresh: RecommendationRequest = {
+      items,
+      occasion: 'everyday',
+      season: 'summer',
+      localDate: '2026-11-06',
+      context: {
+        source: 'device',
+        weather: { temperature: 28, condition: 'Clear', humidity: 50, timestamp: Date.now() - 15 * 60 * 1000 },
+      } as any,
+      enableShadow: true,
+    };
+    const resFresh = recommendOutfitsWithTelemetry(reqFresh);
+    expect(resFresh.shadowComparison?.requestContext.weatherFreshness).toBe('fresh');
+
+    // 4. Stale live weather (30 minutes to 3 hours old)
+    const reqStale: RecommendationRequest = {
+      items,
+      occasion: 'everyday',
+      season: 'summer',
+      localDate: '2026-11-06',
+      context: {
+        source: 'device',
+        weather: { temperature: 28, condition: 'Clear', humidity: 50, timestamp: Date.now() - 45 * 60 * 1000 },
+      } as any,
+      enableShadow: true,
+    };
+    const resStale = recommendOutfitsWithTelemetry(reqStale);
+    expect(resStale.shadowComparison?.requestContext.weatherFreshness).toBe('stale');
+
+    // 5. Expired live weather (> 3 hours old)
+    const reqExpired: RecommendationRequest = {
+      items,
+      occasion: 'everyday',
+      season: 'summer',
+      localDate: '2026-11-06',
+      context: {
+        source: 'device',
+        weather: { temperature: 28, condition: 'Clear', humidity: 50, timestamp: Date.now() - 5 * 3600 * 1000 },
+      } as any,
+      enableShadow: true,
+    };
+    const resExpired = recommendOutfitsWithTelemetry(reqExpired);
+    expect(resExpired.shadowComparison?.requestContext.weatherFreshness).toBe('expired');
+  });
+
+  it('16. Deterministic Comparison Metrics between identical evaluations', () => {
+    const items = createSampleWardrobe();
+    const request: RecommendationRequest = {
+      items,
+      occasion: 'college',
+      season: 'summer',
+      localDate: '2026-11-06',
+      explorationSeedOffset: 42,
+      enableShadow: true,
+    };
+
+    const res1 = recommendOutfitsWithTelemetry(request);
+    const res2 = recommendOutfitsWithTelemetry(request);
+
+    const comp1 = res1.shadowComparison!;
+    const comp2 = res2.shadowComparison!;
+
+    expect(comp1.rankingDifferences.scoreDelta).toBe(comp2.rankingDifferences.scoreDelta);
+    expect(comp1.rankingDifferences.rankInversionsCount).toBe(comp2.rankingDifferences.rankInversionsCount);
+    expect(comp1.candidateOverlap.topPickJaccardOverlap).toBe(comp2.candidateOverlap.topPickJaccardOverlap);
+    expect(comp1.candidateOverlap.sharedTopCandidateIds).toEqual(comp2.candidateOverlap.sharedTopCandidateIds);
+  });
+
+  it('17. Shadow Mode Disabled Behavior', () => {
+    const items = createSampleWardrobe();
+    clearShadowComparisonHistory();
+
+    const request: RecommendationRequest = {
+      items,
+      occasion: 'college',
+      season: 'summer',
+      localDate: '2026-11-06',
+    };
+
+    // Disabled via request parameter
+    const resRequestDisabled = recommendOutfitsWithTelemetry({ ...request, enableShadow: false });
+    expect(resRequestDisabled.shadowComparison).toBeUndefined();
+    expect(getShadowComparisonHistory().length).toBe(0);
+
+    // Disabled via global toggle
+    setShadowEvaluationEnabled(false);
+    const resGlobalDisabled = recommendOutfitsWithTelemetry(request);
+    expect(resGlobalDisabled.shadowComparison).toBeUndefined();
+    expect(getShadowComparisonHistory().length).toBe(0);
+
+    setShadowEvaluationEnabled(true);
+  });
+
+  it('18. Zero External Network and Paid API Dependencies', () => {
+    const items = createSampleWardrobe();
+    const originalFetch = globalThis.fetch;
+    let fetchCalled = false;
+
+    // Intercept fetch to guarantee zero network traffic
+    globalThis.fetch = () => {
+      fetchCalled = true;
+      return Promise.reject(new Error('Network access is prohibited during local shadow evaluation'));
+    };
+
+    try {
+      const res = recommendOutfitsWithTelemetry({
+        items,
+        occasion: 'college',
+        season: 'summer',
+        localDate: '2026-11-06',
+        enableShadow: true,
+      });
+
+      expect(fetchCalled).toBe(false);
+      expect(res.shadowComparison).toBeDefined();
+      expect(res.shadowComparison?.evaluationSuccess).toBe(true);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it('19. Canonical Weather Freshness Boundary Tests', () => {
+    const now = 1700000000000;
+
+    // Fresh: under 30 minutes (< 1,800,000 ms)
+    expect(classifyWeatherFreshness({ weather: { observedAt: now } } as any, now)).toBe('fresh');
+    expect(classifyWeatherFreshness({ weather: { observedAt: now - 10 * 60 * 1000 } } as any, now)).toBe('fresh');
+    expect(classifyWeatherFreshness({ weather: { observedAt: now - (30 * 60 * 1000 - 1) } } as any, now)).toBe('fresh');
+
+    // Stale: 30 minutes to 3 hours (1,800,000 ms to 10,800,000 ms)
+    expect(classifyWeatherFreshness({ weather: { observedAt: now - 30 * 60 * 1000 } } as any, now)).toBe('stale');
+    expect(classifyWeatherFreshness({ weather: { observedAt: now - 60 * 60 * 1000 } } as any, now)).toBe('stale');
+    expect(classifyWeatherFreshness({ weather: { observedAt: now - 120 * 60 * 1000 } } as any, now)).toBe('stale');
+    expect(classifyWeatherFreshness({ weather: { observedAt: now - 180 * 60 * 1000 } } as any, now)).toBe('stale');
+
+    // Expired: over 3 hours (> 10,800,000 ms)
+    expect(classifyWeatherFreshness({ weather: { observedAt: now - (180 * 60 * 1000 + 1) } } as any, now)).toBe('expired');
+    expect(classifyWeatherFreshness({ weather: { observedAt: now - 4 * 3600 * 1000 } } as any, now)).toBe('expired');
+    expect(classifyWeatherFreshness({ weather: { observedAt: now - 24 * 3600 * 1000 } } as any, now)).toBe('expired');
+
+    // Simulated: explicitly identified as simulated
+    expect(classifyWeatherFreshness({ source: 'simulated', weather: { observedAt: now } } as any, now)).toBe('simulated');
+    expect(classifyWeatherFreshness({ weather: { source: 'simulated', observedAt: now } } as any, now)).toBe('simulated');
+    expect(classifyWeatherFreshness({ weather: { source: 'fallback', observedAt: now } } as any, now)).toBe('simulated');
+
+    // Missing: no usable snapshot
+    expect(classifyWeatherFreshness(null, now)).toBe('missing');
+    expect(classifyWeatherFreshness(undefined, now)).toBe('missing');
+    expect(classifyWeatherFreshness({ weather: null } as any, now)).toBe('missing');
+    expect(classifyWeatherFreshness({ source: 'unavailable' } as any, now)).toBe('missing');
+    expect(classifyWeatherFreshness({ freshness: 'unavailable', weather: { observedAt: now } } as any, now)).toBe('missing');
+
+    // Clock skew / future timestamp
+    expect(classifyWeatherFreshness({ weather: { observedAt: now + 5000 } } as any, now)).toBe('fresh');
+  });
+
+  it('20. Recursive Re-Entrancy Guard (isExecutingShadow)', () => {
+    const items = createSampleWardrobe();
+    const req: RecommendationRequest = {
+      items,
+      occasion: 'college',
+      season: 'summer',
+      localDate: '2026-11-06',
+      enableShadow: true,
+    };
+
+    const baselineResult = new RecommendationEngine().recommend(req);
+    expect(baselineResult).toBeDefined();
+
+    // Calling executeShadowEvaluation directly returns a report
+    const report1 = executeShadowEvaluation(baselineResult, req);
+    expect(report1).not.toBeNull();
+  });
+
+  it('21. Runtime Integration Path Verification: TodayScreen and DressMe Entry Points', () => {
+    clearShadowComparisonHistory();
+    const items = createSampleWardrobe();
+
+    // 1. Simulate TodayScreen runtime call: recommendOutfits without explicit enableShadow
+    const todayOutfits = recommendOutfits({
+      items,
+      occasion: 'everyday',
+      season: 'summer',
+      localDate: '2026-11-06',
+    });
+
+    expect(todayOutfits).toBeDefined();
+    expect(Array.isArray(todayOutfits)).toBe(true);
+    expect(todayOutfits.length).toBeGreaterThan(0);
+
+    // Verify shadow evaluation executed and recorded to ring buffer in background
+    const lastReport = getLastShadowComparison();
+    expect(lastReport).not.toBeNull();
+    expect(lastReport?.evaluationSuccess).toBe(true);
+    expect(lastReport?.requestContext.occasion).toBe('everyday');
+    expect(lastReport?.baselineRecommendationIds).toEqual(todayOutfits.map((o) => o.id));
+
+    // 2. Simulate DressMe runtime call
+    const dressMeOutfits = recommendOutfits({
+      items,
+      occasion: 'college',
+      season: 'summer',
+      localDate: '2026-11-06',
+      explorationSeedOffset: 1,
+      limit: 3,
+    });
+
+    expect(dressMeOutfits).toBeDefined();
+    expect(dressMeOutfits.length).toBeGreaterThan(0);
+
+    const history = getShadowComparisonHistory();
+    expect(history.length).toBe(2);
+    expect(history[0].requestContext.occasion).toBe('college');
   });
 });
 

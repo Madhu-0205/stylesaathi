@@ -11,11 +11,15 @@ import {
 import { useSaathi } from '../../hooks/useSaathi';
 import { SaathiMessageItem } from './SaathiMessageItem';
 import { ClarificationOption } from '../../engine/saathi/types';
+import { WardrobeItem } from '../../types';
 
 interface AISaathiChatViewProps {
   isOpen: boolean;
   onClose: () => void;
+  initialPrompt?: string;
+  onClearInitialPrompt?: () => void;
   onPlanLook?: (outfit: any) => void;
+  onOpenInAtelier?: (anchorItem?: WardrobeItem, occasion?: string) => void;
 }
 
 const QUICK_PROMPTS = [
@@ -29,7 +33,10 @@ const QUICK_PROMPTS = [
 export const AISaathiChatView: React.FC<AISaathiChatViewProps> = ({
   isOpen,
   onClose,
+  initialPrompt,
+  onClearInitialPrompt,
   onPlanLook,
+  onOpenInAtelier,
 }) => {
   const [inputText, setInputText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -44,6 +51,14 @@ export const AISaathiChatView: React.FC<AISaathiChatViewProps> = ({
     selectClarificationOption,
     resetConversation,
   } = useSaathi();
+
+  // Auto-send initial prompt if dispatched from an editorial card
+  useEffect(() => {
+    if (isOpen && initialPrompt) {
+      sendMessage(initialPrompt);
+      onClearInitialPrompt?.();
+    }
+  }, [isOpen, initialPrompt, sendMessage, onClearInitialPrompt]);
 
   // Focus input when opened
   useEffect(() => {
@@ -92,7 +107,7 @@ export const AISaathiChatView: React.FC<AISaathiChatViewProps> = ({
       aria-modal="true"
       aria-label="AI Saathi Conversation"
     >
-      <div className="w-full h-full sm:h-[85vh] sm:max-h-180 max-w-xl bg-background rounded-none sm:rounded-3xl border-0 sm:border border-border/80 flex flex-col overflow-hidden shadow-2xl specular-border">
+      <div className="w-full h-full sm:h-[85vh] sm:max-h-180 max-w-xl bg-background rounded-none sm:rounded-3xl border-0 sm:border border-border/80 couture-card flex flex-col overflow-hidden shadow-2xl specular-border">
         {/* Luxury Editorial Header */}
         <header className="flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-border/80 glass-header shrink-0">
           <div className="flex items-center gap-2.5">
@@ -187,7 +202,30 @@ export const AISaathiChatView: React.FC<AISaathiChatViewProps> = ({
                 }
                 onConfirmAction={confirmAction}
                 onCancelAction={cancelAction}
-                onPlanLook={onPlanLook}
+                onPlanLook={(outfit) => {
+                  if (onPlanLook) {
+                    onPlanLook(outfit);
+                    onClose();
+                  }
+                }}
+                onOpenInAtelier={(outfit) => {
+                  if (onOpenInAtelier) {
+                    const pieces = Object.values(outfit.slots || {}).flat() as WardrobeItem[];
+                    const anchor = pieces.find((p) => p.category === 'Tops' || p.category === 'Ethnic') || pieces[0];
+                    onOpenInAtelier(anchor);
+                    onClose();
+                  }
+                }}
+                onShowAlternative={() => sendMessage('Show me another alternative look')}
+                onAssessPurchase={() => sendMessage('Do I need to buy anything for this look?')}
+                onStyleThis={(item) => {
+                  if (onOpenInAtelier) {
+                    onOpenInAtelier(item);
+                    onClose();
+                  } else {
+                    sendMessage(`Style an outfit with my ${item.name}`);
+                  }
+                }}
               />
             ))
           )}
@@ -203,7 +241,7 @@ export const AISaathiChatView: React.FC<AISaathiChatViewProps> = ({
         </div>
 
         {/* Input Bar */}
-        <footer className="border-t border-border bg-(--card)/95 backdrop-blur-md shrink-0">
+        <footer className="border-t border-border bg-(--card)/95 backdrop-blur-md shrink-0 pb-[max(0.25rem,env(safe-area-inset-bottom))]">
           {/* Quick Prompts Carousel */}
           <div className="px-3 sm:px-4 py-2 border-b border-border/40 flex gap-2 overflow-x-auto no-scrollbar">
             {QUICK_PROMPTS.map((prompt) => (

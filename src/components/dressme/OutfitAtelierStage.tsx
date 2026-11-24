@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   RotateCcw,
+  RefreshCw,
   Layers,
   ShieldCheck,
   AlertCircle,
@@ -23,6 +24,7 @@ import { ItemImage } from '../common/ItemImage';
 import { Button } from '@/components/ui/button';
 import { getOutfitWhyReasons } from '../../engine/scoring';
 import { useWardrobeContext } from '../../context/WardrobeContext';
+import { getCompatibilityDescriptor } from '../../utils/scoreFormatter';
 
 export interface OutfitAtelierStageProps {
   anchorItem: WardrobeItem | null;
@@ -190,6 +192,11 @@ export const OutfitAtelierStage: React.FC<OutfitAtelierStageProps> = ({
     return whyReasons.filter((r) => typeof r === 'string' && r.trim().length > 0);
   }, [whyReasons]);
 
+  // Descriptive compatibility presentation tier
+  const compatibilityDescriptor = useMemo(() => {
+    return getCompatibilityDescriptor(baseOutfit?.score);
+  }, [baseOutfit?.score]);
+
   // Normalized compatibility match percentage (50% - 100%)
   const matchPercentage = useMemo(() => {
     if (!baseOutfit?.score) return 92;
@@ -291,6 +298,23 @@ export const OutfitAtelierStage: React.FC<OutfitAtelierStageProps> = ({
     setRemovedSlots(new Set());
     onSelectAccessory(null);
   };
+
+  // Shuffle unlocked coordinating pieces using compatible alternatives
+  const handleShuffleUnlocked = useCallback(() => {
+    const newOverrides: Record<string, WardrobeItem> = {};
+    for (const [slotKey, candidates] of Object.entries(slotCandidates)) {
+      const currentPiece = slotOverrides[slotKey] || activeSlots[slotKey]?.[0];
+      const isAnchor = currentPiece?.id === anchorItem?.id;
+      if (!isAnchor && candidates.length > 1) {
+        const alternatives = candidates.filter((c) => c.id !== currentPiece?.id);
+        const randomAlternative = alternatives[Math.floor(Math.random() * alternatives.length)];
+        if (randomAlternative) {
+          newOverrides[slotKey] = randomAlternative;
+        }
+      }
+    }
+    setSlotOverrides((prev) => ({ ...prev, ...newOverrides }));
+  }, [slotCandidates, slotOverrides, activeSlots, anchorItem?.id]);
 
   // Keyboard navigation for Atelier stage
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -705,9 +729,12 @@ export const OutfitAtelierStage: React.FC<OutfitAtelierStageProps> = ({
           {/* Harmony Score & Why This Works */}
           <div className="space-y-1.5 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300 flex items-center gap-1">
+              <span
+                className={`rounded-full border px-2.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wider flex items-center gap-1 ${compatibilityDescriptor.badgeClass}`}
+                title={compatibilityDescriptor.heuristicNote}
+              >
                 <ShieldCheck className="h-3 w-3" />
-                <span>{matchPercentage}% Compatibility Match</span>
+                <span>{compatibilityDescriptor.label} • {matchPercentage}% Compatibility Match</span>
               </span>
 
               <span className="text-[11px] text-muted font-sans">
@@ -729,17 +756,30 @@ export const OutfitAtelierStage: React.FC<OutfitAtelierStageProps> = ({
             )}
           </div>
 
-          {/* Reset Action */}
-          {(Object.keys(slotOverrides).length > 0 || removedSlots.size > 0 || accessory) && (
+          <div className="flex items-center gap-2 self-start sm:self-center shrink-0 flex-wrap">
+            {/* Shuffle Unlocked Action */}
             <button
               type="button"
-              onClick={handleResetEnsemble}
-              className="flex min-h-11 items-center gap-1.5 rounded-full border border-border bg-card px-3.5 text-xs font-semibold text-muted hover:text-(--ink) hover:border-(--ink) shadow-2xs active:scale-95 transition-all shrink-0 self-start sm:self-center"
+              onClick={handleShuffleUnlocked}
+              aria-label="Shuffle unlocked coordinating pieces"
+              className="flex min-h-11 items-center gap-1.5 rounded-full border border-border/80 bg-card px-3.5 text-xs font-semibold text-(--ink) hover:border-(--burnished-gold) shadow-2xs active:scale-95 transition-all tactile-press"
             >
-              <RotateCcw className="h-3.5 w-3.5" />
-              <span>Reset Ensemble</span>
+              <RefreshCw className="h-3.5 w-3.5 text-(--burnished-gold)" />
+              <span>Shuffle Unlocked</span>
             </button>
-          )}
+
+            {/* Reset Action */}
+            {(Object.keys(slotOverrides).length > 0 || removedSlots.size > 0 || accessory) && (
+              <button
+                type="button"
+                onClick={handleResetEnsemble}
+                className="flex min-h-11 items-center gap-1.5 rounded-full border border-border bg-card px-3.5 text-xs font-semibold text-muted hover:text-(--ink) hover:border-(--ink) shadow-2xs active:scale-95 transition-all"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                <span>Reset</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Tactical Action Bar: Save to Lookbook, Wear Today, Plan in Calendar */}

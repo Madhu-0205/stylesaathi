@@ -19,7 +19,7 @@ export const SavedOutfitsModal: React.FC<SavedOutfitsModalProps> = ({
   onPlanLook,
   onOpenInAtelier,
 }) => {
-  const { savedOutfits, deleteSavedOutfit, markOutfitWornOnDate, showToast } = useWardrobeContext();
+  const { savedOutfits, deleteSavedOutfit, markOutfitWornOnDate, showToast, items } = useWardrobeContext();
   const [filterCategory, setFilterCategory] = useState<string>('all');
 
   // Filter categories
@@ -117,6 +117,16 @@ export const SavedOutfitsModal: React.FC<SavedOutfitsModalProps> = ({
             {filteredOutfits.map((saved) => {
               const outfit = saved.outfit;
               const pieces = Object.values(outfit.slots).flat();
+              const pieceLiveStatuses = pieces.map((piece) => {
+                const live = items.find((i) => i.id === piece.id);
+                if (!live) return { piece, isMissing: true, status: 'deleted' as const };
+                return { piece: live, isMissing: false, status: live.status };
+              });
+
+              const missingCount = pieceLiveStatuses.filter((p) => p.isMissing).length;
+              const uncleanCount = pieceLiveStatuses.filter((p) => !p.isMissing && p.status !== 'clean').length;
+              const isReadyToWear = missingCount === 0 && uncleanCount === 0;
+
               const savedDateStr = new Date(saved.savedAt).toLocaleDateString('en-US', {
                 month: 'short',
                 day: 'numeric',
@@ -131,10 +141,23 @@ export const SavedOutfitsModal: React.FC<SavedOutfitsModalProps> = ({
                   {/* Card Header: Title & Occasion */}
                   <div className="flex items-start justify-between gap-2 border-b border-border/60 pb-2.5">
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="rounded-full bg-(--ivory) px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-(--burnished-gold) border border-(--burnished-gold)/20">
                           {outfit.template}
                         </span>
+                        {missingCount > 0 ? (
+                          <span className="rounded-full bg-rose-500/10 px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-rose-600 border border-rose-500/20">
+                            Missing Pieces ({missingCount} removed)
+                          </span>
+                        ) : uncleanCount > 0 ? (
+                          <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-600 border border-amber-500/20">
+                            In Laundry ({uncleanCount} need wash)
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-600 border border-emerald-500/20">
+                            Ready to Wear
+                          </span>
+                        )}
                         <span className="text-[10px] text-muted font-sans font-medium">
                           Saved on {savedDateStr}
                         </span>
@@ -156,12 +179,21 @@ export const SavedOutfitsModal: React.FC<SavedOutfitsModalProps> = ({
 
                   {/* Layered Garments Visual Exhibition */}
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
-                    {pieces.map((piece, pIdx) => (
+                    {pieceLiveStatuses.map(({ piece, isMissing, status }, pIdx) => (
                       <div
                         key={`${saved.id}-${piece.id}-${pIdx}`}
                         className="group relative aspect-4/5 overflow-hidden rounded-2xl border border-border/80 bg-(--ivory) shadow-2xs transition-transform duration-200 hover:-translate-y-0.5"
                       >
                         <ItemImage item={piece} className="h-full w-full object-cover" />
+                        {isMissing ? (
+                          <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-md bg-rose-600 text-[8px] font-bold uppercase text-white shadow-2xs">
+                            Removed
+                          </div>
+                        ) : status !== 'clean' ? (
+                          <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-md bg-amber-500 text-[8px] font-bold uppercase text-white shadow-2xs">
+                            {status === 'in_laundry' ? 'In Laundry' : 'Needs Wash'}
+                          </div>
+                        ) : null}
                         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent p-2 text-white">
                           <span className="block text-[8px] font-bold uppercase tracking-wider text-(--burnished-gold)/90">
                             {piece.category}
@@ -200,13 +232,22 @@ export const SavedOutfitsModal: React.FC<SavedOutfitsModalProps> = ({
                     )}
 
                     <Button
-                      variant="outline"
+                      variant={isReadyToWear ? 'outline' : 'secondary'}
                       size="sm"
                       onClick={() => handleWearToday(outfit)}
-                      className="min-h-11 flex-1 rounded-full text-[11px] font-semibold uppercase tracking-wider gap-1.5 tactile-press"
+                      className={`min-h-11 flex-1 rounded-full text-[11px] font-semibold uppercase tracking-wider gap-1.5 tactile-press ${
+                        !isReadyToWear ? 'opacity-80 border-dashed border-amber-500/50' : ''
+                      }`}
+                      title={
+                        missingCount > 0
+                          ? 'Contains garments removed from wardrobe'
+                          : uncleanCount > 0
+                          ? 'Contains garments in laundry or needing wash'
+                          : 'Log outfit as worn today'
+                      }
                     >
-                      <Check className="h-3.5 w-3.5 text-emerald-600" />
-                      <span>Wear Today</span>
+                      <Check className={`h-3.5 w-3.5 ${isReadyToWear ? 'text-emerald-600' : 'text-amber-600'}`} />
+                      <span>{isReadyToWear ? 'Wear Today' : missingCount > 0 ? 'Removed Pieces' : 'Needs Laundry'}</span>
                     </Button>
 
                     <Button

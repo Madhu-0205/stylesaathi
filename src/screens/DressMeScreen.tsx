@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, AlertCircle, Calendar, Pin, Bookmark, X, Sparkles, Layers, ChevronLeft, ChevronRight } from 'lucide-react';
+import { RefreshCw, AlertCircle, Calendar, Pin, Bookmark, X, Sparkles, Layers, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react';
 import { useDressMe } from '../hooks/useDressMe';
 import { useWardrobeContext } from '../context/WardrobeContext';
 import { Chip } from '../components/common/Chip';
@@ -24,9 +24,16 @@ import { BackButtonPriority } from '../services/backButtonManager';
 interface DressMeScreenProps {
   onGoToWardrobe: () => void;
   onGoToCalendar?: () => void;
+  initialAnchorItem?: WardrobeItem | null;
+  onClearInitialAnchor?: () => void;
 }
 
-export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, onGoToCalendar }) => {
+export const DressMeScreen: React.FC<DressMeScreenProps> = ({
+  onGoToWardrobe,
+  onGoToCalendar,
+  initialAnchorItem,
+  onClearInitialAnchor,
+}) => {
   const { items, theme, toggleTheme, plans, savedOutfits, updateItem, deleteItem, styleVibes } = useWardrobeContext();
   const {
     occasion,
@@ -46,6 +53,12 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
     anchorItem,
     setAnchorItem,
     laundryWarning,
+    selectedAesthetic,
+    setSelectedAesthetic,
+    formalityPreference,
+    setFormalityPreference,
+    isWeatherUnavailable,
+    STYLING_AESTHETICS,
   } = useDressMe();
 
   const [activeDrawerOutfitIndex, setActiveDrawerOutfitIndex] = useState<number | null>(null);
@@ -60,7 +73,21 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
 
   useEffect(() => {
     setActiveLookIndex(0);
-  }, [occasion, season, anchorItem?.id]);
+  }, [occasion, season, anchorItem?.id, selectedAesthetic, formalityPreference]);
+
+  useEffect(() => {
+    if (initialAnchorItem) {
+      setAnchorItem(initialAnchorItem);
+      setViewMode('atelier');
+      onClearInitialAnchor?.();
+    }
+  }, [initialAnchorItem, setAnchorItem, onClearInitialAnchor]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash.toLowerCase() === '#atelier') {
+      setViewMode('atelier');
+    }
+  }, []);
 
   useBackButton(
     BackButtonPriority.SCREEN_MODAL,
@@ -86,9 +113,9 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
   };
 
   return (
-    <div className="pb-28 sm:pb-24 md:pb-8 animate-fade-in max-w-7xl mx-auto">
+    <div className="pb-36 sm:pb-32 md:pb-8 animate-fade-in max-w-7xl mx-auto w-full overflow-x-clip">
       {/* Luxury Editorial Header: "What feels like you today?" */}
-      <header className="mb-4 flex items-start justify-between border-b border-border/80 pb-3.5">
+      <header className="mb-4 flex flex-col md:flex-row md:items-start md:justify-between border-b border-border/80 pb-3.5 gap-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="editorial-kicker text-(--kumkum)">
@@ -106,7 +133,7 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
           </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0 pt-1">
+        <div className="flex flex-wrap items-center gap-2 pt-1">
           {/* Dual Experience Switcher: Daily Edit vs 3D Atelier */}
           <div className="flex items-center rounded-full border border-border/80 bg-card/60 p-0.5 shadow-2xs">
             <button
@@ -143,7 +170,7 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
             className="md:hidden flex h-9 w-9 min-h-11 min-w-11 items-center justify-center rounded-full border border-border text-muted transition-colors hover:border-(--ink) hover:text-(--ink) active:scale-95 tactile-press"
             aria-label="Toggle theme"
           >
-            {theme === 'light' ? '☾' : '☼'}
+            {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
           </button>
 
           <Button
@@ -173,6 +200,21 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
 
       {/* India-First Weather & Climate Context Bar */}
       <WeatherStatusBar />
+
+      {/* Weather Context Honest Fallback Notice (if live forecast is unavailable) */}
+      {isWeatherUnavailable && (
+        <div className="mb-3 flex items-center justify-between px-3 py-2 rounded-xl bg-(--card)/60 border border-border/70 text-[11px] text-muted shadow-2xs">
+          <div className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-(--burnished-gold) shrink-0" />
+            <span className="font-sans">
+              <strong className="text-(--ink)">Climate Context:</strong> Seasonal Climate Average Fallback (Live forecast unavailable · Calibrated for {season}).
+            </span>
+          </div>
+          <span className="text-[9.5px] uppercase font-bold tracking-wider text-(--burnished-gold) shrink-0 hidden sm:inline">
+            Local Calibration
+          </span>
+        </div>
+      )}
 
       {/* Tomorrow Shortcut Bar */}
       {tomorrowPlan ? (
@@ -304,6 +346,82 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
         </div>
       )}
 
+      {/* Studio Styling Brief Controls: Aesthetics + Formality */}
+      <div className="mb-4 rounded-2xl glass-card border border-border/80 p-3.5 space-y-3 shadow-2xs">
+        <div className="flex items-center justify-between border-b border-border/60 pb-2">
+          <span className="editorial-kicker text-(--burnished-gold) tracking-[0.16em]">
+            STYLING BRIEF · ATELIER CALIBRATION
+          </span>
+          <span className="text-[10px] text-muted font-sans hidden sm:inline">
+            Aesthetic direction &amp; formality balance
+          </span>
+        </div>
+
+        {/* Aesthetic Direction Selector */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-muted">
+              Aesthetic Direction:
+            </span>
+            <span className="text-[10.5px] text-(--burnished-gold) font-medium italic">
+              {STYLING_AESTHETICS.find((a) => a.id === selectedAesthetic)?.label}
+            </span>
+          </div>
+          <div className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1 py-0.5 md:flex-wrap">
+            {STYLING_AESTHETICS.map((aes) => {
+              const isSelected = selectedAesthetic === aes.id;
+              return (
+                <button
+                  key={aes.id}
+                  type="button"
+                  onClick={() => setSelectedAesthetic(aes.id)}
+                  aria-pressed={isSelected}
+                  className={`inline-flex min-h-11 items-center justify-center rounded-full px-3.5 text-xs font-semibold tracking-wide transition-all tactile-press ${
+                    isSelected
+                      ? 'bg-(--ink) text-(--paper) shadow-2xs'
+                      : 'border border-border/80 bg-card/70 text-muted hover:border-(--burnished-gold)/60 hover:text-(--ink)'
+                  }`}
+                  title={aes.description}
+                >
+                  {aes.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Formality & Balance Dial */}
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-border/50 text-[11px]">
+          <span className="text-[10px] uppercase font-bold tracking-wider text-muted">
+            Formality Dial:
+          </span>
+          <div className="inline-flex rounded-xl border border-border bg-card p-0.5 shadow-2xs">
+            {(
+              [
+                { id: 'auto', label: 'Auto (Occasion)' },
+                { id: 'relaxed', label: 'Relaxed (1-2)' },
+                { id: 'balanced', label: 'Balanced (3)' },
+                { id: 'elevated', label: 'Elevated (4-5)' },
+              ] as const
+            ).map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setFormalityPreference(f.id)}
+                aria-pressed={formalityPreference === f.id}
+                className={`inline-flex min-h-11 items-center justify-center rounded-lg px-2.5 sm:px-3 text-[10.5px] font-semibold transition-all tactile-press ${
+                  formalityPreference === f.id
+                    ? 'bg-(--ink) text-(--paper) shadow-2xs'
+                    : 'text-muted hover:text-(--ink)'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Context Controls: Occasions + Seasons */}
       <div className="mb-4 space-y-2.5 border-b border-(--border)/70 pb-3">
         {/* Missing Context Guidance */}
@@ -316,7 +434,7 @@ export const DressMeScreen: React.FC<DressMeScreenProps> = ({ onGoToWardrobe, on
             <button
               type="button"
               onClick={onGoToWardrobe}
-              className="text-[10.5px] font-semibold text-(--burnished-gold) hover:underline shrink-0"
+              className="min-h-11 inline-flex items-center px-3 py-1.5 rounded-full text-[11px] font-semibold text-(--burnished-gold) hover:underline hover:bg-(--ivory) shrink-0 tactile-press"
             >
               Refine Profile
             </button>

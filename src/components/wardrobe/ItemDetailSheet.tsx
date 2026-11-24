@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Heart, Trash2, Plus, ShieldCheck, Sparkles } from 'lucide-react';
 import { WardrobeItem, Status, FabricType, PatternType, SilhouetteFit } from '../../types';
 import { BottomSheet } from '../common/BottomSheet';
@@ -24,6 +24,8 @@ interface ItemDetailSheetProps {
   onClose: () => void;
   onUpdate: (id: string, patch: Partial<WardrobeItem>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onStyleThreeWays?: (item: WardrobeItem) => void;
+  onOpenInAtelier?: (item: WardrobeItem) => void;
 }
 
 export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
@@ -32,6 +34,8 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
   onClose,
   onUpdate,
   onDelete,
+  onStyleThreeWays,
+  onOpenInAtelier,
 }) => {
   if (!item) return null;
 
@@ -50,6 +54,18 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showStyleSheet, setShowStyleSheet] = useState(false);
 
+  useEffect(() => {
+    setName(item.name);
+    setNote(item.note);
+    setStatus(item.status);
+    setFavorite(item.favorite);
+    setTimesWorn(item.timesWorn);
+    setFabric(item.fabric);
+    setPattern(item.pattern);
+    setFit(item.fit);
+    setPurchasePrice(item.purchasePrice !== undefined ? String(item.purchasePrice) : '');
+  }, [item]);
+
   // Cost-per-wear calculation
   const priceNum = purchasePrice.trim() ? parseFloat(purchasePrice) : item.purchasePrice;
   const costPerWear =
@@ -65,9 +81,9 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
       status,
       favorite,
       timesWorn,
-      fabric,
-      pattern,
-      fit,
+      fabric: fabric || undefined,
+      pattern: pattern || undefined,
+      fit: fit || undefined,
       purchasePrice: parsedPrice !== undefined && !isNaN(parsedPrice) ? parsedPrice : undefined,
       userVerified: true, // User explicit review marks attributes authoritative
     });
@@ -85,7 +101,7 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
   const handleWearIncrement = async () => {
     const next = timesWorn + 1;
     setTimesWorn(next);
-    await onUpdate(item.id, { timesWorn: next });
+    await onUpdate(item.id, { timesWorn: next, lastWorn: Date.now() });
   };
 
   return (
@@ -123,12 +139,12 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
             {item.userVerified ? (
               <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 text-[9px] font-bold py-0.5">
                 <ShieldCheck className="h-3 w-3 mr-1 text-emerald-600" />
-                Verified
+                User Confirmed
               </Badge>
             ) : item.aiConfidence ? (
               <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 text-[9px] font-bold py-0.5">
                 <Sparkles className="h-3 w-3 mr-1 text-amber-600" />
-                AI Suggested ({Math.round(item.aiConfidence * 100)}%)
+                Auto-Tagged (Suggested)
               </Badge>
             ) : null}
           </div>
@@ -160,7 +176,7 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
         </div>
 
         {/* Fabric, Pattern, & Fit Attributes */}
-        <div className="rounded-xl border border-border bg-card p-3.5 space-y-3">
+        <div className="rounded-2xl couture-card p-4 space-y-3">
           <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted block">
             FASHION SPECIFICATIONS
           </span>
@@ -168,10 +184,11 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
             <div>
               <span className="text-[9px] uppercase font-bold text-muted block">Fabric</span>
               <select
-                value={fabric || 'cotton'}
-                onChange={(e) => setFabric(e.target.value as FabricType)}
-                className="mt-1 w-full min-h-10 rounded-lg border border-border bg-(--paper) px-2 py-1 text-xs font-semibold text-(--ink) outline-none focus-editorial"
+                value={fabric || ''}
+                onChange={(e) => setFabric((e.target.value as FabricType) || undefined)}
+                className="mt-1 w-full min-h-11 rounded-lg border border-border bg-(--paper) px-2 py-1 text-xs font-semibold text-(--ink) outline-none focus-editorial"
               >
+                <option value="">Unspecified</option>
                 {FABRICS.map((f) => (
                   <option key={f} value={f}>
                     {f}
@@ -182,10 +199,11 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
             <div>
               <span className="text-[9px] uppercase font-bold text-muted block">Pattern</span>
               <select
-                value={pattern || 'solid'}
-                onChange={(e) => setPattern(e.target.value as PatternType)}
-                className="mt-1 w-full min-h-10 rounded-lg border border-border bg-(--paper) px-2 py-1 text-xs font-semibold text-(--ink) outline-none focus-editorial"
+                value={pattern || ''}
+                onChange={(e) => setPattern((e.target.value as PatternType) || undefined)}
+                className="mt-1 w-full min-h-11 rounded-lg border border-border bg-(--paper) px-2 py-1 text-xs font-semibold text-(--ink) outline-none focus-editorial"
               >
+                <option value="">Unspecified</option>
                 {PATTERNS.map((p) => (
                   <option key={p} value={p}>
                     {p.replace('_', ' ')}
@@ -196,10 +214,11 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
             <div>
               <span className="text-[9px] uppercase font-bold text-muted block">Fit</span>
               <select
-                value={fit || 'regular'}
-                onChange={(e) => setFit(e.target.value as SilhouetteFit)}
-                className="mt-1 w-full min-h-10 rounded-lg border border-border bg-(--paper) px-2 py-1 text-xs font-semibold text-(--ink) outline-none focus-editorial"
+                value={fit || ''}
+                onChange={(e) => setFit((e.target.value as SilhouetteFit) || undefined)}
+                className="mt-1 w-full min-h-11 rounded-lg border border-border bg-(--paper) px-2 py-1 text-xs font-semibold text-(--ink) outline-none focus-editorial"
               >
+                <option value="">Unspecified</option>
                 {SILHOUETTES.map((s) => (
                   <option key={s} value={s}>
                     {s.replace('_', ' ')}
@@ -245,7 +264,7 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
         </div>
 
         {/* Wear History & Cost-Per-Wear */}
-        <div className="rounded-xl border border-border bg-(--ivory) p-3.5 space-y-2">
+        <div className="rounded-2xl couture-card p-4 space-y-2">
           <div className="flex items-center justify-between">
             <div>
               <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted">
@@ -254,6 +273,15 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
               <p className="font-serif text-sm italic text-(--ink)">
                 Worn {timesWorn} {timesWorn === 1 ? 'time' : 'times'} so far
               </p>
+              {item.lastWorn ? (
+                <p className="text-[10px] text-muted font-sans mt-0.5">
+                  Last worn: {new Date(item.lastWorn).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </p>
+              ) : (
+                <p className="text-[10px] text-muted/70 font-sans mt-0.5">
+                  Last worn: Not yet recorded
+                </p>
+              )}
             </div>
             <button
               type="button"
@@ -301,15 +329,41 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
           />
         </div>
 
-        {/* Style This Item Primary Action */}
-        <Button
-          type="button"
-          onClick={() => setShowStyleSheet(true)}
-          className="w-full min-h-12 flex items-center justify-center gap-2 bg-(--ink) text-(--paper) hover:bg-(--ink)/90 font-semibold tracking-wider uppercase rounded-xl focus-editorial shadow-sm active:scale-98 transition-transform"
-        >
-          <Sparkles className="h-4 w-4 text-(--burnished-gold)" />
-          <span>Style This Item</span>
-        </Button>
+        {/* Atelier Outfit Creation & 3-Ways Actions */}
+        <div className="space-y-2">
+          {onOpenInAtelier && (
+            <Button
+              type="button"
+              variant="default"
+              size="lg"
+              onClick={() => {
+                onClose();
+                onOpenInAtelier(item);
+              }}
+              className="w-full min-h-12 flex items-center justify-center gap-2 bg-accent text-white hover:opacity-95 font-bold tracking-wider uppercase rounded-xl focus-editorial shadow-sm active:scale-98 transition-transform couture-press"
+            >
+              <Sparkles className="h-4 w-4 text-(--burnished-gold)" />
+              <span>Create Outfit in Atelier</span>
+            </Button>
+          )}
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              if (onStyleThreeWays) {
+                onStyleThreeWays(item);
+                onClose();
+              } else {
+                setShowStyleSheet(true);
+              }
+            }}
+            className="w-full min-h-11 flex items-center justify-center gap-2 border-border bg-card text-(--ink) hover:bg-(--ivory) font-semibold tracking-wider uppercase rounded-xl focus-editorial active:scale-98 transition-transform couture-press"
+          >
+            <Sparkles className="h-4 w-4 text-(--burnished-gold)" />
+            <span>Style This Item (3 Ways)</span>
+          </Button>
+        </div>
 
         {/* Actions */}
         <div className="flex gap-2.5 pt-1">
@@ -318,14 +372,14 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
             onClick={() => setShowDeleteConfirm(true)}
             disabled={isDeleting}
             aria-label="Remove item from wardrobe"
-            className="flex min-h-12 w-12 items-center justify-center rounded-xl border border-red-200 text-red-600 transition-colors hover:bg-red-50 dark:border-red-900/60 dark:text-red-400 focus-editorial active:scale-95"
+            className="flex min-h-12 w-12 items-center justify-center rounded-xl border border-red-200 text-red-600 transition-colors hover:bg-red-50 dark:border-red-900/60 dark:text-red-400 focus-editorial active:scale-95 couture-press"
           >
             <Trash2 className="h-4.5 w-4.5" />
           </button>
           <Button
             size="lg"
             onClick={handleSave}
-            className="flex-1 min-h-12 font-semibold tracking-wider uppercase rounded-xl focus-editorial"
+            className="flex-1 min-h-12 font-semibold tracking-wider uppercase rounded-xl focus-editorial couture-press"
           >
             Save Changes
           </Button>
@@ -352,7 +406,7 @@ export const ItemDetailSheet: React.FC<ItemDetailSheetProps> = ({
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* Style This Item BottomSheet */}
+        {/* Style This Item BottomSheet Fallback */}
         {showStyleSheet && (
           <StyleItemSheet
             anchorItem={item}

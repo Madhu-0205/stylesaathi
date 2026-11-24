@@ -100,6 +100,30 @@ export class LocalStorageWardrobeRepository implements WardrobeRepository {
     this.setStorageData(data);
   }
 
+  async upsertItemsBulk(items: WardrobeItem[]): Promise<void> {
+    if (!items || items.length === 0) return;
+    const data = this.getStorageData();
+    const existingIndexMap = new Map<string, number>();
+    for (let i = 0; i < data.items.length; i++) {
+      existingIndexMap.set(data.items[i].id, i);
+    }
+
+    for (const item of items) {
+      const itemToSave = { ...item };
+      if (itemToSave.photo && itemToSave.photo.startsWith('data:')) {
+        delete itemToSave.photo;
+      }
+      const existingIndex = existingIndexMap.get(item.id);
+      if (existingIndex !== undefined) {
+        data.items[existingIndex] = itemToSave;
+      } else {
+        data.items.push(itemToSave);
+        existingIndexMap.set(item.id, data.items.length - 1);
+      }
+    }
+    this.setStorageData(data);
+  }
+
   async addItem(item: WardrobeItem): Promise<void> {
     const data = this.getStorageData();
     const now = Date.now();
@@ -199,6 +223,26 @@ export class LocalStorageWardrobeRepository implements WardrobeRepository {
       saved[idx] = outfit;
     } else {
       saved.unshift(outfit);
+    }
+    this.setItemRaw(SAVED_OUTFITS_KEY, JSON.stringify(saved));
+  }
+
+  async upsertSavedOutfitsBulk(outfits: SavedOutfit[]): Promise<void> {
+    if (!outfits || outfits.length === 0) return;
+    const saved = await this.getAllSavedOutfitsRaw();
+    const existingIndexMap = new Map<string, number>();
+    for (let i = 0; i < saved.length; i++) {
+      existingIndexMap.set(saved[i].id, i);
+    }
+
+    for (const outfit of outfits) {
+      const idx = existingIndexMap.get(outfit.id);
+      if (idx !== undefined) {
+        saved[idx] = outfit;
+      } else {
+        saved.push(outfit);
+        existingIndexMap.set(outfit.id, saved.length - 1);
+      }
     }
     this.setItemRaw(SAVED_OUTFITS_KEY, JSON.stringify(saved));
   }

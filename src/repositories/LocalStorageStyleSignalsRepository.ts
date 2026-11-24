@@ -89,6 +89,18 @@ export class LocalStorageStyleSignalsRepository implements StyleSignalsRepositor
     }
   }
 
+  async addSignalsBulk(newSignals: StyleSignalEvent[]): Promise<void> {
+    return this.addSignals(newSignals);
+  }
+
+  async removeSignal(signalId: string): Promise<void> {
+    const signals = await this.getSignals();
+    const filtered = signals.filter((s) => s.id !== signalId);
+    if (filtered.length !== signals.length) {
+      this.setRaw(STYLE_SIGNALS_KEY, JSON.stringify(filtered));
+    }
+  }
+
   async clear(): Promise<void> {
     this.removeRaw(STYLE_SIGNALS_KEY);
   }

@@ -16,3 +16,4 @@ export * from './knowledge';
 export * from './pairwise';
 export * from './ensemble';
 export * from './feedback/feedbackAttributor';
+export * from './styleDNA';

@@ -22,8 +22,17 @@ import { FashionKnowledgeSignal } from '../knowledge/types';
  * Strongly typed intents supported by AI Saathi Orchestrator.
  */
 export type SaathiIntent =
-  | 'RECOMMEND_OUTFIT'          // "What should I wear today?", "Suggest a college outfit"
+  | 'RECOMMEND_OUTFIT'          // "What should I wear today?", "Suggest a look"
   | 'STYLE_ITEM'               // "How do I style this blue shirt?", "Style my kurta"
+  | 'STYLE_3_WAYS'             // "Style this shirt 3 ways", "Give me 3 styles"
+  | 'COLLEGE_OUTFIT'          // "College outfit", "Campus look", "Uni clothes"
+  | 'INTERVIEW_OUTFIT'        // "Interview outfit", "Placement interview look"
+  | 'SAREE_STYLING'           // "How do I style a saree?", "Footwear for saree"
+  | 'INDO_WESTERN'            // "Indo-Western look", "Kurta with jeans"
+  | 'COLOR_PAIRING'           // "What colors go with these trousers?", "Trouser color combinations"
+  | 'PREMIUM_UPGRADE'         // "Make this look elevated/premium", "Quiet luxury look"
+  | 'MINIMALIST_OUTFIT'       // "Minimalist outfit", "Clean simple look"
+  | 'RESTYLE_UNDERUSED'       // "Restyle underused", "What haven't I worn?", "Neglected items"
   | 'CHECK_WARDROBE'           // "Find my black trousers", "What tops do I have?"
   | 'CHECK_WEATHER'            // "What is the weather today?", "Is it raining outside?"
   | 'ANALYZE_WEAR'             // "What do I wear most often?", "Show my rotation health"
@@ -34,6 +43,13 @@ export type SaathiIntent =
   | 'EXPLAIN_RECOMMENDATION'   // "Why did you recommend this outfit?"
   | 'PLAN_OUTFIT'              // "Plan an outfit for tomorrow's office meeting"
   | 'RECORD_WEAR'              // "I wore this outfit today", "Log wear for white sneakers"
+  | 'ANTI_REPETITION'          // "I don't want to repeat yesterday's outfit", "Don't repeat"
+  | 'SHOW_ALTERNATIVE'         // "Show another look", "Different look", "Next look"
+  | 'SWAP_PIECE'               // "Use the same kurti but different footwear", "Different footwear"
+  | 'REFINE_OUTFIT'            // "Make it more formal", "Make it more casual", "Make it more minimal"
+  | 'WARDROBE_ONLY_QUERY'      // "Only use clothes from my wardrobe", "Don't suggest anything I don't own"
+  | 'PAIRING_CHECK'             // "Can I wear my blue kurti with jeans?"
+  | 'EXPLICIT_NO_PURCHASE'     // "I don't want to buy anything", "No buying"
   | 'FEEDBACK_POSITIVE'        // "I love this outfit", "Looks great"
   | 'FEEDBACK_NEGATIVE'        // "I don't like this look", "Hate this"
   | 'GENERAL_FASHION_QUESTION' // "How do I pair a saree with footwear?"
@@ -61,7 +77,33 @@ export interface SaathiEntities {
   targetLook?: string;
   confirmationStatus?: 'confirmed' | 'cancelled';
   clarificationValue?: string;
+  status?: string;             // e.g. 'clean', 'in_laundry', 'needs_washing'
   constraints?: string[];
+  // Ordinal and look reference
+  lookIndex?: number;          // 0-based index of referenced look
+  ordinalRef?: 'first' | 'second' | 'third' | 'last';
+  selectedOutfitId?: string;   // Stable outfit ID referenced
+  selectedGarmentId?: string;  // Specific garment ID referenced
+  // Styling and refinement preferences
+  refinementType?: 'more_elegant' | 'more_formal' | 'more_casual' | 'more_minimal' | 'warmer' | 'cooler';
+  antiRepetition?: boolean;    // User requested not to repeat recent outfits
+  avoidRecentDays?: number;    // How many days back to avoid (default: 1-2)
+  isCorrection?: boolean;      // Indicates user is correcting a previous turn
+  // Phase 1.10 Anchor, Swap, and Occasion Context
+  anchorGarmentId?: string;
+  anchorGarmentName?: string;
+  swapRole?: 'top' | 'bottom' | 'footwear' | 'outerwear' | 'layer' | 'accessories';
+  keptPieceRole?: 'top' | 'bottom' | 'footwear' | 'outerwear' | 'layer' | 'accessories';
+  keptPieceName?: string;
+  wardrobeOnly?: boolean;
+  pairingItemNames?: string[];
+  explicitNoPurchase?: boolean;
+  occasionContext?: string;    // e.g. 'birthday party', 'house party', 'reception', 'puja'
+  secondaryOccasion?: Occasion;
+  removedRole?: 'top' | 'bottom' | 'footwear' | 'outerwear' | 'layer' | 'accessories';
+  unlockedAnchor?: boolean;
+  requestedGarmentName?: string;
+  unownedGarmentDetected?: boolean;
 }
 
 /**
@@ -141,7 +183,7 @@ export type DomainResultType =
   | 'ERROR';
 
 export interface SaathiPurchaseAssessmentDetail {
-  verdict: PurchaseAssessment;
+  verdict: PurchaseAssessment | 'OPTIONAL_GAP' | 'WARDROBE_GAP' | 'INSUFFICIENT_INFORMATION' | 'NO_VALID_OUTFIT';
   purchaseAssessment: PurchaseAssessment;
   headline: string;
   summary: string;
@@ -150,6 +192,12 @@ export interface SaathiPurchaseAssessmentDetail {
   details?: string[];
   occasionGaps?: any[];
   confidenceScore?: number;
+  occasion?: Occasion;
+  occasionSubtype?: string;
+  evaluatedPieces?: WardrobeItem[];
+  recommendedLook?: GeneratedOutfit;
+  missingRoles?: string[];
+  laundryNotice?: string;
 }
 
 export interface DomainResultReference {
@@ -197,6 +245,15 @@ export interface SaathiConversationState {
   pendingClarification?: ClarificationRequest;
   pendingConfirmation?: ConfirmationRequest;
   lastDomainResult?: DomainResultReference;
+  selectedOutfitId?: string;
+  selectedLookIndex?: number;
+  // Phase 1.10 Session Continuity
+  activeAnchorItem?: WardrobeItem;
+  activeOccasion?: Occasion;
+  activeOccasionContext?: string;
+  shownOutfitIds?: string[];
+  activeOutfit?: GeneratedOutfit;
+  activePurchaseAssessment?: SaathiPurchaseAssessmentDetail;
 }
 
 /**
@@ -212,6 +269,8 @@ export interface SaathiToolContext {
   wearLogs?: WearEvent[];
   weatherSnapshot?: ContextSnapshot | null;
   weather?: any;
+  forecast?: any;
+  freshness?: any;
   culturalSignals?: CulturalContextSignals;
   userId?: string;
   referenceTimestamp: number;

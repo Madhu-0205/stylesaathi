@@ -54,6 +54,9 @@ export function useSaathi(injectedTimestamp?: number) {
       styleProfile,
       plans,
       weatherSnapshot,
+      weather: weatherContext?.weather,
+      forecast: weatherContext?.forecast,
+      freshness: weatherContext?.freshness,
       referenceTimestamp,
       localDate,
       onSavePlan: savePlan,
@@ -65,6 +68,9 @@ export function useSaathi(injectedTimestamp?: number) {
     styleProfile,
     plans,
     weatherSnapshot,
+    weatherContext?.weather,
+    weatherContext?.forecast,
+    weatherContext?.freshness,
     referenceTimestamp,
     localDate,
     savePlan,
@@ -78,7 +84,11 @@ export function useSaathi(injectedTimestamp?: number) {
       setError(null);
 
       try {
-        const response = await processSaathiTurn(text, conversationState, toolContext);
+        const turnContext: SaathiToolContext = {
+          ...toolContext,
+          referenceTimestamp: injectedTimestamp ?? Date.now(),
+        };
+        const response = await processSaathiTurn(text, conversationState, turnContext);
         setConversationState(response.updatedState);
       } catch (err: any) {
         console.error('[useSaathi] Turn execution error:', err);

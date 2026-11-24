@@ -9,6 +9,7 @@ import {
   RecommendationResultWithTelemetry,
   RecommendationSet,
   RecommendedOutfit,
+  RecommendationRole,
   ScoreBreakdown,
   RecommendationExplanation,
   ExplanationEvidenceSource,
@@ -78,36 +79,42 @@ function isOuterwearItem(item: WardrobeItem): boolean {
 }
 
 function buildMissingRequirement(
-  anchorItem: WardrobeItem,
+  anchorItem: WardrobeItem | undefined,
   template: (typeof TEMPLATES)[0],
   missingSlot: string
 ): MissingOutfitRequirement {
   let missingRole: OutfitSlotRole = 'bottom';
   let expectedCategory: Category = 'Bottoms';
   let compatibleSubcategories: Subcategory[] = ['trousers', 'jeans', 'palazzo', 'churidar'];
-  let explanation = `Your ${anchorItem.name} needs a compatible bottom. Add trousers, jeans, or a skirt to your wardrobe to create a complete look.`;
+  let explanation = anchorItem
+    ? `Your ${anchorItem.name} needs a compatible bottom. Add trousers, jeans, or a skirt to your wardrobe to create a complete look.`
+    : `Your wardrobe needs a compatible bottom to create complete outfits. Add trousers, jeans, or ethnic bottoms to unlock this look.`;
 
   if (missingSlot === 'bottom') {
     missingRole = 'bottom';
     expectedCategory = 'Bottoms';
     compatibleSubcategories = ['trousers', 'jeans', 'palazzo', 'churidar', 'salwar', 'skirt'];
-    explanation = `Your ${anchorItem.name} needs a compatible bottom. Add trousers, jeans, or a skirt to your wardrobe to create a complete look.`;
+    explanation = anchorItem
+      ? `Your ${anchorItem.name} needs a compatible bottom. Add trousers, jeans, or a skirt to your wardrobe to create a complete look.`
+      : `Your wardrobe needs a compatible bottom to create complete outfits. Add trousers, jeans, or ethnic bottoms to unlock this look.`;
   } else if (missingSlot === 'top' || missingSlot === 'blouse') {
     missingRole = 'top';
-    if (anchorItem.subcategory === 'saree' || anchorItem.subcategory === 'lehenga') {
+    if (anchorItem && (anchorItem.subcategory === 'saree' || anchorItem.subcategory === 'lehenga')) {
       expectedCategory = 'Ethnic';
       compatibleSubcategories = ['blouse', 'crop top'];
       explanation = `Your ${anchorItem.name} needs a compatible blouse. Add a blouse or fitted crop top to your wardrobe to create a complete look.`;
     } else {
       expectedCategory = 'Tops';
       compatibleSubcategories = ['shirt', 't-shirt', 'top', 'kurta'];
-      explanation = `Your outfit needs a compatible top. Add a shirt, top, or kurta to your wardrobe to create a complete look.`;
+      explanation = anchorItem
+        ? `Your outfit needs a compatible top. Add a shirt, top, or kurta to your wardrobe to create a complete look.`
+        : `Your wardrobe needs a compatible top to create complete outfits. Add a shirt, top, or kurta to unlock this look.`;
     }
   } else if (missingSlot === 'footwear' || missingSlot === 'shoes') {
     missingRole = 'footwear';
     expectedCategory = 'Footwear';
     compatibleSubcategories = ['sneakers', 'loafers', 'flats', 'juttis', 'formal shoes'];
-    explanation = `Your outfit needs compatible footwear. Add shoes or juttis to your wardrobe to complete this look.`;
+    explanation = `Your outfit needs compatible footwear. Add clean footwear to your wardrobe to complete this look.`;
   } else if (missingSlot === 'outerwear' || missingSlot === 'jacket') {
     missingRole = 'layer';
     expectedCategory = 'Outerwear';
@@ -117,7 +124,9 @@ function buildMissingRequirement(
     missingRole = 'dupatta';
     expectedCategory = 'Ethnic';
     compatibleSubcategories = ['dupatta', 'scarf'];
-    explanation = `Your ${anchorItem.name} look needs a compatible dupatta or scarf to complete the ensemble.`;
+    explanation = anchorItem
+      ? `Your ${anchorItem.name} look needs a compatible dupatta or scarf to complete the ensemble.`
+      : `This look requires a compatible dupatta or scarf to complete the ensemble.`;
   } else if (missingSlot === 'dress') {
     missingRole = 'dress';
     expectedCategory = 'Dresses';
@@ -150,9 +159,12 @@ export class RecommendationEngine {
       styleProfile,
       context,
       culturalSignals,
-      limit = 3,
+      limit = 4,
       anchorItemId,
       allowPlanningMode,
+      recentWornItemIds,
+      plannedTomorrowItemIds,
+      targetFormality,
     } = request;
 
     // Filter templates for occasion and presentation preferences
@@ -219,17 +231,30 @@ export class RecommendationEngine {
     let totalGeneratedCount = 0;
 
     const anchorItem = anchorItemId ? items.find((i) => i.id === anchorItemId) : undefined;
-    const isPlanningMode = Boolean(
-      allowPlanningMode ||
-      (anchorItem && (anchorItem.status === 'needs_washing' || anchorItem.status === 'in_laundry'))
-    );
+    const isPlanningMode =
+      allowPlanningMode === true ||
+      (allowPlanningMode !== false &&
+        Boolean(anchorItem && (anchorItem.status === 'needs_washing' || anchorItem.status === 'in_laundry')));
 
-    // If anchor was specified but does not exist or has an un-plannable status (e.g. archived/donated)
+    // If anchor was specified but does not exist or has an un-plannable status (e.g. archived/donated, or unwashed when allowPlanningMode is false)
     if (
       anchorItemId &&
       (!anchorItem ||
         (anchorItem.status !== 'clean' && !isPlanningMode))
     ) {
+      const missingReq: MissingOutfitRequirement[] =
+        anchorItem && anchorItem.status !== 'clean'
+          ? [
+              {
+                templateId: 'unwashed_anchor',
+                templateName: 'Anchor Item Unavailable',
+                missingRole: (anchorItem.category === 'Tops' ? 'top' : anchorItem.category === 'Bottoms' ? 'bottom' : anchorItem.category === 'Footwear' ? 'footwear' : 'top') as OutfitSlotRole,
+                expectedCategory: anchorItem.category,
+                compatibleSubcategories: anchorItem.subcategory ? [anchorItem.subcategory] : [],
+                explanation: `Selected anchor "${anchorItem.name}" is currently ${anchorItem.status === 'in_laundry' ? 'in laundry' : 'needing wash'}. Wash it first or switch to planning mode to style it for future wear.`,
+              },
+            ]
+          : [];
       const tEnd = typeof performance !== 'undefined' ? performance.now() : 0;
       return {
         set: {
@@ -244,7 +269,7 @@ export class RecommendationEngine {
             explorationSeedOffset,
             anchorItemId,
           },
-          missingRequirements: [],
+          missingRequirements: missingReq,
         },
         telemetry: {
           candidateCount: 0,
@@ -304,9 +329,10 @@ export class RecommendationEngine {
     }
 
     // Filter available pieces (companions must be strictly clean and season-appropriate)
+    // StyleSaathi 4.0.2 (P2-B): items with missing/unknown seasons remain eligible (neutral, not blocked)
     const eligiblePool = items.filter((i) => {
       if (anchorItemId && i.id === anchorItemId) return false;
-      return i.status === 'clean' && seasonFit(i, season);
+      return i.status === 'clean' && seasonFit(i, season) !== false;
     });
 
     interface RawCandidate {
@@ -496,15 +522,15 @@ export class RecommendationEngine {
       });
     }
 
-    // Handle sparse wardrobe around anchor item when no complete outfit can be formed
-    if (anchorItem && viableTemplates.length === 0) {
+    // Handle sparse wardrobe when no complete outfit can be formed
+    if (viableTemplates.length === 0) {
       let missingRequirements: MissingOutfitRequirement[] = [];
       if (unmetTemplates.length > 0) {
         const bestUnmet = unmetTemplates[0];
         missingRequirements = [
           buildMissingRequirement(anchorItem, bestUnmet.template, bestUnmet.missingSlot),
         ];
-      } else {
+      } else if (anchorItem) {
         missingRequirements = [
           {
             templateId: 'unsupported_anchor_occasion',
@@ -513,6 +539,17 @@ export class RecommendationEngine {
             expectedCategory: 'Tops',
             compatibleSubcategories: ['shirt', 'kurta', 't-shirt'],
             explanation: `Unable to form complete looks around ${anchorItem.name} for ${occasion}. Add complementary wardrobe essentials to style this piece.`,
+          },
+        ];
+      } else {
+        missingRequirements = [
+          {
+            templateId: 'sparse_wardrobe_missing_category',
+            templateName: 'Wardrobe Complementarity',
+            missingRole: 'bottom',
+            expectedCategory: 'Bottoms',
+            compatibleSubcategories: ['trousers', 'jeans', 'palazzo', 'churidar'],
+            explanation: `Unable to form complete looks for ${occasion}. Add complementary wardrobe essentials (tops, bottoms, or footwear) to unlock outfits.`,
           },
         ];
       }
@@ -741,8 +778,8 @@ export class RecommendationEngine {
       const colorHarmonyScore = numPairs > 0 ? (harmonySum / numPairs) * 3 : 0;
 
       const avgFormality = pieces.reduce((a, x) => a + x.formality, 0) / pieces.length;
-      const targetFormality = OCCASION_FORMALITY_TARGETS[occasion] ?? 2.5;
-      const formalityDeltaScore = -Math.abs(avgFormality - targetFormality) * 1.5;
+      const targetFormalityScore = targetFormality ?? (OCCASION_FORMALITY_TARGETS[occasion] ?? 2.5);
+      const formalityDeltaScore = -Math.abs(avgFormality - targetFormalityScore) * 1.5;
 
       let patternScore = 0;
       if (pieces.length >= 2) {
@@ -839,6 +876,12 @@ export class RecommendationEngine {
         wearPenalty += Math.min(p.timesWorn || 0, 6) * 0.12;
         if (p.lastWorn && referenceEpoch > 0 && Math.abs(referenceEpoch - p.lastWorn) < 24 * 3600 * 1000) {
           wearPenalty += 0.8;
+        }
+        if (recentWornItemIds && recentWornItemIds.includes(p.id)) {
+          wearPenalty += 0.5;
+        }
+        if (plannedTomorrowItemIds && plannedTomorrowItemIds.includes(p.id)) {
+          wearPenalty += 0.6;
         }
       }
 
@@ -983,6 +1026,39 @@ export class RecommendationEngine {
         exploreOutfit.why = exploreOutfit.explanation.reasons.join(' · ');
         curatedOutfits.push(exploreOutfit);
       }
+
+      // Role 4: UNDERUSED (Wardrobe Rediscovery: features rarely/unworn pieces with high compatibility)
+      const existingOutfitIds = new Set(curatedOutfits.map((o) => o.id));
+      const underusedCandidate = scoredPool.find((cand) => {
+        if (existingOutfitIds.has(cand.id)) return false;
+        return cand.pieces.some(
+          (piece) => piece.timesWorn === undefined || piece.timesWorn <= 1 || piece.lastWorn === undefined
+        );
+      });
+
+      if (underusedCandidate) {
+        const underusedOutfit: RecommendedOutfit = {
+          id: underusedCandidate.id,
+          template: underusedCandidate.template,
+          slots: underusedCandidate.slots,
+          score: underusedCandidate.score,
+          role: 'underused',
+          scoreBreakdown: underusedCandidate.scoreBreakdown,
+          explanation: this.buildExplanation(
+            underusedCandidate,
+            'underused',
+            occasion,
+            preferences,
+            styleProfile,
+            context,
+            anchorItem
+          ),
+          why: '',
+          knowledgeSignals: underusedCandidate.knowledgeSignals,
+        };
+        underusedOutfit.why = underusedOutfit.explanation.reasons.join(' · ');
+        curatedOutfits.push(underusedOutfit);
+      }
     }
     const tDiv1 = typeof performance !== 'undefined' ? performance.now() : 0;
     const tEnd = typeof performance !== 'undefined' ? performance.now() : 0;
@@ -1049,7 +1125,7 @@ export class RecommendationEngine {
       culturalEvalReasons?: string[];
       knowledgeSignals?: FashionKnowledgeSignal[];
     },
-    role: 'best_match' | 'alternative' | 'explore',
+    role: RecommendationRole,
     occasion: Occasion,
     preferences?: any,
     styleProfile?: any,
@@ -1105,6 +1181,16 @@ export class RecommendationEngine {
     } else if (role === 'alternative') {
       evidenceSources.push('compatibility');
       reasons.push(`Distinct silhouette variation using your ${cand.template.toLowerCase()}`);
+    } else if (role === 'underused') {
+      evidenceSources.push('exploration');
+      const underusedPiece = cand.pieces.find(
+        (p) => p.timesWorn === undefined || p.timesWorn <= 1 || p.lastWorn === undefined
+      );
+      if (underusedPiece) {
+        reasons.push(`Revives your underused ${underusedPiece.name} into active rotation with balanced styling`);
+      } else {
+        reasons.push('Features under-rotated wardrobe pieces paired for everyday balance');
+      }
     }
 
     // 5. IFKG Domain Compatibility Rationale
@@ -1162,7 +1248,7 @@ export class RecommendationEngine {
     if (preferences?.internationalInspirations && preferences.internationalInspirations.length > 0) {
       assumptions.push(`International style inspiration active: ${preferences.internationalInspirations.join(', ')}.`);
     }
-    if (anchorItem && (anchorItem.status === 'needs_washing' || anchorItem.status === 'in_laundry')) {
+    if (cand.pieces.some((p) => p.status !== 'clean') || (anchorItem && (anchorItem.status === 'needs_washing' || anchorItem.status === 'in_laundry'))) {
       assumptions.push('Planning look: includes garments that need washing before wear.');
     }
 

@@ -1,14 +1,27 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, Sparkles, Heart, ArrowUpRight, Layers, LayoutGrid } from 'lucide-react';
+import {
+  Search,
+  Plus,
+  Sparkles,
+  Heart,
+  ArrowUpRight,
+  Layers,
+  LayoutGrid,
+  SlidersHorizontal,
+  RotateCcw,
+  Sun,
+  Moon,
+} from 'lucide-react';
 import { useWardrobe } from '../hooks/useWardrobe';
 import { Chip } from '../components/common/Chip';
 import { ItemCard } from '../components/wardrobe/ItemCard';
 import { ItemDetailSheet } from '../components/wardrobe/ItemDetailSheet';
 import { SpatialGarmentRail } from '../components/wardrobe/SpatialGarmentRail';
+import { StyleThreeWaysModal } from '../components/editorial/StyleThreeWaysModal';
 import { EmptyState } from '../components/common/EmptyState';
 import { WardrobeItemSkeleton } from '../components/common/Skeleton';
-import { CATEGORIES } from '../data/taxonomy';
-import { WardrobeItem, Status } from '../types';
+import { CATEGORIES, SEASONS } from '../data/taxonomy';
+import { WardrobeItem, Status, Season, Occasion } from '../types';
 import { StyleSaathiLogo } from '../components/brand/StyleSaathiLogo';
 import { Button } from '@/components/ui/button';
 import { ItemImage } from '../components/common/ItemImage';
@@ -18,9 +31,10 @@ import { BackButtonPriority } from '../services/backButtonManager';
 
 interface WardrobeScreenProps {
   onOpenAddItem: () => void;
+  onGoToDress?: (anchorItem?: WardrobeItem, occasion?: string) => void;
 }
 
-export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem }) => {
+export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem, onGoToDress }) => {
   const {
     items,
     loading,
@@ -32,6 +46,14 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
     setStatusFilter,
     favoriteOnly,
     setFavoriteOnly,
+    colorFilter,
+    setColorFilter,
+    seasonFilter,
+    setSeasonFilter,
+    occasionFilter,
+    setOccasionFilter,
+    resetFilters,
+    hasActiveFilters,
     filteredItems,
     stats,
     updateItem,
@@ -39,19 +61,53 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
     theme,
     toggleTheme,
     loadSample,
+    markOutfitWornOnDate,
+    saveOutfit,
+    showToast,
   } = useWardrobe();
 
   const [selectedItem, setSelectedItem] = useState<WardrobeItem | null>(null);
+  const [styleThreeWaysItem, setStyleThreeWaysItem] = useState<WardrobeItem | null>(null);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'rail' | 'grid'>('rail');
+  const [sortBy, setSortBy] = useState<
+    'recent' | 'recently_worn' | 'most_worn' | 'least_worn' | 'formality_desc' | 'formality_asc'
+  >('recent');
+
+  const sortedAndFilteredItems = useMemo(() => {
+    const list = [...filteredItems];
+    switch (sortBy) {
+      case 'most_worn':
+        return list.sort((a, b) => (b.timesWorn || 0) - (a.timesWorn || 0));
+      case 'least_worn':
+        return list.sort((a, b) => (a.timesWorn || 0) - (b.timesWorn || 0));
+      case 'recently_worn':
+        return list.sort((a, b) => (b.lastWorn || 0) - (a.lastWorn || 0));
+      case 'formality_desc':
+        return list.sort((a, b) => b.formality - a.formality);
+      case 'formality_asc':
+        return list.sort((a, b) => a.formality - b.formality);
+      case 'recent':
+      default:
+        return list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    }
+  }, [filteredItems, sortBy]);
 
   useBackButton(
     BackButtonPriority.SCREEN_MODAL,
     () => {
-      setSelectedItem(null);
-      return true;
+      if (styleThreeWaysItem) {
+        setStyleThreeWaysItem(null);
+        return true;
+      }
+      if (selectedItem) {
+        setSelectedItem(null);
+        return true;
+      }
+      return false;
     },
-    selectedItem !== null,
-    'Item Detail Sheet'
+    selectedItem !== null || styleThreeWaysItem !== null,
+    'Wardrobe Modal or Sheet'
   );
 
   const handleToggleFavorite = async (e: React.MouseEvent, item: WardrobeItem) => {
@@ -64,10 +120,17 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
     return items.filter((item) => Boolean(item.photo || item.photoId));
   }, [items]);
 
-  const isDefaultView = !search && selectedCategory === 'All' && statusFilter === 'All' && !favoriteOnly;
+  const isDefaultView =
+    !search &&
+    selectedCategory === 'All' &&
+    statusFilter === 'All' &&
+    !favoriteOnly &&
+    colorFilter === 'All' &&
+    seasonFilter === 'All' &&
+    occasionFilter === 'All';
 
   return (
-    <div className="pb-28 sm:pb-24 md:pb-12 animate-fade-in max-w-7xl mx-auto">
+    <div className="pb-36 sm:pb-32 md:pb-12 animate-fade-in max-w-7xl mx-auto">
       {/* Editorial Masthead */}
       <header className="mb-6 sm:mb-8 border-b border-border/70 pb-5 sm:pb-6">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -89,12 +152,20 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
               A curated taxonomy of your everyday staples and ceremonial silhouettes. Handloom weaves, tailoring, and footwear catalogued for mindful rotation.
             </p>
 
-            <div className="flex items-center gap-3 pt-1 text-[11px] font-sans text-muted/90">
+            <div className="flex items-center gap-3 pt-1 text-[11px] font-sans text-muted/90 flex-wrap">
               <span className="font-semibold text-(--ink)">{stats.total} pieces in rotation</span>
               <span className="opacity-40">•</span>
               <span>{itemsWithPhotos.length} photographic plates</span>
               <span className="opacity-40">•</span>
               <span className="text-emerald-700 dark:text-emerald-400 font-medium">{stats.clean} ready to wear</span>
+              {stats.needsWashing + stats.inLaundry > 0 && (
+                <>
+                  <span className="opacity-40">•</span>
+                  <span className="text-amber-700 dark:text-amber-400 font-medium">
+                    {stats.needsWashing + stats.inLaundry} care attention
+                  </span>
+                </>
+              )}
             </div>
           </div>
 
@@ -106,7 +177,7 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
               className="md:hidden flex h-9 w-9 min-h-11 min-w-11 items-center justify-center rounded-full border border-border bg-card/60 text-muted transition-colors hover:border-(--ink) hover:text-(--ink) active:scale-95 tactile-press"
               aria-label="Toggle theme"
             >
-              {theme === 'light' ? '☾' : '☼'}
+              {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
             </button>
 
             <button
@@ -207,9 +278,23 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
                     {itemsWithPhotos[0].occasions.slice(0, 3).join(', ')}
                   </p>
 
-                  <div className="pt-2 flex items-center gap-1.5 text-[11px] font-semibold tracking-wider text-amber-200 group-hover:translate-x-1 transition-transform">
-                    <span>Inspect Garment Plate</span>
-                    <ArrowUpRight className="h-3.5 w-3.5" />
+                  <div className="pt-2 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wider text-amber-200 group-hover:translate-x-1 transition-transform">
+                      <span>Inspect Garment Plate</span>
+                      <ArrowUpRight className="h-3.5 w-3.5" />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setStyleThreeWaysItem(itemsWithPhotos[0]);
+                      }}
+                      className="flex min-h-11 items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-md px-3 py-1.5 text-xs font-semibold text-white border border-white/30 hover:bg-white/30 active:scale-95 transition-all"
+                    >
+                      <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+                      <span>Style 3 Ways</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -244,7 +329,7 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
                     type="button"
                     aria-label={photoItem.favorite ? 'Remove from favorites' : 'Add to favorites'}
                     onClick={(e) => handleToggleFavorite(e, photoItem)}
-                    className="absolute right-2.5 top-2.5 z-10 flex h-9 w-9 items-center justify-center rounded-full glass-pill text-white shadow-2xs transition-transform hover:scale-110 active:scale-95"
+                    className="absolute right-2.5 top-2.5 z-10 flex min-h-11 min-w-11 h-11 w-11 items-center justify-center rounded-full glass-pill text-white shadow-2xs transition-transform hover:scale-110 active:scale-95"
                   >
                     <Heart
                       className={`h-3.5 w-3.5 ${
@@ -311,7 +396,7 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
           ))}
         </div>
 
-        {/* Secondary Care & Status Filter Bar */}
+        {/* Secondary Care & Status Filter Bar + Advanced Filter Toggle */}
         <div className="no-scrollbar -mx-3.5 sm:-mx-6 md:mx-0 flex gap-2 overflow-x-auto px-3.5 sm:px-6 md:px-0 py-0.5 md:flex-wrap scroll-fade-mask-end md:mask-none items-center">
           <button
             type="button"
@@ -347,7 +432,140 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
               <span>{s.label}</span>
             </button>
           ))}
+
+          {/* More Filters Toggle */}
+          <button
+            type="button"
+            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+            aria-expanded={showAdvancedFilters}
+            className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-3.5 text-[10.5px] font-semibold tracking-wider uppercase transition-all duration-150 ease-out whitespace-nowrap active:scale-[0.97] focus-editorial ${
+              showAdvancedFilters || colorFilter !== 'All' || seasonFilter !== 'All' || occasionFilter !== 'All'
+                ? 'border border-(--burnished-gold) bg-(--burnished-gold)/10 text-(--ink) font-bold'
+                : 'border border-border bg-card/60 text-muted hover:border-(--ink)'
+            }`}
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5 text-(--burnished-gold)" />
+            <span>
+              {colorFilter !== 'All' || seasonFilter !== 'All' || occasionFilter !== 'All'
+                ? 'Filters (Active)'
+                : 'More Filters'}
+            </span>
+          </button>
+
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="inline-flex min-h-11 items-center gap-1 text-[11px] font-semibold text-muted hover:text-(--ink) transition-colors px-2 ml-auto"
+            >
+              <RotateCcw className="h-3 w-3" />
+              <span>Reset All</span>
+            </button>
+          )}
         </div>
+
+        {/* Collapsible Editorial Filter Panel (Color, Season, Occasion) */}
+        {showAdvancedFilters && (
+          <div className="rounded-2xl border border-border/80 bg-card/70 p-4 space-y-3.5 animate-fade-in text-xs">
+            {/* Color Palette Chips */}
+            {stats.availableColors.length > 0 && (
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1.5">
+                  Filter by Palette / Color
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setColorFilter('All')}
+                    className={`min-h-9 px-3 py-1 rounded-full text-[11px] font-medium transition-all ${
+                      colorFilter === 'All'
+                        ? 'bg-(--ink) text-(--paper) font-semibold'
+                        : 'bg-card border border-border text-muted hover:border-(--ink)'
+                    }`}
+                  >
+                    All Colors
+                  </button>
+                  {stats.availableColors.map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => setColorFilter(colorFilter === color ? 'All' : color)}
+                      className={`min-h-9 px-2.5 py-1 rounded-full text-[11px] font-medium capitalize flex items-center gap-1.5 transition-all ${
+                        colorFilter === color
+                          ? 'border border-(--ink) bg-(--ink) text-(--paper) font-semibold'
+                          : 'bg-card border border-border text-muted hover:border-(--ink)'
+                      }`}
+                    >
+                      <span
+                        className="h-2 w-2 rounded-full border border-black/20"
+                        style={{ backgroundColor: color }}
+                      />
+                      <span>{color}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Season Filter Chips */}
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1.5">
+                Filter by Season
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {(['All', ...SEASONS] as (Season | 'All')[]).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setSeasonFilter(s)}
+                    className={`min-h-9 px-3 py-1 rounded-full text-[11px] font-medium capitalize transition-all ${
+                      seasonFilter === s
+                        ? 'bg-(--ink) text-(--paper) font-semibold'
+                        : 'bg-card border border-border text-muted hover:border-(--ink)'
+                    }`}
+                  >
+                    {s === 'All' ? 'All Seasons' : s}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Occasion Filter Chips */}
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-1.5">
+                Filter by Occasion
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {(
+                  [
+                    'All',
+                    'everyday',
+                    'office',
+                    'college',
+                    'party',
+                    'festive',
+                    'wedding guest',
+                    'date',
+                    'casual outing',
+                  ] as (Occasion | 'All')[]
+                ).map((occ) => (
+                  <button
+                    key={occ}
+                    type="button"
+                    onClick={() => setOccasionFilter(occ)}
+                    className={`min-h-9 px-3 py-1 rounded-full text-[11px] font-medium capitalize transition-all ${
+                      occasionFilter === occ
+                        ? 'bg-(--ink) text-(--paper) font-semibold'
+                        : 'bg-card border border-border text-muted hover:border-(--ink)'
+                    }`}
+                  >
+                    {occ === 'All' ? 'All Occasions' : occ}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Catalog Registry Header */}
@@ -359,7 +577,28 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
           </h3>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Archival Sort Selector */}
+          <div className="flex items-center rounded-full border border-border/80 bg-card/60 px-3 shadow-2xs">
+            <label htmlFor="wardrobe-sort-select" className="text-[10px] font-bold uppercase tracking-wider text-muted mr-1.5 hidden sm:inline">
+              Sort:
+            </label>
+            <select
+              id="wardrobe-sort-select"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              aria-label="Sort wardrobe pieces"
+              className="bg-transparent text-xs font-semibold text-(--ink) outline-none cursor-pointer focus-editorial min-h-11 py-1"
+            >
+              <option value="recent">Recently Added</option>
+              <option value="recently_worn">Recently Worn</option>
+              <option value="most_worn">Most Worn</option>
+              <option value="least_worn">Least Worn</option>
+              <option value="formality_desc">Formality: High → Low</option>
+              <option value="formality_asc">Formality: Low → High</option>
+            </select>
+          </div>
+
           {/* Dual View Mode Switcher */}
           <div className="flex items-center rounded-full border border-border/80 bg-card/60 p-0.5 shadow-2xs">
             <button
@@ -424,12 +663,7 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
           description="None of your garments match the active filter criteria."
           action={{
             label: 'Reset Filters',
-            onClick: () => {
-              setSearch('');
-              setSelectedCategory('All');
-              setStatusFilter('All');
-              setFavoriteOnly(false);
-            },
+            onClick: resetFilters,
           }}
         />
       )}
@@ -438,7 +672,7 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
       {!loading && filteredItems.length > 0 && viewMode === 'rail' && (
         <div className="space-y-8">
           <SpatialGarmentRail
-            items={filteredItems}
+            items={sortedAndFilteredItems}
             onSelectItem={setSelectedItem}
             onToggleFavorite={handleToggleFavorite}
             onUpdateItem={updateItem}
@@ -456,12 +690,12 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
                 onClick={() => setViewMode('grid')}
                 className="text-xs font-semibold text-(--burnished-gold) hover:underline flex items-center gap-1 min-h-11 px-2"
               >
-                <span>View full grid ({filteredItems.length})</span>
+                <span>View full grid ({sortedAndFilteredItems.length})</span>
                 <LayoutGrid className="h-3 w-3" />
               </button>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
-              {filteredItems.map((item) => (
+              {sortedAndFilteredItems.map((item) => (
                 <ItemCard
                   key={item.id}
                   item={item}
@@ -477,7 +711,7 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
       {/* Complete Archival Grid View */}
       {!loading && filteredItems.length > 0 && viewMode === 'grid' && (
         <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
-          {filteredItems.map((item) => (
+          {sortedAndFilteredItems.map((item) => (
             <ItemCard
               key={item.id}
               item={item}
@@ -495,6 +729,42 @@ export const WardrobeScreen: React.FC<WardrobeScreenProps> = ({ onOpenAddItem })
         onClose={() => setSelectedItem(null)}
         onUpdate={updateItem}
         onDelete={deleteItem}
+        onOpenInAtelier={onGoToDress}
+        onStyleThreeWays={(item) => {
+          setSelectedItem(null);
+          setStyleThreeWaysItem(item);
+        }}
+      />
+
+      {/* Style Three Ways Modal (Anchored to real garment) */}
+      <StyleThreeWaysModal
+        anchorItem={styleThreeWaysItem}
+        isOpen={Boolean(styleThreeWaysItem)}
+        onClose={() => setStyleThreeWaysItem(null)}
+        onMarkWorn={async (outfit) => {
+          try {
+            const todayStr = new Date().toISOString().slice(0, 10);
+            await markOutfitWornOnDate(outfit, todayStr);
+            showToast('Outfit marked worn for today');
+          } catch {
+            // Already handled
+          }
+        }}
+        onSaveLook={async (outfit) => {
+          try {
+            await saveOutfit(outfit);
+            showToast('Look saved to collection');
+          } catch {
+            // Error handled
+          }
+        }}
+        onOpenInAtelier={(anchor, occasion) => {
+          window.dispatchEvent(
+            new CustomEvent('open-atelier-stage', {
+              detail: { anchorItemId: anchor?.id, occasion },
+            })
+          );
+        }}
       />
     </div>
   );

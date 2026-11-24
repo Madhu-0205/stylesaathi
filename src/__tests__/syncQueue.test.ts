@@ -116,6 +116,31 @@ describe('Production Sync Queue', () => {
     expect(all[0].attemptCount).toBe(1);
   });
 
+  it('Phase 3C.6: handles REVISION_REQUIRED as permanent rejection, preserving data in dead_letter without retry loop', async () => {
+    const mut = await queue.enqueue({
+      entityType: 'wardrobe_item',
+      entityId: 'item-no-rev',
+      operation: 'UPSERT',
+      payload: { id: 'item-no-rev', name: 'Legacy Unversioned Item' } as any,
+    });
+
+    // Server rejects unversioned update with REVISION_REQUIRED
+    await queue.markFailed(mut.id, 'REVISION_REQUIRED: expectedRevision is required for updating an existing wardrobe_item', true);
+
+    const all = await queue.getAllMutations();
+    expect(all).toHaveLength(1);
+    expect(all[0].id).toBe(mut.id);
+    expect(all[0].status).toBe('dead_letter');
+    expect(all[0].lastError).toContain('REVISION_REQUIRED');
+
+    // Crucial: Payload data is strictly preserved (no local data loss)
+    expect((all[0].payload as any).name).toBe('Legacy Unversioned Item');
+
+    // Crucial: Not returned by peekNext (prevents infinite retry loop)
+    const next = await queue.peekNext();
+    expect(next).toBeNull();
+  });
+
   // ==========================================================================
   // O. Queue Crash Recovery
   // ==========================================================================

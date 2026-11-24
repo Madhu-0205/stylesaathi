@@ -378,6 +378,9 @@ export const getOutfitWhyReasons = (
     case 'puja':
       reasons.push('Traditional aesthetic with respectful, auspicious tones');
       break;
+    case 'party':
+      reasons.push('Chic, statement evening styling with celebratory flair');
+      break;
     case 'wedding guest':
     case 'celebration':
       reasons.push('Elevated festive craftsmanship suited for celebrations');

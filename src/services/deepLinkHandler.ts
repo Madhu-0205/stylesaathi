@@ -3,6 +3,13 @@ import { App, URLOpenListenerEvent } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { User } from '../types';
+import {
+  getWorkerBaseUrl,
+  getAndClearPendingPkceVerifier,
+  redeemExchangeCode,
+  fetchAuthenticatedUser,
+  setInMemorySession,
+} from '../lib/auth/pkce';
 
 export interface CallbackValidationResult {
   isValid: boolean;
@@ -116,6 +123,31 @@ export class DeepLinkAuthHandler {
         }
       }
 
+      // 1. Check if a pending PKCE verifier exists for the Cloudflare Worker flow
+      const pendingVerifier = getAndClearPendingPkceVerifier();
+      if (pendingVerifier) {
+        const workerBaseUrl = getWorkerBaseUrl();
+        const { sessionToken, userId } = await redeemExchangeCode(workerBaseUrl, code, pendingVerifier);
+        setInMemorySession(sessionToken, userId);
+
+        let user: User;
+        try {
+          user = await fetchAuthenticatedUser(workerBaseUrl, sessionToken);
+        } catch {
+          user = {
+            id: userId,
+            email: '',
+            name: 'StyleSaathi Member',
+            isGuest: false,
+            createdAt: Date.now(),
+          };
+        }
+
+        onSuccess?.(user);
+        return true;
+      }
+
+      // 2. Fallback to Supabase if configured and no PKCE verifier is pending
       if (!isSupabaseConfigured()) {
         throw new Error('Cloud authentication is not configured');
       }

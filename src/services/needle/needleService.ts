@@ -17,6 +17,7 @@ import {
   Season,
 } from '../../types';
 import { generateOutfits } from '../../engine/outfitEngine';
+import { recommendOutfitsWithTelemetry } from '../../engine/recommendationEngine';
 
 export interface NeedleDomainContext {
   items: WardrobeItem[];
@@ -362,14 +363,17 @@ export class NeedleService {
           season?: Season;
         };
         const season = args.season || 'summer';
-        const outfits = generateOutfits(
+        const localDate = new Date().toISOString().slice(0, 10);
+        // Use shared authoritative recommendation engine with hard constraints and telemetry
+        const telemetryResult = recommendOutfitsWithTelemetry({
           items,
-          args.occasion as any,
+          occasion: args.occasion as any,
           season,
-          4,
-          Math.random(),
-          preferences
-        );
+          localDate,
+          preferences,
+          limit: 4,
+        });
+        const outfits = telemetryResult.set.outfits;
 
         return {
           query,

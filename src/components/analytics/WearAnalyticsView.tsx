@@ -15,6 +15,7 @@ import {
 import { useWearAnalytics, AnalyticsTimeframe } from '../../hooks/useWearAnalytics';
 import { RotationHealthCard } from './RotationHealthCard';
 import { StyleEvolutionCard } from './StyleEvolutionCard';
+import { PersonalStyleEvolutionView } from './PersonalStyleEvolutionView';
 import { ItemImage } from '../common/ItemImage';
 import { WardrobeItem } from '../../types';
 import { StyleItemSheet } from '../wardrobe/StyleItemSheet';
@@ -368,8 +369,12 @@ export const WearAnalyticsView: React.FC<WearAnalyticsViewProps> = ({
 
         {/* Right Column: Style Evolution & Snapshot Breakdown */}
         <div className="lg:col-span-5 space-y-5">
-          {/* 4. Style Evolution Card */}
-          <StyleEvolutionCard evolution={evolution} />
+          {/* 4. Style Evolution View */}
+          <PersonalStyleEvolutionView
+            wardrobe={items}
+            evolutionReport={evolution}
+            onNavigateToStyle={(item) => setStylingAnchorItem(item)}
+          />
 
           {/* 5. Active Window Distribution Breakdown */}
           <div className="rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-2xs space-y-3.5">

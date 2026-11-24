@@ -1,0 +1,110 @@
+{
+  "timestamp": "2026-11-11T16:46:33.424Z",
+  "viewportsTested": [],
+  "p0_aiCollisionRemediation": {
+    "calendar": {
+      "buttonBox": {
+        "top": 763,
+        "bottom": 807,
+        "left": 102,
+        "right": 288
+      },
+      "aiBox": {
+        "top": 4,
+        "bottom": 58,
+        "left": 167,
+        "right": 376
+      },
+      "isOverlapping": false,
+      "aiIsFixedBottom": false
+    },
+    "dressMe": {
+      "spotlightBox": {
+        "top": 859,
+        "bottom": 903
+      },
+      "aiBox": {
+        "top": 4,
+        "bottom": 58
+      },
+      "isOverlapping": false
+    }
+  },
+  "p1_bottomNavClearance": [
+    {
+      "tab": "Today",
+      "docHeight": 3539,
+      "maxScroll": 2695,
+      "navTop": 768,
+      "lastInteractiveBottom": 600,
+      "clearancePixels": 168,
+      "isObscured": false
+    },
+    {
+      "tab": "Wardrobe",
+      "docHeight": 6832,
+      "maxScroll": 5988,
+      "navTop": 768,
+      "lastInteractiveBottom": 401,
+      "clearancePixels": 367,
+      "isObscured": false
+    },
+    {
+      "tab": "Dress",
+      "docHeight": 2258,
+      "maxScroll": 1414,
+      "navTop": 768,
+      "lastInteractiveBottom": 628,
+      "clearancePixels": 140,
+      "isObscured": false
+    },
+    {
+      "tab": "Calendar",
+      "docHeight": 1489,
+      "maxScroll": 645,
+      "navTop": 768,
+      "lastInteractiveBottom": 611,
+      "clearancePixels": 157,
+      "isObscured": false
+    },
+    {
+      "tab": "Insight",
+      "docHeight": 1148,
+      "maxScroll": 304,
+      "navTop": 768,
+      "lastInteractiveBottom": -20,
+      "clearancePixels": 788,
+      "isObscured": false
+    },
+    {
+      "tab": "You",
+      "docHeight": 3123,
+      "maxScroll": 2279,
+      "navTop": 768,
+      "lastInteractiveBottom": 429,
+      "clearancePixels": 339,
+      "isObscured": false
+    }
+  ],
+  "p1_scoreNormalization": {
+    "observedBadges": [
+      "69% match",
+      "67% match",
+      "55% match"
+    ],
+    "parsedScores": [
+      69,
+      67,
+      55
+    ],
+    "hasScoreAbove100": false,
+    "passed": true
+  },
+  "p2_desktopAiRedundancy": {
+    "mobileHeaderHidden": true,
+    "topNavVisible": true,
+    "hasTopNavSaathi": true,
+    "hasTopNavStylist": true,
+    "hasRedundantFloatingAside": false
+  }
+}

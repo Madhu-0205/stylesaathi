@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -6,6 +6,7 @@ import {
   Sparkles,
   Check,
   AlertCircle,
+  AlertTriangle,
   Trash2,
   ArrowRight,
   Shirt,
@@ -14,6 +15,8 @@ import {
   ListFilter,
   CheckCircle2,
   Clock,
+  RotateCcw,
+  RefreshCw,
 } from 'lucide-react';
 import { useWardrobeContext } from '../context/WardrobeContext';
 import { useAuth } from '../context/AuthContext';
@@ -21,6 +24,7 @@ import { useWeather } from '../context/WeatherContext';
 import { ItemImage } from '../components/common/ItemImage';
 import { AuthView } from '../components/auth/AuthView';
 import { WardrobeItem, OutfitPlan } from '../types';
+import { deriveSeasonalContext } from '../engine';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -33,18 +37,27 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { CalendarPlanModal } from '../components/calendar/CalendarPlanModal';
+import { RescheduleModal } from '../components/calendar/RescheduleModal';
 
 interface CalendarScreenProps {
   onGoToDress: (occasion?: string) => void;
+  initialViewMode?: 'month' | 'week' | 'agenda';
 }
 
-export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) => {
-  const { plans, items, deletePlan, markOutfitWornOnDate, showToast } = useWardrobeContext();
-  const { isGuest } = useAuth();
+export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress, initialViewMode = 'month' }) => {
+  const { plans, items, savePlan, deletePlan, markOutfitWornOnDate, showToast } = useWardrobeContext();
+  const { isGuest, authError } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
+
+  useEffect(() => {
+    if (authError) {
+      setShowAuthModal(true);
+    }
+  }, [authError]);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [planToDelete, setPlanToDelete] = useState<OutfitPlan | null>(null);
-  const [calendarViewMode, setCalendarViewMode] = useState<'month' | 'agenda'>('month');
+  const [calendarViewMode, setCalendarViewMode] = useState<'month' | 'week' | 'agenda'>(initialViewMode);
 
   // Month navigation state
   const [viewDate, setViewDate] = useState(() => new Date());
@@ -62,6 +75,10 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
 
   const todayStr = formatDateStr(new Date());
   const [selectedDateStr, setSelectedDateStr] = useState<string>(todayStr);
+
+  // In-calendar planning and rescheduling modals
+  const [planningDateStr, setPlanningDateStr] = useState<string | null>(null);
+  const [reschedulingPlan, setReschedulingPlan] = useState<OutfitPlan | null>(null);
 
   // Month metadata
   const firstDayOfMonth = new Date(year, month, 1).getDay();
@@ -82,19 +99,80 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
     setSelectedDateStr(todayStr);
   };
 
-  // Find plan for selected date
-  const selectedPlan = useMemo(() => {
-    return plans.find((p) => p.date === selectedDateStr);
-  }, [plans, selectedDateStr]);
-
+  // Weather context
   let weatherCtx: ReturnType<typeof useWeather> | null = null;
   try {
     weatherCtx = useWeather();
   } catch {}
 
-  const matchingForecast = useMemo(() => {
-    return weatherCtx?.forecast?.periods.find((p) => p.date === selectedDateStr);
-  }, [weatherCtx?.forecast, selectedDateStr]);
+  // Weather info for any date with transparent source and freshness status
+  const getWeatherInfoForDate = useCallback(
+    (dateStr: string) => {
+      const periods: any[] = Array.isArray(weatherCtx?.forecast?.periods)
+        ? weatherCtx.forecast.periods
+        : Array.isArray(weatherCtx?.forecast)
+          ? (weatherCtx.forecast as any[])
+          : [];
+      const isTodayDate = dateStr === new Date().toISOString().split('T')[0];
+      const todayWeather: any = weatherCtx?.weather || (weatherCtx as any)?.current;
+      const forecastPeriod =
+        periods.find((p) => p.date === dateStr) ||
+        (isTodayDate && todayWeather
+          ? {
+              date: dateStr,
+              temperatureMin:
+                (todayWeather as any).temperatureMin ??
+                (todayWeather as any).tempMin ??
+                todayWeather.temperature ??
+                20,
+              temperatureMax:
+                (todayWeather as any).temperatureMax ??
+                (todayWeather as any).tempMax ??
+                todayWeather.temperature ??
+                28,
+              summary: todayWeather.conditionText ?? todayWeather.condition ?? 'Fair',
+              precipitationProbability: todayWeather.precipitationProbability ?? 0,
+            }
+          : undefined);
+      const freshness = weatherCtx?.freshness || 'unavailable';
+
+      if (forecastPeriod) {
+        const minTemp = forecastPeriod.temperatureMin ?? forecastPeriod.low ?? 20;
+        const maxTemp = forecastPeriod.temperatureMax ?? forecastPeriod.high ?? 28;
+        const summary = forecastPeriod.summary ?? forecastPeriod.condition ?? 'Fair';
+        const rainProb = forecastPeriod.precipitationProbability ?? 0;
+
+        if (freshness === 'fresh') {
+          return {
+            type: 'live' as const,
+            label: 'Live Forecast',
+            summary: `${summary} (${minTemp}° - ${maxTemp}°C)`,
+            rainProbability: rainProb,
+          };
+        } else if (freshness === 'stale') {
+          return {
+            type: 'stale' as const,
+            label: 'Cached Forecast (Stale)',
+            summary: `${summary} (${minTemp}° - ${maxTemp}°C)`,
+            rainProbability: rainProb,
+          };
+        }
+      }
+
+      // Beyond active forecast horizon or weather unavailable -> Seasonal Climate Fallback
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const targetDate = new Date(y, m - 1, d);
+      const derivedSeason = deriveSeasonalContext(targetDate, weatherCtx?.weather);
+
+      return {
+        type: 'seasonal' as const,
+        label: 'Seasonal Climate Fallback',
+        summary: `Calibrated for ${derivedSeason.toUpperCase()} climate (Live forecast unavailable)`,
+        rainProbability: 0,
+      };
+    },
+    [weatherCtx]
+  );
 
   // Map of plans by date for fast calendar cell lookup
   const plansByDate = useMemo(() => {
@@ -104,6 +182,65 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
     }
     return map;
   }, [plans]);
+
+  // Find plan for selected date
+  const selectedPlan = useMemo(() => {
+    return plansByDate.get(selectedDateStr) || null;
+  }, [plansByDate, selectedDateStr]);
+
+  // 7-day week calculation centered on selectedDateStr
+  const currentWeekDays = useMemo(() => {
+    const [y, m, d] = selectedDateStr.split('-').map(Number);
+    const centerDate = new Date(y, m - 1, d);
+    const dayOfWeek = centerDate.getDay();
+    const distanceToMonday = (dayOfWeek + 6) % 7;
+    const monday = new Date(centerDate);
+    monday.setDate(centerDate.getDate() - distanceToMonday);
+
+    const days: {
+      dateStr: string;
+      dateObj: Date;
+      dayName: string;
+      dayFullLabel: string;
+      dayNum: number;
+      isToday: boolean;
+      isSelected: boolean;
+      plan?: OutfitPlan;
+    }[] = [];
+
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(monday);
+      day.setDate(monday.getDate() + i);
+      const str = formatDateStr(day);
+      days.push({
+        dateStr: str,
+        dateObj: day,
+        dayName: day.toLocaleDateString('en-US', { weekday: 'short' }),
+        dayFullLabel: day.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+        dayNum: day.getDate(),
+        isToday: str === todayStr,
+        isSelected: str === selectedDateStr,
+        plan: plansByDate.get(str),
+      });
+    }
+    return days;
+  }, [selectedDateStr, todayStr, plansByDate]);
+
+  const handlePrevWeek = () => {
+    const [y, m, d] = selectedDateStr.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    date.setDate(date.getDate() - 7);
+    setSelectedDateStr(formatDateStr(date));
+    setViewDate(date);
+  };
+
+  const handleNextWeek = () => {
+    const [y, m, d] = selectedDateStr.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    date.setDate(date.getDate() + 7);
+    setSelectedDateStr(formatDateStr(date));
+    setViewDate(date);
+  };
 
   // Monthly summary metrics based strictly on real plans
   const monthMetrics = useMemo(() => {
@@ -123,32 +260,52 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
     return [...plans].sort((a, b) => b.date.localeCompare(a.date));
   }, [plans]);
 
-  // Check if selected plan has any items in laundry or deleted
-  const planIntegrity = useMemo(() => {
-    if (!selectedPlan) return null;
-    const pieces = Object.values(selectedPlan.outfit.slots).flat();
-    if (selectedPlan.accessory) pieces.push(selectedPlan.accessory);
+  // Check if a plan has any items in care (laundry) or deleted from archive
+  const getPlanIntegrity = useCallback(
+    (plan: OutfitPlan | null | undefined) => {
+      if (!plan || !plan.outfit) return null;
+      const pieces: WardrobeItem[] = plan.outfit.slots
+        ? (Object.values(plan.outfit.slots).flat().filter(Boolean) as WardrobeItem[])
+        : [];
+      if (plan.accessory) pieces.push(plan.accessory);
 
-    const missingPieces: string[] = [];
-    const laundryPieces: string[] = [];
+      const missingPieces: string[] = [];
+      const laundryPieces: string[] = [];
+      const recentlyWornPieces: string[] = [];
 
-    for (const piece of pieces) {
-      const currentItem = items.find((i) => i.id === piece.id);
-      if (!currentItem) {
-        missingPieces.push(piece.name || piece.subcategory);
-      } else if (currentItem.status === 'in_laundry' || currentItem.status === 'needs_washing') {
-        laundryPieces.push(currentItem.name || currentItem.subcategory);
+      const twoDaysAgo = Date.now() - 48 * 3600 * 1000;
+
+      for (const piece of pieces) {
+        if (!piece || !piece.id) continue;
+        const currentItem = items.find((i) => i.id === piece.id);
+        if (!currentItem) {
+          missingPieces.push(piece.name || piece.subcategory || 'Garment');
+        } else {
+          if (currentItem.status === 'in_laundry' || currentItem.status === 'needs_washing') {
+            laundryPieces.push(currentItem.name || currentItem.subcategory);
+          }
+          if (currentItem.lastWorn && currentItem.lastWorn > twoDaysAgo && plan.date > todayStr) {
+            recentlyWornPieces.push(currentItem.name || currentItem.subcategory);
+          }
+        }
       }
-    }
 
-    return {
-      pieces,
-      isStale: missingPieces.length > 0,
-      missingPieces,
-      hasLaundry: laundryPieces.length > 0,
-      laundryPieces,
-    };
-  }, [selectedPlan, items]);
+      return {
+        pieces,
+        isStale: missingPieces.length > 0,
+        missingPieces,
+        hasLaundry: laundryPieces.length > 0,
+        laundryPieces,
+        hasRecentWear: recentlyWornPieces.length > 0,
+        recentlyWornPieces,
+      };
+    },
+    [items, todayStr]
+  );
+
+  const selectedPlanIntegrity = useMemo(() => {
+    return getPlanIntegrity(selectedPlan);
+  }, [getPlanIntegrity, selectedPlan]);
 
   const handleWearToday = async (plan: OutfitPlan = selectedPlan!) => {
     if (!plan) return;
@@ -169,6 +326,49 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
     setPlanToDelete(null);
   };
 
+  const handleConfirmPlan = async (planData: {
+    date: string;
+    outfit: any;
+    accessory?: any;
+    occasion: any;
+  }) => {
+    await savePlan({
+      date: planData.date,
+      outfit: planData.outfit,
+      accessory: planData.accessory,
+      occasion: planData.occasion,
+      status: 'planned',
+    });
+    showToast(`Outfit planned for ${planData.date}! Added to Style Calendar.`);
+    setPlanningDateStr(null);
+  };
+
+  const handleConfirmReschedule = async (plan: OutfitPlan, newDateStr: string) => {
+    if (plan.date === newDateStr) {
+      showToast('Date unchanged.');
+      return;
+    }
+    // Delete from old date and save to new date
+    await deletePlan(plan.id);
+    await savePlan({
+      ...plan,
+      id: `plan_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      date: newDateStr,
+      status: 'planned',
+    });
+    showToast(`Look rescheduled to ${newDateStr}.`);
+    setReschedulingPlan(null);
+    setSelectedDateStr(newDateStr);
+  };
+
+  const handleOpenPlanModal = (dateStr: string) => {
+    setPlanningDateStr(dateStr);
+  };
+
+  const handleOpenReschedule = (plan: OutfitPlan) => {
+    setReschedulingPlan(plan);
+  };
+
   // Formatted date string for selected date heading
   const selectedDateHeading = useMemo(() => {
     const [y, m, d] = selectedDateStr.split('-').map(Number);
@@ -182,8 +382,12 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
     return isToday ? `${dateLabel} · Today` : dateLabel;
   }, [selectedDateStr, todayStr]);
 
+  const selectedDateWeather = useMemo(() => {
+    return getWeatherInfoForDate(selectedDateStr);
+  }, [getWeatherInfoForDate, selectedDateStr]);
+
   return (
-    <div className="pb-28 sm:pb-24 md:pb-8 animate-fade-in space-y-4 max-w-7xl mx-auto">
+    <div className="pb-36 sm:pb-32 md:pb-8 animate-fade-in space-y-4 max-w-7xl mx-auto">
       {/* Luxury Editorial Header */}
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-border/80 pb-3 sm:pb-4 gap-3">
         <div>
@@ -203,12 +407,13 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
           </p>
         </div>
 
-        {/* View Mode & Month Navigation Controls */}
+        {/* View Mode & Navigation Controls */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* Month vs Agenda Toggle */}
+          {/* Month vs Week vs Agenda Toggle */}
           <div className="inline-flex items-center rounded-full border border-border/80 bg-card p-0.5 shadow-2xs">
             <button
               type="button"
+              data-active={calendarViewMode === 'month'}
               onClick={() => setCalendarViewMode('month')}
               className={`min-h-11 px-3.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-all tactile-press-sm ${
                 calendarViewMode === 'month'
@@ -220,6 +425,19 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
             </button>
             <button
               type="button"
+              data-active={calendarViewMode === 'week'}
+              onClick={() => setCalendarViewMode('week')}
+              className={`min-h-11 px-3.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-all tactile-press-sm ${
+                calendarViewMode === 'week'
+                  ? 'bg-(--ink) text-(--paper) shadow-2xs'
+                  : 'text-muted hover:text-(--ink)'
+              }`}
+            >
+              Week
+            </button>
+            <button
+              type="button"
+              data-active={calendarViewMode === 'agenda'}
               onClick={() => setCalendarViewMode('agenda')}
               className={`min-h-11 px-3.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-all tactile-press-sm ${
                 calendarViewMode === 'agenda'
@@ -240,23 +458,26 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
             Today
           </Button>
 
+          {/* Month/Week Navigation Capsule */}
           <div className="inline-flex items-center rounded-full glass-pill specular-border p-0.5 shadow-2xs">
             <button
               type="button"
-              onClick={handlePrevMonth}
+              onClick={calendarViewMode === 'week' ? handlePrevWeek : handlePrevMonth}
               className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-muted hover:text-(--ink) hover:bg-(--ivory) active:scale-95 transition-transform"
-              aria-label="Previous month"
+              aria-label={calendarViewMode === 'week' ? 'Previous week' : 'Previous month'}
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
             <span className="px-2 text-xs font-serif font-medium text-(--ink) min-w-28 text-center uppercase tracking-wider">
-              {monthName}
+              {calendarViewMode === 'week'
+                ? `Week of ${currentWeekDays[0]?.dayFullLabel}`
+                : monthName}
             </span>
             <button
               type="button"
-              onClick={handleNextMonth}
+              onClick={calendarViewMode === 'week' ? handleNextWeek : handleNextMonth}
               className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-muted hover:text-(--ink) hover:bg-(--ivory) active:scale-95 transition-transform"
-              aria-label="Next month"
+              aria-label={calendarViewMode === 'week' ? 'Next week' : 'Next month'}
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -266,7 +487,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
 
       {/* Summary KPI Strip: Month Metrics */}
       <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
-        <div className="rounded-2xl border border-border bg-card p-3 sm:p-4 shadow-2xs">
+        <div className="rounded-2xl couture-card p-3 sm:p-4 shadow-2xs">
           <span className="text-[9.5px] font-bold uppercase tracking-wider text-muted block">
             MONTHLY SCHEDULE
           </span>
@@ -274,11 +495,11 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
             {monthMetrics.total}
           </p>
           <span className="text-[10px] text-muted block truncate">
-            {monthMetrics.upcoming} planned in {viewDate.toLocaleDateString('en-US', { month: 'short' })}
+            {`${monthMetrics.upcoming} planned in ${viewDate.toLocaleDateString('en-US', { month: 'short' })}`}
           </span>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-3 sm:p-4 shadow-2xs">
+        <div className="rounded-2xl couture-card p-3 sm:p-4 shadow-2xs">
           <span className="text-[9.5px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 block">
             WORN TO DATE
           </span>
@@ -290,7 +511,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
           </span>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-3 sm:p-4 shadow-2xs">
+        <div className="rounded-2xl couture-card p-3 sm:p-4 shadow-2xs">
           <span className="text-[9.5px] font-bold uppercase tracking-wider text-(--burnished-gold) block">
             WARDROBE RHYTHM
           </span>
@@ -303,7 +524,157 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
         </div>
       </div>
 
-      {calendarViewMode === 'agenda' ? (
+      {calendarViewMode === 'week' ? (
+        /* WEEKLY PLANNER VIEW: 7-Day Editorial Planner */
+        <div className="space-y-4">
+          <div className="flex items-center justify-between border-b border-border/60 pb-2">
+            <span className="editorial-kicker text-muted">
+              SEVEN-DAY FASHION PLANNER
+            </span>
+            <span className="text-xs text-muted font-sans">
+              Plan and coordinate outfits ahead of time
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
+            {currentWeekDays.map((day) => {
+              const plan = day.plan;
+              const weather = getWeatherInfoForDate(day.dateStr);
+              const integrity = getPlanIntegrity(plan);
+              const isWorn = plan?.status === 'worn';
+
+              return (
+                <div
+                  key={day.dateStr}
+                  className={`rounded-2xl border p-3 flex flex-col justify-between transition-all specular-border ${
+                    day.isSelected
+                      ? 'border-(--ink) bg-(--ivory) shadow-xs'
+                      : day.isToday
+                      ? 'border-(--kumkum) bg-(--paper)'
+                      : 'border-border bg-card/80'
+                  }`}
+                >
+                  {/* Day Header */}
+                  <div>
+                    <div className="flex items-center justify-between gap-1 border-b border-border/50 pb-2 mb-2">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted block">
+                          {day.dayName}
+                        </span>
+                        <span className="font-serif text-sm font-semibold text-(--ink)">
+                          {day.dayNum} {day.dateObj.toLocaleDateString('en-US', { month: 'short' })}
+                        </span>
+                      </div>
+                      {day.isToday && (
+                        <span className="text-[8.5px] font-bold uppercase tracking-wider text-(--kumkum) border border-(--kumkum)/30 bg-(--kumkum)/10 px-1.5 py-0.5 rounded-full">
+                          Today
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Weather Context Snippet */}
+                    <div className="mb-2 text-[10px] text-muted flex items-center gap-1">
+                      <CloudSun className="h-3 w-3 shrink-0 text-(--burnished-gold)" />
+                      <span className="truncate" title={weather.summary}>
+                        {weather.type === 'live' ? weather.summary : weather.label}
+                      </span>
+                    </div>
+
+                    {/* Planned Look Content OR Empty Prompt */}
+                    {plan ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-1">
+                          <Badge variant="gold" className="text-[8px] uppercase tracking-wider px-1.5 py-0">
+                            {plan.occasion}
+                          </Badge>
+                          <span
+                            className={`text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                              isWorn
+                                ? 'bg-emerald-500/10 text-emerald-800 dark:text-emerald-300'
+                                : 'bg-(--burnished-gold)/10 text-(--burnished-gold)'
+                            }`}
+                          >
+                            {isWorn ? '✓ Worn' : 'Planned'}
+                          </span>
+                        </div>
+
+                        <h4 className="font-serif text-xs font-normal text-(--ink) line-clamp-1">
+                          {plan.outfit.template}
+                        </h4>
+
+                        {/* Garment Thumbnails */}
+                        <div className="flex -space-x-2 overflow-hidden py-1">
+                          {integrity?.pieces.slice(0, 3).map((piece, pIdx) => (
+                            <div
+                              key={`${piece.id}-${pIdx}`}
+                              className="h-10 w-8 rounded border border-border bg-card overflow-hidden shrink-0 shadow-2xs"
+                            >
+                              <ItemImage item={piece} className="h-full w-full object-cover" />
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Care Alert Pill */}
+                        {integrity?.hasLaundry && (
+                          <div className="text-[8.5px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30 truncate">
+                            Care Alert: In Laundry
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="py-4 text-center">
+                        <span className="text-[11px] text-muted block mb-2">
+                          No look planned
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleOpenPlanModal(day.dateStr)}
+                          className="w-full min-h-11 rounded-full text-[10px] font-semibold uppercase tracking-wider tactile-press"
+                        >
+                          <Sparkles className="h-3 w-3 text-(--burnished-gold) mr-1" />
+                          <span>Plan Look</span>
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Day Footer Actions when planned */}
+                  {plan && (
+                    <div className="pt-2 border-t border-border/50 flex items-center justify-between gap-1 mt-2">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenPlanModal(day.dateStr)}
+                        className="text-[10px] font-semibold text-(--burnished-gold) hover:underline"
+                      >
+                        Replace
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenReschedule(plan)}
+                        className="text-[10px] font-semibold text-muted hover:text-(--ink)"
+                      >
+                        Move
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPlanToDelete(plan);
+                          setIsDeleteDialogOpen(true);
+                        }}
+                        className="text-[10px] text-red-500 hover:text-red-700"
+                        aria-label="Delete plan"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : calendarViewMode === 'agenda' ? (
         /* AGENDA VIEW: Chronological Timeline of Planned & Worn Outfits */
         <div className="space-y-4">
           <div className="flex items-center justify-between border-b border-border/60 pb-2">
@@ -324,7 +695,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
               </p>
               <Button
                 variant="default"
-                onClick={() => onGoToDress()}
+                onClick={() => handleOpenPlanModal(selectedDateStr)}
                 className="min-h-11 rounded-full uppercase tracking-wider text-xs font-semibold tactile-press"
               >
                 Plan a Look
@@ -333,7 +704,9 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
           ) : (
             <div className="space-y-3">
               {agendaPlans.map((plan) => {
-                const pieces = Object.values(plan.outfit.slots).flat();
+                const pieces: WardrobeItem[] = plan.outfit?.slots
+                  ? (Object.values(plan.outfit.slots).flat().filter(Boolean) as WardrobeItem[])
+                  : [];
                 if (plan.accessory) pieces.push(plan.accessory);
                 const isWorn = plan.status === 'worn';
                 const [y, m, d] = plan.date.split('-').map(Number);
@@ -344,6 +717,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
                   day: 'numeric',
                   year: 'numeric',
                 });
+                const integrity = getPlanIntegrity(plan);
 
                 return (
                   <div
@@ -371,7 +745,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
                         </h4>
                       </div>
 
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5">
                         {!isWorn && (
                           <Button
                             variant="outline"
@@ -383,6 +757,22 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
                             <span>Mark Worn</span>
                           </Button>
                         )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleOpenPlanModal(plan.date)}
+                          className="min-h-11 rounded-full text-xs text-muted hover:text-(--ink) tactile-press"
+                        >
+                          Replace
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleOpenReschedule(plan)}
+                          className="min-h-11 rounded-full text-xs text-muted hover:text-(--ink) tactile-press"
+                        >
+                          Reschedule
+                        </Button>
                         <button
                           type="button"
                           onClick={() => {
@@ -413,6 +803,13 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
                         </div>
                       ))}
                     </div>
+
+                    {integrity?.hasLaundry && (
+                      <div className="text-xs text-amber-800 dark:text-amber-300 bg-amber-500/10 px-3 py-1.5 rounded-xl border border-amber-500/30 flex items-center gap-2">
+                        <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                        <span>Care Notice: {integrity.laundryPieces.join(', ')} is resting for wash.</span>
+                      </div>
+                    )}
 
                     {plan.outfit.why && (
                       <p className="text-xs text-muted italic font-serif leading-relaxed">
@@ -477,10 +874,10 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
           {/* Grid: Tablet/Desktop Matrix on Left, Selected Day Outfit on Right */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5 lg:gap-6 items-start">
             {/* TABLET / DESKTOP CALENDAR MATRIX */}
-            <div className="hidden md:block md:col-span-5 rounded-3xl glass-card specular-border p-5 shadow-2xs">
+            <div className="hidden md:block md:col-span-5 rounded-3xl glass-card couture-card specular-border p-5 shadow-2xs">
               {/* Days of week header */}
               <div className="grid grid-cols-7 text-center mb-2">
-                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, idx) => (
                   <span key={idx} className="text-[10px] font-bold text-muted uppercase tracking-wider">
                     {day}
                   </span>
@@ -554,7 +951,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
 
             {/* SELECTED DAY OUTFIT DETAIL (Dominant, Fashion-First) */}
             <div className="md:col-span-7">
-              <div className="rounded-3xl glass-card specular-border p-5 sm:p-6 shadow-2xs">
+              <div className="rounded-3xl glass-card couture-card specular-border p-5 sm:p-6 shadow-2xs card-hover-lift">
                 {/* Header: Date + Badges */}
                 <div className="flex items-center justify-between border-b border-border/80 pb-3 mb-4">
                   <div>
@@ -588,62 +985,78 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
                 {/* Plan Display OR Empty Day State */}
                 {selectedPlan ? (
                   <div className="space-y-4">
-                    {/* Weather Forecast Preview for planned date */}
-                    {matchingForecast && (
-                      <div className="rounded-2xl border border-blue-200/70 bg-blue-50/60 dark:border-blue-900/40 dark:bg-blue-950/20 p-3 flex items-center justify-between text-xs text-blue-950 dark:text-blue-200 shadow-2xs">
-                        <div className="flex items-center gap-2">
-                          <CloudSun className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
-                          <span className="font-medium">Forecast: {matchingForecast.summary}</span>
-                        </div>
-                        {matchingForecast.precipitationProbability >= 40 && (
-                          <span className="text-[10px] font-bold text-(--kumkum) bg-white dark:bg-zinc-900 px-2 py-0.5 rounded-full border border-(--border)/60">
-                            Rain {matchingForecast.precipitationProbability}%
+                    {/* Weather Forecast Preview with Source Freshness Indicator */}
+                    <div className="rounded-2xl border border-border/80 bg-blue-50/50 dark:bg-blue-950/20 p-3 flex items-center justify-between text-xs text-blue-950 dark:text-blue-200 shadow-2xs">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <CloudSun className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                        <div className="min-w-0">
+                          <span className="text-[9px] uppercase font-bold tracking-wider text-blue-700 dark:text-blue-300 block">
+                            {selectedDateWeather.label}
                           </span>
-                        )}
+                          <span className="font-medium text-xs truncate block">
+                            {selectedDateWeather.summary}
+                          </span>
+                        </div>
                       </div>
-                    )}
+                      {selectedDateWeather.rainProbability >= 40 && (
+                        <span className="text-[10px] font-bold text-(--kumkum) bg-white dark:bg-zinc-900 px-2 py-0.5 rounded-full border border-(--border)/60 shrink-0">
+                          Rain {selectedDateWeather.rainProbability}%
+                        </span>
+                      )}
+                    </div>
+
                     {/* Fashion-First Integrity Notice if pieces are unavailable */}
-                    {planIntegrity?.isStale && (
+                    {selectedPlanIntegrity?.isStale && (
                       <div className="rounded-2xl border border-red-200 bg-red-50 dark:bg-red-950/30 p-3.5 flex items-start gap-2.5 text-xs text-red-800 dark:text-red-300">
                         <AlertCircle className="h-4 w-4 shrink-0 text-red-600 mt-0.5" />
                         <div className="flex-1">
-                          <span className="font-semibold block">One piece isn&apos;t available anymore:</span>
+                          <span className="font-semibold block">Wardrobe Integrity Notice: One piece isn&apos;t available anymore</span>
                           <span className="text-[11px] opacity-90">
-                            {planIntegrity.missingPieces.join(', ')} is no longer in your wardrobe.
+                            {selectedPlanIntegrity.missingPieces.join(', ')} is no longer in your wardrobe archive.
                           </span>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => onGoToDress(selectedPlan.occasion)}
-                          className="text-[10px] font-bold uppercase underline hover:opacity-80 shrink-0"
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleOpenPlanModal(selectedDateStr)}
+                          className="min-h-11 rounded-full text-xs font-semibold uppercase tracking-wider shrink-0 tactile-press"
                         >
-                          Restyle
-                        </button>
+                          Restyle Look
+                        </Button>
                       </div>
                     )}
 
-                    {planIntegrity?.hasLaundry && !planIntegrity.isStale && (
+                    {/* Care Alert if pieces in the plan need washing */}
+                    {selectedPlanIntegrity?.hasLaundry && !selectedPlanIntegrity.isStale && (
                       <div className="rounded-2xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 p-3.5 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
-                        <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+                        <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
                         <div className="flex-1">
-                          <span className="font-semibold block">A piece is currently in care:</span>
+                          <span className="font-semibold block">Care Alert: A piece needs washing or is in laundry</span>
                           <span className="text-[11px] opacity-90">
-                            {planIntegrity.laundryPieces.join(', ')} is resting for wash before wearing.
+                            {selectedPlanIntegrity.laundryPieces.join(', ')} needs washing or is resting for wash before wearing.
                           </span>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => onGoToDress(selectedPlan.occasion)}
-                          className="text-[10px] font-bold uppercase underline hover:opacity-80 shrink-0"
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleOpenPlanModal(selectedDateStr)}
+                          className="min-h-11 rounded-full text-xs font-semibold uppercase tracking-wider shrink-0 tactile-press"
                         >
-                          Restyle
-                        </button>
+                          Restyle Look
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Recent Wear Notice */}
+                    {selectedPlanIntegrity?.hasRecentWear && (
+                      <div className="text-[11px] text-muted bg-(--ivory)/80 p-2.5 rounded-xl border border-border/60">
+                        <strong className="text-(--ink)">Rotation note:</strong> {selectedPlanIntegrity.recentlyWornPieces.join(', ')} was worn recently.
                       </div>
                     )}
 
                     {/* Garments Visual Rail Grid */}
                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5 sm:gap-3.5 bg-(--ivory)/70 dark:bg-zinc-900/40 rounded-2xl p-3 sm:p-3.5 border border-(--border)/60">
-                      {planIntegrity?.pieces.map((piece, pIdx) => (
+                      {selectedPlanIntegrity?.pieces.map((piece, pIdx) => (
                         <div
                           key={piece.id || pIdx}
                           className="aspect-3/4 rounded-xl border border-border bg-card overflow-hidden flex flex-col shadow-2xs relative"
@@ -654,6 +1067,11 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
                               {piece.name || piece.subcategory}
                             </span>
                           </div>
+                          {piece.status !== 'clean' && (
+                            <div className="absolute top-1 left-1 text-[7.5px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-500/20 px-1 py-0.5 rounded border border-amber-500/40">
+                              {piece.status.replace('_', ' ')}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -685,10 +1103,19 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
                       <Button
                         variant="outline"
                         size="default"
-                        onClick={() => onGoToDress(selectedPlan.occasion)}
+                        onClick={() => handleOpenPlanModal(selectedDateStr)}
                         className="min-h-11 shadow-2xs font-semibold uppercase tracking-wider tactile-press"
                       >
                         <span>Change Look</span>
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="default"
+                        onClick={() => handleOpenReschedule(selectedPlan)}
+                        className="min-h-11 shadow-2xs font-semibold uppercase tracking-wider tactile-press"
+                      >
+                        <span>Reschedule</span>
                       </Button>
 
                       <Button
@@ -711,7 +1138,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
                     <div className="h-12 w-12 rounded-full bg-(--ivory) border border-border flex items-center justify-center mb-3">
                       <Shirt className="h-5 w-5 text-(--burnished-gold)" />
                     </div>
-                    <h3 className="font-serif text-lg font-normal text-(--ink)">
+                    <h3 className="editorial-headline font-serif text-lg font-normal text-(--ink)">
                       No outfit planned for this date
                     </h3>
                     <p className="mt-1.5 text-xs text-muted max-w-xs">
@@ -719,7 +1146,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
                     </p>
                     <Button
                       variant="default"
-                      onClick={() => onGoToDress()}
+                      onClick={() => handleOpenPlanModal(selectedDateStr)}
                       className="mt-4 min-h-11 gap-2 shadow-2xs font-semibold uppercase tracking-wider tactile-press"
                     >
                       <Sparkles className="h-3.5 w-3.5 text-(--burnished-gold)" />
@@ -747,7 +1174,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
           </p>
           <Button
             variant="default"
-            onClick={() => onGoToDress()}
+            onClick={() => handleOpenPlanModal(selectedDateStr)}
             className="mt-4 min-h-11 gap-2 shadow-2xs font-semibold uppercase tracking-wider tactile-press"
           >
             <Sparkles className="h-3.5 w-3.5 text-(--burnished-gold)" />
@@ -776,11 +1203,33 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress }) =
             variant="default"
             size="sm"
             onClick={() => setShowAuthModal(true)}
-            className="shrink-0 font-semibold uppercase tracking-wider"
+            className="shrink-0 min-h-11 px-4 font-semibold uppercase tracking-wider"
           >
             Create Profile
           </Button>
         </div>
+      )}
+
+      {/* In-Calendar Outfit Planning Modal */}
+      {planningDateStr && (
+        <CalendarPlanModal
+          isOpen={planningDateStr !== null}
+          onClose={() => setPlanningDateStr(null)}
+          targetDateStr={planningDateStr}
+          initialOccasion={selectedPlan?.occasion || 'office'}
+          existingPlan={plansByDate.get(planningDateStr) || null}
+          onConfirmPlan={handleConfirmPlan}
+        />
+      )}
+
+      {/* In-Calendar Reschedule Modal */}
+      {reschedulingPlan && (
+        <RescheduleModal
+          isOpen={reschedulingPlan !== null}
+          onClose={() => setReschedulingPlan(null)}
+          plan={reschedulingPlan}
+          onReschedule={handleConfirmReschedule}
+        />
       )}
 
       {/* Delete Plan Confirmation Dialog */}

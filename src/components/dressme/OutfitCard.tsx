@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { Bookmark, Check, RefreshCw, Plus, Calendar, ThumbsDown, X, Layers } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Bookmark, Check, RefreshCw, Plus, Calendar, ThumbsDown, X, Layers, AlertTriangle } from 'lucide-react';
 import { GeneratedOutfit, WardrobeItem, Occasion, RejectionReason, ContextSnapshot } from '../../types';
 import { ItemImage } from '../common/ItemImage';
 import { getOutfitWhyReasons } from '../../engine/scoring';
 import { useWardrobeContext } from '../../context/WardrobeContext';
+import { extractEditorialComponents, buildEditorialReasoning } from '../../engine/saathi/editorialReasoning';
 
 const REJECTION_OPTIONS: { reason: RejectionReason; label: string }[] = [
   { reason: 'not_my_style', label: 'Not my style' },
@@ -69,10 +70,29 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
   if (accessory) pieceNames.push(accessory.name);
   const pieceSummary = pieceNames.join(' · ');
 
-  // Get 2-3 concise editorial why reasons, informed by Personal Style Brain and Climate Context
+  // Compute grounded 8-part editorial reasoning directly from owned garments
+  const editorialComponents = useMemo(() => {
+    return extractEditorialComponents(outfit.slots);
+  }, [outfit.slots]);
+
+  const editorialRationale = useMemo(() => {
+    return buildEditorialReasoning({
+      concept: outfit.template,
+      occasion,
+      components: editorialComponents,
+      weather: context,
+    });
+  }, [outfit.template, occasion, editorialComponents, context]);
+
+  // Get concise editorial why reasons, informed by Personal Style Brain and Climate Context
   const whyReasons = outfit.explanation?.reasons?.length
     ? outfit.explanation.reasons
     : getOutfitWhyReasons(allPieces, occasion, outfit.score, preferences, styleProfile, context);
+
+  // Check if any piece in the ensemble requires washing
+  const unwashedPieces = useMemo(() => {
+    return allPieces.filter((p) => p.status !== 'clean');
+  }, [allPieces]);
 
   const handleWoreClick = async () => {
     if (wornToday) return;
@@ -110,10 +130,18 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
     best_match: { label: 'Best Match', className: 'text-(--burnished-gold) border-(--burnished-gold)/40 bg-(--paper)/90' },
     alternative: { label: 'Alternative', className: 'text-(--ink)/80 border-border bg-card' },
     explore: { label: 'Explore', className: 'text-(--kumkum) border-(--kumkum)/30 bg-(--kumkum)/5' },
+    underused: { label: 'Archive Rediscovery', className: 'text-emerald-700 border-emerald-400/40 bg-emerald-50/80 dark:text-emerald-300 dark:bg-emerald-950/40' },
+  };
+
+  const roleDistinctionCopy: Record<string, string> = {
+    best_match: `Top overall compatibility for ${occasion} based on your color harmony and style brief.`,
+    alternative: `Alternative silhouette variation exploring a distinct combination and drape.`,
+    explore: `Curated exploration introducing unexpected styling harmony from your archive.`,
+    underused: `Wardrobe rediscovery look bringing underused pieces back into active rotation.`,
   };
 
   return (
-    <article className="group relative overflow-hidden rounded-3xl glass-card specular-border p-4 sm:p-6 transition-[border-color,box-shadow] duration-200 hover:border-muted/60 animate-fade-in shadow-xs hover:shadow-md">
+    <article className="group relative overflow-hidden rounded-3xl couture-card glass-card specular-border p-4 sm:p-6 transition-all duration-300 animate-fade-in shadow-xs hover:shadow-md">
       {/* Top Editorial Header */}
       <div className="mb-3 flex items-baseline justify-between border-b border-border/80 pb-2.5">
         <div>
@@ -135,6 +163,25 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
           {outfit.template}
         </span>
       </div>
+
+      {/* Discovery Role Distinction Banner */}
+      {outfit.role && roleDistinctionCopy[outfit.role] && (
+        <div className="mb-3.5 flex items-center gap-2 rounded-xl bg-(--ivory)/70 px-3 py-1.5 border border-border/60 text-[11px] text-muted">
+          <span className="h-1.5 w-1.5 rounded-full bg-(--burnished-gold) shrink-0" />
+          <span className="font-medium text-(--ink)">{roleBadges[outfit.role]?.label || 'Curation'}:</span>
+          <span className="truncate">{roleDistinctionCopy[outfit.role]}</span>
+        </div>
+      )}
+
+      {/* Laundry Awareness Callout for look components */}
+      {unwashedPieces.length > 0 && (
+        <div className="mb-3.5 flex items-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 p-2.5 text-xs text-amber-800 dark:text-amber-300">
+          <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+          <span>
+            {unwashedPieces.map((p) => p.name).join(', ')} currently {unwashedPieces[0].status.replace('_', ' ')}. You can plan this outfit or wash before wearing.
+          </span>
+        </div>
+      )}
 
       {/* Universal Responsive Composition:
           - Phone (<768px): Vertical stack with asymmetric visual hero + supporting stack
@@ -176,6 +223,11 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
                     {primarySlot[1][0].fabric}
                   </div>
                 )}
+                {primarySlot[1][0].status !== 'clean' && (
+                  <div className="absolute bottom-9 left-2 text-[8px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-500/20 backdrop-blur-xs px-1.5 py-0.5 rounded border border-amber-500/40">
+                    {primarySlot[1][0].status.replace('_', ' ')}
+                  </div>
+                )}
               </div>
             )}
 
@@ -209,6 +261,11 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
                       <div className="absolute bottom-1.5 left-1.5 right-1.5 truncate rounded bg-(--ink)/80 px-1.5 py-0.5 text-[9px] font-medium text-(--paper) backdrop-blur-xs">
                         {piece.name}
                       </div>
+                      {piece.status !== 'clean' && (
+                        <div className="absolute top-1.5 left-1.5 text-[7.5px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-500/20 backdrop-blur-xs px-1 py-0.5 rounded border border-amber-500/40">
+                          {piece.status.replace('_', ' ')}
+                        </div>
+                      )}
                     </div>
                   );
                 })
@@ -238,6 +295,11 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
                       <div className="absolute bottom-1.5 left-1.5 right-1.5 truncate rounded bg-(--ink)/80 px-1.5 py-0.5 text-[9px] font-medium text-(--paper) backdrop-blur-xs">
                         {secondarySlots[0][1][0].name}
                       </div>
+                      {secondarySlots[0][1][0].status !== 'clean' && (
+                        <div className="absolute top-1.5 left-1.5 text-[7.5px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-500/20 backdrop-blur-xs px-1 py-0.5 rounded border border-amber-500/40">
+                          {secondarySlots[0][1][0].status.replace('_', ' ')}
+                        </div>
+                      )}
                     </div>
                   )}
                   {/* Remaining secondary pieces side-by-side (e.g. Bottom + Footwear) */}
@@ -269,6 +331,11 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
                           <div className="absolute bottom-1 left-1 right-1 truncate rounded bg-(--ink)/80 px-1 py-0.5 text-[8px] font-medium text-(--paper) backdrop-blur-xs">
                             {piece.name}
                           </div>
+                          {piece.status !== 'clean' && (
+                            <div className="absolute top-1 left-1 text-[7px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-500/20 backdrop-blur-xs px-1 py-0.5 rounded border border-amber-500/40">
+                              {piece.status.replace('_', ' ')}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -342,7 +409,24 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
                 </span>
               </div>
 
-              <ul className="space-y-1 text-xs text-(--ink)">
+              {/* Grounded Color Theory & Silhouette Dimensions */}
+              <div className="space-y-1.5 pt-1 text-[11px] border-t border-border/50">
+                <div className="text-(--ink)">
+                  <span className="font-semibold text-(--burnished-gold)">Color Balance: </span>
+                  <span className="text-muted leading-tight">{editorialRationale.sections.colorTheory}</span>
+                </div>
+                <div className="text-(--ink)">
+                  <span className="font-semibold text-(--burnished-gold)">Silhouette &amp; Drape: </span>
+                  <span className="text-muted leading-tight">{editorialRationale.sections.proportionSilhouette}</span>
+                </div>
+                <div className="text-(--ink)">
+                  <span className="font-semibold text-(--burnished-gold)">Texture Flow: </span>
+                  <span className="text-muted leading-tight">{editorialRationale.sections.fabricTexture}</span>
+                </div>
+              </div>
+
+              {/* Additional Why Reasons from Style Brain & Knowledge Engine */}
+              <ul className="space-y-1 text-xs text-(--ink) pt-1">
                 {whyReasons.map((reason, i) => (
                   <li key={`${reason}-${i}`} className="flex items-start gap-2">
                     <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-(--burnished-gold)" />
@@ -350,6 +434,7 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
                   </li>
                 ))}
               </ul>
+
               {outfit.explanation?.culturalRationale && (
                 <div className="pt-2 border-t border-border/50 text-[11px] text-(--kumkum)">
                   <span className="font-semibold">Cultural Rationale:</span> {outfit.explanation.culturalRationale}
@@ -513,4 +598,3 @@ export const OutfitCard: React.FC<OutfitCardProps> = ({
     </article>
   );
 };
-

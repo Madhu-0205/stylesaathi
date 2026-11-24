@@ -439,6 +439,17 @@ export interface StylePreferences {
   preferredFits?: SilhouetteFit[];
   regionalInterests?: string[];
   budgetTier?: 'budget_conscious' | 'mid_range' | 'premium';
+  budgetConstraints?: {
+    maxMonthlyBudget?: number;
+    currency?: string;
+    prioritizeEssentialGapsOnly?: boolean;
+    avoidImpulsePurchases?: boolean;
+  };
+  culturalOverrides?: {
+    allowLeatherInPuja?: boolean;
+    strictPujaDecorum?: boolean;
+  };
+  allowLeatherInPuja?: boolean;
   internationalInspirations?: ('indian_first' | 'korean_contemporary_streetwear' | 'japanese_relaxed_workwear' | 'european_tailored_smart')[];
   comfortPreferences?: {
     warmthSensitivity?: 'runs_warm' | 'runs_cold' | 'standard';
@@ -470,6 +481,7 @@ export interface CalendarRepository {
   getPlanByDate(date: string): Promise<OutfitPlan | null>;
   getAllPlansRaw?(): Promise<OutfitPlan[]>;
   upsertPlanRaw?(plan: OutfitPlan): Promise<void>;
+  upsertPlansBulk?(plans: OutfitPlan[]): Promise<void>;
   savePlan(plan: OutfitPlan): Promise<void>;
   deletePlan(id: string): Promise<void>;
   updatePlanStatus(id: string, status: PlanStatus): Promise<void>;
@@ -642,11 +654,74 @@ export interface PersonalStyleProfile {
   contextualPreferences?: ContextualPreferences;
 }
 
+export type PreferenceEvidenceSource =
+  | 'explicit_declaration' // Set directly by user in preferences/onboarding
+  | 'worn_history'        // Physical wear events (highest ground-truth weight)
+  | 'outfit_feedback'     // Like / Love / Dislike diagnostic feedback
+  | 'calendar_plan'       // Scheduled outfit on calendar
+  | 'saved_look'          // Bookmarked in saved outfits
+  | 'unobserved';         // No evidence recorded
+
+export interface StyleDNANode<T = string> {
+  id: string;
+  dimension: 'aesthetic' | 'color' | 'silhouette' | 'fabric' | 'pattern' | 'occasion' | 'cultural';
+  value: T;
+  label: string;
+  score: number; // -1.0 to +1.0
+  confidence: number; // 0.0 to 1.0
+  status: PreferenceStatus; // 'explicit' | 'observed' | 'inferred' | 'unknown' | 'contradictory'
+  evidenceSource: PreferenceEvidenceSource;
+  sampleCount: number;
+  lastUpdated: number;
+  description?: string;
+  isConfirmed?: boolean;
+}
+
+export interface StyleDNAInsight {
+  id: string;
+  type: 'color_frequency' | 'silhouette_signature' | 'underused_gem' | 'occasion_contrast' | 'emerging_trend';
+  title: string;
+  evidence: string;
+  confidence: number;
+  tags?: string[];
+  actionLabel?: string;
+}
+
+export interface StyleDNAProfile {
+  version: number;
+  userId: string;
+  updatedAt: number;
+  overallConfidence: number;
+  totalSignalsCount: number;
+  hasSufficientEvidence: boolean;
+
+  // Curated DNA dimensions:
+  aesthetics: StyleDNANode[];
+  colors: StyleDNANode[];
+  silhouettes: StyleDNANode[];
+  fabrics: StyleDNANode[];
+  patterns: StyleDNANode[];
+  culturalAffinities: StyleDNANode[];
+  occasionPreferences: Record<string, StyleDNANode[]>;
+
+  // Personal fashion insights:
+  insights: StyleDNAInsight[];
+
+  // Avoidance summary:
+  avoidances: {
+    colors: string[];
+    fabrics: string[];
+    patterns: string[];
+    styles: string[];
+  };
+}
+
 export interface StyleSignalsRepository {
   getSignals(): Promise<StyleSignalEvent[]>;
   getSignalsForItem(itemId: string): Promise<StyleSignalEvent[]>;
   addSignal(signal: StyleSignalEvent): Promise<void>;
   addSignals(signals: StyleSignalEvent[]): Promise<void>;
+  removeSignal?(signalId: string): Promise<void>;
   clear(): Promise<void>;
 }
 
@@ -686,6 +761,8 @@ export interface WearEvent {
   plannedDate?: string; // YYYY-MM-DD
   wornAt: number; // Epoch timestamp (ms)
   createdAt: number; // Epoch timestamp (ms)
+  occasion?: Occasion;
+  timestamp?: number;
 }
 
 // ============================================================================
@@ -703,6 +780,7 @@ export type SyncOperation =
 export interface BaseSyncMutation {
   id: string;
   mutationId?: string; // Optional alias for id
+  userId?: string; // User ownership tag for account isolation
   createdAt?: number; // Epoch timestamp (ms)
   clientTimestamp: number; // Timestamp of mutation creation
   attemptCount: number;
@@ -711,6 +789,9 @@ export interface BaseSyncMutation {
   lastError: string | null;
   status: 'pending' | 'in_flight' | 'failed' | 'dead_letter';
   dependencies?: string[];
+  expectedRevision?: number; // Server-authoritative revision expectation
+  reconciledAt?: number; // Timestamp of user-directed reconciliation
+  originalMutationId?: string; // Lineage link to superseded dead-letter mutation
 }
 
 export interface ItemUpsertMutation extends BaseSyncMutation {
@@ -926,7 +1007,7 @@ export interface WeatherProvider {
 // PHASE 5: RECOMMENDATION ENGINE 2.0
 // ============================================================================
 
-export type RecommendationRole = 'best_match' | 'alternative' | 'explore';
+export type RecommendationRole = 'best_match' | 'alternative' | 'explore' | 'underused';
 
 export interface ScoreBreakdown {
   baseCompatibility: number;
@@ -1004,10 +1085,13 @@ export interface RecommendationRequest {
   styleProfile?: PersonalStyleProfile;
   context?: ContextSnapshot;
   culturalSignals?: CulturalContextSignals;
-  limit?: number; // Default 3
+  limit?: number; // Default 3 (or 4 when underused role present)
   anchorItemId?: string; // Phase 7: Explicit anchor constraint
   allowPlanningMode?: boolean; // Phase 5D: Permits unwashed anchor garments for styling exploration
   enableShadow?: boolean; // Phase 5A: Toggle shadow ensemble evaluation (defaults to true)
+  recentWornItemIds?: string[]; // Anti-repetition lookback filter
+  plannedTomorrowItemIds?: string[]; // Calendar collision prevention
+  targetFormality?: number; // Phase 1.7: Styling brief target formality calibration (1-5)
 }
 
 export interface RecommendationSet {
@@ -1121,6 +1205,8 @@ export type {
   SaathiErrorType,
   SaathiError,
 } from './engine/saathi/types';
+
+export { DEFAULT_STYLE_PREFERENCES } from './repositories/LocalStoragePreferencesRepository';
 
 
 

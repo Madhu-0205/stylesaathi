@@ -238,6 +238,32 @@ export function evaluateTier1HardConstraints(
     return { passed: false, failureReason: sensitivityCheck.reason };
   }
 
+  // Sacred Indian Occasion Decorum: Exclude leather items during puja / worship,
+  // unless explicitly permitted by user preference (culturalOverrides.allowLeatherInPuja or modern western aesthetic)
+  const effectiveOccasion = occasion || context?.occasion;
+  if (effectiveOccasion === 'puja') {
+    const userAesthetics = (preferences?.preferredAesthetics || []).map((a) => a.toLowerCase());
+    const userAllowsLeather =
+      preferences?.culturalOverrides?.allowLeatherInPuja === true ||
+      preferences?.allowLeatherInPuja === true ||
+      (preferences as any)?.culturalPreferences?.allowLeatherInPuja === true ||
+      userAesthetics.includes('modern western');
+
+    if (!userAllowsLeather) {
+      const leatherPiece = pieces.find(
+        (p) =>
+          p.fabric?.toLowerCase() === 'leather' ||
+          (p as any).material?.toLowerCase() === 'leather'
+      );
+      if (leatherPiece) {
+        return {
+          passed: false,
+          failureReason: `Leather item "${leatherPiece.name}" is incompatible with sacred puja decorum.`,
+        };
+      }
+    }
+  }
+
   return { passed: true };
 }
 

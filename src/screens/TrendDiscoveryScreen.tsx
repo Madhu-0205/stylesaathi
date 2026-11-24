@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Compass, AlertCircle, X, Shirt } from 'lucide-react';
+import { Compass, AlertCircle, X, Shirt, Sparkles } from 'lucide-react';
 import { useWardrobeContext } from '../context/WardrobeContext';
 import { CuratedActiveTrend, TrendDiscoveryOpportunity } from '../engine/trends/types';
 import { getBundledCuratedTrends } from '../engine/trends/trendCatalog';
@@ -7,11 +7,16 @@ import { evaluateWardrobeDiscoveryOpportunities, exploreTrendWithWardrobe } from
 import { computeWearAnalytics } from '../engine/analytics';
 import { TrendDiscoveryCard } from '../components/trends/TrendDiscoveryCard';
 import { TrendTelemetryModal } from '../components/trends/TrendTelemetryModal';
-import { RecommendedOutfit, MissingOutfitRequirement } from '../types';
+import { RecommendedOutfit, MissingOutfitRequirement, WardrobeItem } from '../types';
+import { getCompatibilityDescriptor } from '../utils/scoreFormatter';
 
-type FilterTab = 'ALL' | 'STRONG_DISCOVERY' | 'WARDROBE_RELEVANT' | 'STYLE_RELEVANT';
+type FilterTab = 'ALL' | 'STRONG_DISCOVERY' | 'WARDROBE_RELEVANT' | 'STYLE_RELEVANT' | 'INDIAN_HERITAGE';
 
-export const TrendDiscoveryScreen: React.FC = () => {
+interface TrendDiscoveryScreenProps {
+  onGoToDress?: (anchorItem?: WardrobeItem, occasion?: string) => void;
+}
+
+export const TrendDiscoveryScreen: React.FC<TrendDiscoveryScreenProps> = ({ onGoToDress }) => {
   const { items, styleProfile } = useWardrobeContext();
   const [activeFilter, setActiveFilter] = useState<FilterTab>('ALL');
   const [telemetryOpportunity, setTelemetryOpportunity] = useState<TrendDiscoveryOpportunity | null>(null);
@@ -58,6 +63,13 @@ export const TrendDiscoveryScreen: React.FC = () => {
   const filteredOpportunities = useMemo(() => {
     if (activeFilter === 'ALL') {
       return opportunities.filter((o) => o.evidence.classification !== 'NOT_RELEVANT');
+    }
+    if (activeFilter === 'INDIAN_HERITAGE') {
+      return opportunities.filter(
+        (o) =>
+          o.trend.concept.indianFashionContext?.isIndianFusion ||
+          o.trend.provenance.sourceType === 'INDIAN_HERITAGE_CURATION'
+      );
     }
     return opportunities.filter((o) => o.evidence.classification === activeFilter);
   }, [opportunities, activeFilter]);
@@ -151,6 +163,18 @@ export const TrendDiscoveryScreen: React.FC = () => {
         >
           Style Relevant
         </button>
+        <button
+          type="button"
+          onClick={() => setActiveFilter('INDIAN_HERITAGE')}
+          className={`min-h-11 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-full transition-all tactile-press-sm ${
+            activeFilter === 'INDIAN_HERITAGE'
+              ? 'bg-(--ink) text-(--paper) shadow-2xs'
+              : 'text-muted hover:text-(--ink)'
+          }`}
+          aria-pressed={activeFilter === 'INDIAN_HERITAGE'}
+        >
+          Indian &amp; Heritage
+        </button>
       </div>
 
       {/* Opportunities Grid */}
@@ -169,6 +193,7 @@ export const TrendDiscoveryScreen: React.FC = () => {
               opportunity={opportunity}
               onExplore={handleExplore}
               onInspectTelemetry={(opp) => setTelemetryOpportunity(opp)}
+              wardrobeItems={items}
             />
           ))}
         </div>
@@ -234,9 +259,17 @@ export const TrendDiscoveryScreen: React.FC = () => {
                         <span className="text-xs font-bold text-(--ink)">
                           Look #{idx + 1}
                         </span>
-                        <span className="text-[11px] text-muted font-medium">
-                          Score: {typeof rec.score === 'number' ? (rec.score * 100).toFixed(0) : '85'}%
-                        </span>
+                        {(() => {
+                          const desc = getCompatibilityDescriptor(rec.score);
+                          return (
+                            <span
+                              className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${desc.badgeClass}`}
+                              title={desc.heuristicNote}
+                            >
+                              {desc.label}
+                            </span>
+                          );
+                        })()}
                       </div>
 
                       <div className="flex flex-wrap gap-1.5 pt-1">
@@ -256,6 +289,24 @@ export const TrendDiscoveryScreen: React.FC = () => {
                           ? rec.explanation.headline || rec.explanation.reasons?.join(' · ') || 'Coordinated ensemble'
                           : String(rec.explanation || 'Coordinated ensemble')}
                       </p>
+
+                      {onGoToDress && (
+                        <div className="pt-2 flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const outfitPieces = Object.values(rec.slots || {}).flat();
+                              const anchorPiece = outfitPieces.find((p) => p.category === 'Tops' || p.category === 'Ethnic') || outfitPieces[0];
+                              setExplorationResult(null);
+                              onGoToDress(anchorPiece, 'everyday');
+                            }}
+                            className="min-h-11 px-3.5 rounded-full bg-(--ink) text-(--paper) hover:opacity-90 active:scale-95 text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-2xs couture-press cursor-pointer"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-(--burnished-gold)" />
+                            <span>Style in Atelier</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

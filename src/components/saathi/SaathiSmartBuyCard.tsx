@@ -4,13 +4,16 @@ import { PurchaseAssessment } from '../../types';
 import { ShieldCheck, AlertCircle, RefreshCw, ShoppingBag } from 'lucide-react';
 
 export interface SaathiSmartBuyAssessmentData {
-  verdict?: PurchaseAssessment;
+  verdict?: any;
+  purchaseVerdict?: 'NO_PURCHASE_NEEDED' | 'PURCHASE_OPTIONAL' | 'PURCHASE_RECOMMENDED' | 'PURCHASE_STRONGLY_RECOMMENDED' | 'INSUFFICIENT_INFORMATION' | string;
   headline?: string;
   summary?: string;
   dormantRediscoveries?: any[];
   occasionGaps?: any[];
   evidenceHierarchy?: string[];
   confidenceScore?: number;
+  evaluatedPieces?: any[];
+  laundryNotice?: string;
 }
 
 interface SaathiSmartBuyCardProps {
@@ -21,21 +24,61 @@ interface SaathiSmartBuyCardProps {
 export const SaathiSmartBuyCard: React.FC<SaathiSmartBuyCardProps> = ({ report, assessment }) => {
   const isObj = typeof assessment === 'object' && assessment !== null;
   const assessmentObj = isObj ? (assessment as SaathiSmartBuyAssessmentData) : undefined;
-  const verdict: PurchaseAssessment =
+  const rawVerdict =
+    assessmentObj?.purchaseVerdict ||
     assessmentObj?.verdict ||
-    (typeof assessment === 'string' ? (assessment as PurchaseAssessment) : undefined) ||
+    (typeof assessment === 'string' ? assessment : undefined) ||
     report?.purchaseAssessment ||
     'NO_PURCHASE_NEEDED';
 
-  const isNoPurchase = verdict === 'NO_PURCHASE_NEEDED';
+  const isNoPurchase =
+    rawVerdict === 'NO_PURCHASE_NEEDED' ||
+    rawVerdict === 'PURCHASE_OPTIONAL' ||
+    rawVerdict === 'OPTIONAL_GAP' ||
+    rawVerdict === 'NO_VALID_OUTFIT' ||
+    rawVerdict === 'INSUFFICIENT_INFORMATION';
+
+  const badgeText =
+    rawVerdict === 'PURCHASE_OPTIONAL' || rawVerdict === 'OPTIONAL_GAP'
+      ? 'PURCHASE OPTIONAL'
+      : rawVerdict === 'PURCHASE_STRONGLY_RECOMMENDED'
+      ? 'PURCHASE STRONGLY RECOMMENDED'
+      : rawVerdict === 'PURCHASE_RECOMMENDED'
+      ? 'PURCHASE RECOMMENDED'
+      : rawVerdict === 'WARDROBE_GAP'
+      ? 'PURCHASE STRONGLY RECOMMENDED'
+      : rawVerdict === 'NO_VALID_OUTFIT'
+      ? 'LAUNDRY BOTTLENECK'
+      : rawVerdict === 'INSUFFICIENT_INFORMATION'
+      ? 'INSUFFICIENT INFORMATION'
+      : isNoPurchase
+      ? 'NO PURCHASE NEEDED'
+      : 'PURCHASE JUSTIFIED';
+
   const headline =
     assessmentObj?.headline ||
-    (isNoPurchase ? 'No Purchase Needed' : 'Purchase Justified');
+    (rawVerdict === 'PURCHASE_OPTIONAL' || rawVerdict === 'OPTIONAL_GAP'
+      ? 'Optional Enhancement Only'
+      : rawVerdict === 'PURCHASE_STRONGLY_RECOMMENDED'
+      ? 'Essential Structural Gap'
+      : rawVerdict === 'PURCHASE_RECOMMENDED'
+      ? 'Recommended Wardrobe Addition'
+      : rawVerdict === 'WARDROBE_GAP'
+      ? 'Verified Wardrobe Gap'
+      : rawVerdict === 'NO_VALID_OUTFIT'
+      ? 'No Purchase Needed (Laundry Bottleneck)'
+      : rawVerdict === 'INSUFFICIENT_INFORMATION'
+      ? 'More Wardrobe Information Needed'
+      : isNoPurchase
+      ? 'No Purchase Needed'
+      : 'Verified Wardrobe Gap');
 
   const summary =
     assessmentObj?.summary ||
     report?.negativeEvidence?.primaryReason ||
     'Your existing wardrobe covers current needs sufficiently.';
+
+  const evaluatedPieces: any[] = assessmentObj?.evaluatedPieces || [];
 
   const rediscoveryCount =
     assessmentObj?.dormantRediscoveries?.length ??
@@ -71,7 +114,7 @@ export const SaathiSmartBuyCard: React.FC<SaathiSmartBuyCardProps> = ({ report, 
                 : 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30'
             }`}
           >
-            {isNoPurchase ? 'NO PURCHASE NEEDED' : 'PURCHASE JUSTIFIED'}
+            {badgeText}
           </span>
         </div>
       </div>
@@ -82,6 +125,37 @@ export const SaathiSmartBuyCard: React.FC<SaathiSmartBuyCardProps> = ({ report, 
           {summary}
         </p>
       </div>
+
+      {/* Laundry Advisory Notice */}
+      {assessmentObj?.laundryNotice && (
+        <div className="p-2.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-900 dark:text-blue-300">
+          <span className="font-semibold block">Laundry Notice:</span>
+          <p className="text-[11px] leading-relaxed mt-0.5">{assessmentObj.laundryNotice}</p>
+        </div>
+      )}
+
+      {/* Evaluated Owned Pieces */}
+      {evaluatedPieces.length > 0 && (
+        <div className="space-y-1.5 pt-1 border-t border-(--border)/40">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted block">
+            Evaluated Ready Pieces in Closet
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {evaluatedPieces.map((p: any, idx: number) => {
+              const name = typeof p === 'string' ? p : p?.name || 'Garment';
+              const role = typeof p === 'object' && p?.role ? ` (${p.role})` : '';
+              return (
+                <span
+                  key={idx}
+                  className="text-[11px] px-2 py-1 rounded-md bg-(--ivory) border border-(--border) text-(--ink)"
+                >
+                  {name}{role}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Rediscovery callout if owned pieces can solve shortages */}
       {rediscoveryCount > 0 && (

@@ -89,6 +89,10 @@ export class LocalStorageWearEventsRepository implements WearEventsRepository {
     }
   }
 
+  async addEventsBulk(newEvents: WearEvent[]): Promise<void> {
+    return this.addEvents(newEvents);
+  }
+
   async clear(): Promise<void> {
     this.removeRaw(WEAR_EVENTS_KEY);
   }

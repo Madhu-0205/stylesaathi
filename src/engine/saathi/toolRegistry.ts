@@ -68,6 +68,7 @@ export interface GetWardrobeInput {
   color?: string;
   status?: string;
   search?: string;
+  occasion?: Occasion;
 }
 
 export const getWardrobeTool: SaathiTool<GetWardrobeInput, DomainResultReference> = {
@@ -89,7 +90,14 @@ export const getWardrobeTool: SaathiTool<GetWardrobeInput, DomainResultReference
       items = items.filter((i) => i.colors?.some((c) => c.toLowerCase().includes(col)));
     }
     if (input.status) {
-      items = items.filter((i) => i.status === input.status);
+      if (input.status === 'in_laundry') {
+        items = items.filter((i) => i.status === 'in_laundry' || i.status === 'needs_washing');
+      } else {
+        items = items.filter((i) => i.status === input.status);
+      }
+    }
+    if (input.occasion) {
+      items = items.filter((i) => i.occasions && i.occasions.includes(input.occasion!));
     }
     if (input.search) {
       const q = input.search.toLowerCase();
@@ -142,14 +150,64 @@ export const getWardrobeItemTool: SaathiTool<GetWardrobeItemInput, DomainResultR
 // ============================================================================
 // 3. TOOL: getCurrentWeather
 // ============================================================================
-export const getCurrentWeatherTool: SaathiTool<Record<string, unknown>, DomainResultReference> = {
+export interface GetCurrentWeatherInput {
+  relativeDate?: string;
+  dateStr?: string;
+}
+
+export const getCurrentWeatherTool: SaathiTool<GetCurrentWeatherInput, DomainResultReference> = {
   name: 'getCurrentWeather',
-  description: 'Inspects current verified weather snapshot from Phase 4 Weather Engine.',
+  description: 'Inspects current or relative forecast weather snapshot from Phase 4 Weather Engine.',
   isMutation: false,
   requiresConfirmation: false,
-  async execute(_input, context) {
+  async execute(input, context) {
+    const isTomorrow = input?.relativeDate === 'tomorrow';
+    const periods = context.forecast?.periods || [];
+    const tomorrowPeriod = periods.find(
+      (p: any) => p.period === 'tomorrow' || (input?.dateStr && p.date === input.dateStr)
+    );
+
+    if (isTomorrow) {
+      if (tomorrowPeriod) {
+        const freshness = context.freshness || 'fresh';
+        const freshnessBadge = freshness === 'fresh' ? 'Verified Live Forecast' : 'Cached Forecast';
+        const minTemp = tomorrowPeriod.temperatureMin;
+        const maxTemp = tomorrowPeriod.temperatureMax;
+        const condition = tomorrowPeriod.summary || tomorrowPeriod.condition;
+        const rainChance = tomorrowPeriod.precipitationProbability ?? 0;
+        const thermal = maxTemp > 32 ? 'warm to hot' : minTemp < 18 ? 'cool to mild' : 'pleasant';
+
+        const summary = `Tomorrow's forecast: ${minTemp}°–${maxTemp}°C (${condition}). Rain risk: ${rainChance}% (${freshnessBadge}). Thermal expectation: ${thermal}.`;
+        return {
+          type: 'WEATHER',
+          summary,
+          weather: {
+            ...tomorrowPeriod,
+            temperature: maxTemp,
+            relativeDate: 'tomorrow',
+            freshness,
+          },
+        };
+      }
+
+      const weatherData = context.weatherSnapshot?.weather || context.weather;
+      const city = weatherData?.location?.city || 'your region';
+      const summary = `Tomorrow's live forecast for ${city} is currently unavailable offline (honest offline fallback). Expect seasonal conditions; light breathable cotton or adaptable layers are recommended.`;
+      return {
+        type: 'WEATHER',
+        summary,
+        weather: null,
+      };
+    }
+
     const weatherData = context.weatherSnapshot?.weather || context.weather;
-    if (!weatherData) {
+    const isExpired = Boolean(
+      weatherData?.expiresAt &&
+        context.referenceTimestamp &&
+        weatherData.expiresAt < context.referenceTimestamp
+    );
+
+    if (!weatherData || isExpired) {
       return {
         type: 'WEATHER',
         summary: "I can't verify the current weather right now, so I won't use weather as a recommendation factor.",
@@ -178,6 +236,9 @@ export interface RecommendOutfitsInput {
   season: Season;
   dateStr?: string;
   limit?: number;
+  anchorItemId?: string;
+  allowPlanningMode?: boolean;
+  recentWornItemIds?: string[];
 }
 
 export const recommendOutfitsTool: SaathiTool<RecommendOutfitsInput, DomainResultReference> = {
@@ -189,8 +250,15 @@ export const recommendOutfitsTool: SaathiTool<RecommendOutfitsInput, DomainResul
     const localDate = input.dateStr || context.localDate || '2026-10-13';
     const limit = input.limit || 3;
 
+    const filteredWardrobe =
+      input.recentWornItemIds && input.recentWornItemIds.length > 0
+        ? context.wardrobe.filter((i) => !input.recentWornItemIds!.includes(i.id))
+        : context.wardrobe;
+
+    const itemsToPass = filteredWardrobe.length > 0 ? filteredWardrobe : context.wardrobe;
+
     const result = recommendOutfitsWithTelemetry({
-      items: context.wardrobe,
+      items: itemsToPass,
       occasion: input.occasion,
       season: input.season,
       localDate,
@@ -198,6 +266,9 @@ export const recommendOutfitsTool: SaathiTool<RecommendOutfitsInput, DomainResul
       styleProfile: getSafeStyleProfile(context),
       context: context.weatherSnapshot || undefined,
       limit,
+      anchorItemId: input.anchorItemId,
+      allowPlanningMode: input.allowPlanningMode,
+      recentWornItemIds: input.recentWornItemIds,
     });
 
     const outfits = result.set.outfits;
@@ -391,12 +462,297 @@ export const getWardrobeGapsTool: SaathiTool<Record<string, unknown>, DomainResu
 // ============================================================================
 // 9. TOOL: getPurchaseAssessment (Phase 9 Smart Buy Decision Support)
 // ============================================================================
-export const getPurchaseAssessmentTool: SaathiTool<Record<string, unknown>, DomainResultReference> = {
+export interface GetPurchaseAssessmentInput {
+  category?: Category;
+  subcategory?: Subcategory;
+  search?: string;
+  targetPriceINR?: number;
+  occasion?: Occasion;
+  occasionSubtype?: string;
+  anchorItemId?: string;
+  explicitNoPurchase?: boolean;
+}
+
+export const getPurchaseAssessmentTool: SaathiTool<GetPurchaseAssessmentInput, DomainResultReference> = {
   name: 'getPurchaseAssessment',
-  description: 'Answers "Do I actually need to buy anything?" via Phase 9 Smart Buy.',
+  description: 'Answers "Do I actually need to buy anything?" via Phase 9 Smart Buy and Occasion-Scoped Intelligence.',
   isMutation: false,
   requiresConfirmation: false,
-  async execute(_input, context) {
+  async execute(input, context) {
+    // 1. Explicit No Purchase Flag
+    if (input?.explicitNoPurchase) {
+      const summary =
+        'Understood! StyleSaathi focuses 100% on creative combinations from your existing wardrobe. No purchases are recommended.';
+      return {
+        type: 'PURCHASE_ASSESSMENT',
+        summary,
+        purchaseAssessment: {
+          verdict: 'NO_PURCHASE_NEEDED',
+          purchaseVerdict: 'NO_PURCHASE_NEEDED',
+          purchaseAssessment: 'NO_PURCHASE_NEEDED',
+          headline: 'Zero Purchase Philosophy',
+          summary,
+          primaryReason: summary,
+          rediscoveryOpportunitiesCount: 0,
+          details: ['Working strictly with existing wardrobe garments.'],
+        } as any,
+      };
+    }
+
+    const queriedTerm = input?.search || input?.subcategory || input?.category;
+
+    // 2. Occasion-Scoped Purchase Assessment (Critical Phase 1.10 Trust Mandate)
+    if (input?.occasion) {
+      const occasion = input.occasion;
+      const cleanItems = context.wardrobe.filter((i) => i.status === 'clean');
+
+      // Attempt recommendation using clean owned garments
+      const cleanRecResult = recommendOutfitsWithTelemetry({
+        items: cleanItems,
+        occasion,
+        season: 'summer',
+        localDate: context.localDate || '2026-10-13',
+        anchorItemId: input?.anchorItemId,
+        preferences: context.preferences,
+        styleProfile: getSafeStyleProfile(context),
+        limit: 3,
+      });
+
+      const cleanOutfits = cleanRecResult.set.outfits;
+
+      if (cleanOutfits.length > 0) {
+        const topOutfit = cleanOutfits[0];
+        const pieces = Object.values(topOutfit.slots || {}).flat();
+        const pieceNames = pieces.map((p) => p.name).join(' + ');
+
+        // Check if user queried a specific item (e.g. "Do I need a blazer for party?")
+        if (queriedTerm) {
+          const q = queriedTerm.toLowerCase();
+          const matchingOwned = context.wardrobe.filter((i) => {
+            if (input?.subcategory && i.subcategory !== input.subcategory) return false;
+            if (input?.category && i.category !== input.category) return false;
+            if (input?.search) {
+              const s = input.search.toLowerCase();
+              return (
+                i.name.toLowerCase().includes(s) ||
+                i.subcategory.toLowerCase().includes(s) ||
+                i.category.toLowerCase().includes(s)
+              );
+            }
+            return true;
+          });
+
+          if (matchingOwned.length > 0) {
+            const ownedNames = matchingOwned.slice(0, 3).map((i) => i.name).join(', ');
+            const summary = `You already own ${matchingOwned.length} matching piece${
+              matchingOwned.length === 1 ? '' : 's'
+            } (${ownedNames}) that can be styled for ${occasion}. No purchase is needed.`;
+            return {
+              type: 'PURCHASE_ASSESSMENT',
+              summary,
+              purchaseAssessment: {
+                verdict: 'NO_PURCHASE_NEEDED',
+                purchaseVerdict: 'NO_PURCHASE_NEEDED',
+                purchaseAssessment: 'NO_PURCHASE_NEEDED',
+                headline: 'No Purchase Needed',
+                summary,
+                primaryReason: summary,
+                occasion,
+                evaluatedPieces: matchingOwned,
+                recommendedLook: topOutfit,
+                rediscoveryOpportunitiesCount: 0,
+                details: [`Ready look available: ${pieceNames}`],
+              } as any,
+            };
+          }
+
+          // Item is absent from wardrobe, but is it an optional layer or accessory?
+          const isOptionalRole =
+            input?.category === 'Outerwear' ||
+            ['blazer', 'jacket', 'cardigan', 'shrug', 'sweater'].includes(
+              input?.subcategory || ''
+            ) ||
+            q.includes('blazer') ||
+            q.includes('jacket') ||
+            q.includes('shrug') ||
+            q.includes('cardigan') ||
+            q.includes('accessory') ||
+            q.includes('watch') ||
+            q.includes('belt');
+
+          if (isOptionalRole) {
+            const summary = `Your core look for ${occasion} is fully complete with ${pieceNames}. An optional ${queriedTerm} could add extra flair, but you do not need to buy anything.`;
+            return {
+              type: 'PURCHASE_ASSESSMENT',
+              summary,
+              purchaseAssessment: {
+                verdict: 'OPTIONAL_GAP',
+                purchaseVerdict: 'PURCHASE_OPTIONAL',
+                purchaseAssessment: 'NO_PURCHASE_NEEDED',
+                headline: 'Optional Enhancement Only',
+                summary,
+                primaryReason: summary,
+                occasion,
+                evaluatedPieces: pieces,
+                recommendedLook: topOutfit,
+                rediscoveryOpportunitiesCount: 0,
+                details: [
+                  `Complete baseline outfit: ${pieceNames}`,
+                  `No essential clothing shortage exists for ${occasion}.`,
+                ],
+              } as any,
+            };
+          }
+        }
+
+        // Standard Occasion Query: "I was likely to go to Party tonight then is anything I have to buy for it?"
+        const summary = `You already have a complete look for ${occasion} in your closet: ${pieceNames}. No purchase is needed.`;
+        return {
+          type: 'PURCHASE_ASSESSMENT',
+          summary,
+          purchaseAssessment: {
+            verdict: 'NO_PURCHASE_NEEDED',
+            purchaseVerdict: 'NO_PURCHASE_NEEDED',
+            purchaseAssessment: 'NO_PURCHASE_NEEDED',
+            headline: 'No Purchase Needed',
+            summary,
+            primaryReason: summary,
+            occasion,
+            evaluatedPieces: pieces,
+            recommendedLook: topOutfit,
+            rediscoveryOpportunitiesCount: 0,
+            details: [
+              `Core requirements (top, bottom, and footwear) are satisfied by owned clean garments.`,
+              `Styling with existing wardrobe pieces provides a polished look.`,
+            ],
+          } as any,
+        };
+      }
+
+      // If cleanOutfits.length === 0, investigate why:
+      // A. Insufficient wardrobe baseline data: evaluate required role coverage across closet
+      const hasTopOrHero = context.wardrobe.some(
+        (i) => i.category === 'Tops' || i.category === 'Ethnic'
+      );
+      const hasBottomOrHero = context.wardrobe.some(
+        (i) =>
+          i.category === 'Bottoms' ||
+          (i.category === 'Ethnic' &&
+            ['saree', 'lehenga', 'salwar set', 'anarkali'].includes(i.subcategory || ''))
+      );
+      const hasFootwear = context.wardrobe.some((i) => i.category === 'Footwear');
+
+      const unpopulatedRoles: string[] = [];
+      if (!hasTopOrHero) unpopulatedRoles.push('tops');
+      if (!hasBottomOrHero) unpopulatedRoles.push('bottoms');
+      if (!hasFootwear) unpopulatedRoles.push('footwear');
+
+      // If wardrobe is empty or lacks multiple essential roles across the entire closet, metadata is insufficient to judge gaps
+      if (context.wardrobe.length === 0 || unpopulatedRoles.length >= 2) {
+        const summary = `Your wardrobe catalog lacks baseline registered pieces (${unpopulatedRoles.join(
+          ', '
+        )}). Add your core wardrobe essentials so I can accurately assess occasion gaps.`;
+        return {
+          type: 'PURCHASE_ASSESSMENT',
+          summary,
+          purchaseAssessment: {
+            verdict: 'INSUFFICIENT_INFORMATION',
+            purchaseVerdict: 'INSUFFICIENT_INFORMATION',
+            purchaseAssessment: 'NO_PURCHASE_NEEDED',
+            headline: 'More Wardrobe Information Needed',
+            summary,
+            primaryReason: summary,
+            occasion,
+            rediscoveryOpportunitiesCount: 0,
+            details: [
+              `Unpopulated wardrobe roles: ${unpopulatedRoles.join(', ')}`,
+              'Register your core wardrobe garments before assessing occasion shopping needs.',
+            ],
+          } as any,
+        };
+      }
+
+      // B. Check if in-laundry garments would form an outfit if clean
+      const asIfCleanItems = context.wardrobe.map((item) =>
+        item.status === 'in_laundry' || item.status === 'needs_washing'
+          ? { ...item, status: 'clean' as const }
+          : item
+      );
+      const allItemsRec = recommendOutfitsWithTelemetry({
+        items: asIfCleanItems,
+        occasion,
+        season: 'summer',
+        localDate: context.localDate || '2026-10-13',
+        anchorItemId: input?.anchorItemId,
+        preferences: context.preferences,
+        styleProfile: getSafeStyleProfile(context),
+        limit: 3,
+      });
+
+      if (allItemsRec.set.outfits.length > 0) {
+        const potentialOutfit = allItemsRec.set.outfits[0];
+        const dirtyPieces = Object.values(potentialOutfit.slots || {})
+          .flat()
+          .map((p) => context.wardrobe.find((w) => w.id === p.id) || p)
+          .filter((p) => p.status !== 'clean');
+        const dirtyNames = dirtyPieces.map((p) => p.name).join(', ') || 'essential pieces';
+
+        const summary = `No purchase needed. Your wardrobe has pieces for ${occasion}, but key garments (${dirtyNames}) are currently in laundry. Washing them gives you a complete ready look.`;
+        return {
+          type: 'PURCHASE_ASSESSMENT',
+          summary,
+          purchaseAssessment: {
+            verdict: 'NO_VALID_OUTFIT',
+            purchaseVerdict: 'NO_PURCHASE_NEEDED',
+            purchaseAssessment: 'NO_PURCHASE_NEEDED',
+            headline: 'No Purchase Needed (Laundry Bottleneck)',
+            summary,
+            primaryReason: summary,
+            occasion,
+            laundryNotice: `Washing ${dirtyNames} will complete this outfit.`,
+            evaluatedPieces: Object.values(potentialOutfit.slots || {}).flat(),
+            recommendedLook: potentialOutfit,
+            rediscoveryOpportunitiesCount: 0,
+            details: [`In-laundry pieces needed: ${dirtyNames}`],
+          } as any,
+        };
+      }
+
+      // C. Genuine Wardrobe Gap: Essential role genuinely missing across entire closet
+      const missingRolesList = (cleanRecResult.set.missingRequirements || []).map(
+        (r: any) => r.missingRole || r.role
+      );
+      const missingRoles = missingRolesList.join(', ') || 'essential footwear or coordinates';
+
+      const isCriticalStructuralMissing = missingRolesList.some((r: any) =>
+        ['top', 'bottom', 'footwear', 'tops', 'bottoms', 'shoe', 'shoes'].includes(
+          String(r).toLowerCase()
+        )
+      );
+      const purchaseVerdict = isCriticalStructuralMissing
+        ? 'PURCHASE_STRONGLY_RECOMMENDED'
+        : 'PURCHASE_RECOMMENDED';
+
+      const summary = `A necessary component is missing for ${occasion}: you do not have suitable ${missingRoles} in your closet.`;
+      return {
+        type: 'PURCHASE_ASSESSMENT',
+        summary,
+        purchaseAssessment: {
+          verdict: 'WARDROBE_GAP',
+          purchaseVerdict,
+          purchaseAssessment: 'PURCHASE_JUSTIFIED',
+          headline: 'Verified Wardrobe Gap',
+          summary,
+          primaryReason: summary,
+          occasion,
+          missingRoles: missingRolesList,
+          rediscoveryOpportunitiesCount: 0,
+          details: [`Essential role missing for ${occasion}: ${missingRoles}`],
+        } as any,
+      };
+    }
+
+    // 3. General Fallback Assessment (when no specific occasion requested)
     const wearEvents = getNormalizedWearEvents(context);
     const wearAnalytics = computeWearAnalytics(
       context.wardrobe,
@@ -414,21 +770,63 @@ export const getPurchaseAssessmentTool: SaathiTool<Record<string, unknown>, Doma
       referenceTimestamp: context.referenceTimestamp,
     });
 
-    const isNeeded = report.purchaseAssessment === 'PURCHASE_JUSTIFIED';
+    // If user queried a specific item in general context (e.g. "Should I buy blue jeans?")
+    let specificItemCheck: { ownedCount: number; cleanCount: number; matchingItems: WardrobeItem[] } | undefined;
+
+    if (queriedTerm) {
+      const q = queriedTerm.toLowerCase();
+      const matching = context.wardrobe.filter((i) => {
+        if (input?.subcategory && i.subcategory === input.subcategory) return true;
+        if (input?.category && i.category === input.category) return true;
+        return (
+          i.name.toLowerCase().includes(q) ||
+          i.subcategory.toLowerCase().includes(q) ||
+          i.category.toLowerCase().includes(q)
+        );
+      });
+      if (matching.length > 0) {
+        specificItemCheck = {
+          ownedCount: matching.length,
+          cleanCount: matching.filter((i) => i.status === 'clean').length,
+          matchingItems: matching,
+        };
+      }
+    }
+
+    const isNeeded = specificItemCheck ? false : report.purchaseAssessment === 'PURCHASE_JUSTIFIED';
 
     let summary = report.negativeEvidence.primaryReason;
-    if (isNeeded) {
+    if (specificItemCheck && specificItemCheck.ownedCount > 0) {
+      const itemNames = specificItemCheck.matchingItems.slice(0, 3).map((i) => i.name).join(', ');
+      summary = `You already own ${specificItemCheck.ownedCount} ${queriedTerm || 'matching'} piece${specificItemCheck.ownedCount === 1 ? '' : 's'} (${itemNames}) in your wardrobe. No additional purchase is justified.`;
+    } else if (isNeeded) {
       const topGap = report.gaps.find((g) => g.purchaseAssessment === 'PURCHASE_JUSTIFIED');
       summary = `A verified wardrobe gap was identified: ${topGap?.headline || 'Required capability missing'}.`;
     }
 
+    const topGap = report.gaps.find((g) => g.purchaseAssessment === 'PURCHASE_JUSTIFIED');
+    const isCritical =
+      topGap?.gapState === 'CRITICAL_GAP' ||
+      topGap?.expectedCategory === 'Bottoms' ||
+      topGap?.expectedCategory === 'Footwear';
+    const generalPurchaseVerdict = isNeeded
+      ? isCritical
+        ? 'PURCHASE_STRONGLY_RECOMMENDED'
+        : 'PURCHASE_RECOMMENDED'
+      : 'NO_PURCHASE_NEEDED';
+
     const assessmentObj = {
-      verdict: report.purchaseAssessment,
-      purchaseAssessment: report.purchaseAssessment,
-      headline: isNeeded ? 'Purchase Justified' : 'No Purchase Needed',
+      verdict: isNeeded ? 'PURCHASE_JUSTIFIED' : 'NO_PURCHASE_NEEDED',
+      purchaseVerdict: generalPurchaseVerdict,
+      purchaseAssessment: isNeeded ? 'PURCHASE_JUSTIFIED' : 'NO_PURCHASE_NEEDED',
+      headline: isNeeded
+        ? isCritical
+          ? 'Essential Structural Gap'
+          : 'Purchase Justified'
+        : 'No Purchase Needed',
       summary,
       rediscoveryOpportunitiesCount: report.negativeEvidence.rediscoveryOpportunitiesCount,
-      primaryReason: report.negativeEvidence.primaryReason,
+      primaryReason: summary,
       details: report.negativeEvidence.details,
       occasionGaps: report.coverageSummary.occasionReadiness.filter(
         (o) => o.isDeclaredActive && o.readiness !== 'fully_ready'

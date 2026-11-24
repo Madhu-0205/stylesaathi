@@ -259,13 +259,23 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
                 </button>
               </div>
 
-              {/* Natural Stylist Suggestion Tag with Confidence */}
+              {/* Natural Stylist Suggestion Tag with Honest Transparency */}
               <div className="rounded-xl border border-(--burnished-gold)/40 bg-(--ivory) p-3 flex items-start justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <Sparkles className="h-3.5 w-3.5 text-(--burnished-gold)" />
-                    <span className="text-[9.5px] font-bold uppercase tracking-[0.2em] text-(--burnished-gold)">
-                      SUGGESTED DETAILS · {Math.round(aiConfidence * 100)}% CONFIDENCE
+                    {userVerified ? (
+                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                    ) : (
+                      <Sparkles className="h-3.5 w-3.5 text-(--burnished-gold)" />
+                    )}
+                    <span
+                      className={`text-[9.5px] font-bold uppercase tracking-[0.2em] ${
+                        userVerified ? 'text-emerald-700 dark:text-emerald-300' : 'text-(--burnished-gold)'
+                      }`}
+                    >
+                      {userVerified
+                        ? 'ATTRIBUTES · USER-CONFIRMED'
+                        : 'SUGGESTED ATTRIBUTES · AUTO-TAGGED (TAP TO EDIT)'}
                     </span>
                   </div>
                   <p className="mt-1 text-xs font-serif italic text-(--ink)">
@@ -317,6 +327,17 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
               </p>
             </div>
           )}
+
+          <div className="mt-2.5 flex items-center justify-between gap-2 px-1 text-[11px] text-muted">
+            <span className="flex items-center gap-1">
+              <span>📸</span>
+              <span>Natural light · Lay flat or hang against neutral surface</span>
+            </span>
+            <span className="flex items-center gap-1 font-medium text-emerald-700 dark:text-emerald-400">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              <span>100% on-device private</span>
+            </span>
+          </div>
 
           {error && (
             <div className="mt-2.5 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">

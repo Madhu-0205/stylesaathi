@@ -1,6 +1,7 @@
 import React from 'react';
 import { Sparkles, ArrowRight, Clock, Tag } from 'lucide-react';
 import { WardrobeGap, WardrobeItem } from '../../types';
+import { ItemImage } from '../common/ItemImage';
 
 export interface DormantRediscoveryCardProps {
   gap: WardrobeGap;
@@ -44,17 +45,9 @@ export const DormantRediscoveryCard: React.FC<DormantRediscoveryCardProps> = ({
 
       {/* Garment Details Card */}
       <div className="flex items-center gap-3.5 p-3 rounded-xl bg-(--ivory)/60 border border-(--border)/60">
-        {item.photo || item.photoUrl ? (
-          <img
-            src={(item.photo || item.photoUrl) as string}
-            alt={item.name}
-            className="w-14 h-14 object-cover rounded-lg border border-(--border) shrink-0"
-          />
-        ) : (
-          <div className="w-14 h-14 rounded-lg bg-(--border-light) flex items-center justify-center text-(--burnished-gold) font-serif font-bold text-lg shrink-0">
-            {item.name.slice(0, 1).toUpperCase()}
-          </div>
-        )}
+        <div className="w-14 h-14 rounded-lg overflow-hidden border border-(--border) shrink-0">
+          <ItemImage item={item} className="h-full w-full object-cover" />
+        </div>
 
         <div className="min-w-0 flex-1 space-y-0.5">
           <h3 className="text-sm font-semibold text-(--ink) truncate">

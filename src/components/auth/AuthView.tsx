@@ -23,6 +23,8 @@ export const AuthView: React.FC<AuthViewProps> = ({
     verifyEmailOtp,
     continueAsGuest,
     isCloudConfigured,
+    authError,
+    clearAuthError,
   } = useAuth();
 
   const [showEmailForm, setShowEmailForm] = useState(false);
@@ -175,6 +177,49 @@ export const AuthView: React.FC<AuthViewProps> = ({
       {error && (
         <div className="mt-3 w-full rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 p-2.5 text-xs text-red-700 dark:text-red-300 text-center">
           {error}
+        </div>
+      )}
+
+      {/* Luxury Authentication Error Recovery Screen */}
+      {authError && (
+        <div className="w-full my-4 rounded-2xl border border-(--kumkum)/30 bg-(--kumkum)/5 p-5 text-left shadow-2xs animate-fade-in">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="h-2 w-2 rounded-full bg-(--kumkum) animate-pulse" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
+              AUTHENTICATION NOTICE
+            </span>
+          </div>
+          <h3 className="font-serif text-base font-medium text-(--ink) tracking-tight mb-1">
+            {authError.code === 'session_expired' || authError.code === 'INVALID_STATE'
+              ? 'Sign-in Session Expired'
+              : authError.code === 'access_denied'
+              ? 'Sign-in Cancelled'
+              : 'Sign-in Verification Interrupted'}
+          </h3>
+          <p className="text-xs text-muted leading-relaxed mb-4">
+            {authError.message}
+          </p>
+          <div className="flex flex-col sm:flex-row items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => {
+                clearAuthError();
+                handleGoogleSignIn();
+              }}
+              disabled={isSubmitting}
+              className="w-full sm:w-auto flex-1 flex min-h-11 items-center justify-center gap-2 rounded-xl bg-(--kumkum) px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-white transition-all hover:opacity-90 active:scale-[0.98] shadow-xs"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              <span>Try Google sign-in again</span>
+            </button>
+            <button
+              type="button"
+              onClick={clearAuthError}
+              className="w-full sm:w-auto px-3 py-2 text-xs text-muted hover:text-(--ink) transition-colors"
+            >
+              Dismiss
+            </button>
+          </div>
         </div>
       )}
 

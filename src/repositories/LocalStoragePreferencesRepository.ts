@@ -7,6 +7,14 @@ export const DEFAULT_STYLE_PREFERENCES: StylePreferences = {
   preferredAesthetics: ['Contemporary', 'Indo-Western'],
   stylingMode: 'variety',
   updatedAt: Date.now(),
+  budgetConstraints: {
+    prioritizeEssentialGapsOnly: true,
+    avoidImpulsePurchases: true,
+  },
+  culturalOverrides: {
+    allowLeatherInPuja: false,
+    strictPujaDecorum: true,
+  },
 };
 
 export class LocalStoragePreferencesRepository implements PreferencesRepository {

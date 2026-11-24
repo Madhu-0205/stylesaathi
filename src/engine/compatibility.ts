@@ -104,6 +104,34 @@ export const compatible = (slot: string, i: WardrobeItem, t: Template): boolean 
   return false;
 };
 
-export const occasionFit = (i: WardrobeItem, o: Occasion): boolean => i.occasions.includes(o);
+export const occasionFit = (i: WardrobeItem, o: Occasion): boolean => {
+  if (!i || !Array.isArray(i.occasions) || i.occasions.length === 0 || !o) {
+    return false;
+  }
+  return i.occasions.includes(o);
+};
 
-export const seasonFit = (i: WardrobeItem, s: Season): boolean => i.seasons.includes(s);
+export type SeasonFitResult = boolean | null;
+
+/**
+ * StyleSaathi 4.0.2 (P2-B): Safe season compatibility evaluator.
+ * - Returns true if the garment explicitly matches the target season or is 'all year' / 'all_year'.
+ * - Returns false if the garment has valid season metadata that does NOT include the target season.
+ * - Returns null if the garment's seasons metadata is absent, null, undefined, or empty (neutral/unknown).
+ */
+export const seasonFit = (i: WardrobeItem, s: Season): boolean | null => {
+  if (!i || !i.seasons || !Array.isArray(i.seasons) || i.seasons.length === 0) {
+    return null;
+  }
+  if (!s) {
+    return null;
+  }
+  const normalizedSeasons = i.seasons.map((season) => (season || '').toLowerCase().trim());
+  const normalizedTarget = (s || '').toLowerCase().trim();
+
+  if (normalizedSeasons.includes('all year') || normalizedSeasons.includes('all_year')) {
+    return true;
+  }
+
+  return normalizedSeasons.includes(normalizedTarget);
+};

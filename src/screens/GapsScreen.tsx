@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Sun, Moon } from 'lucide-react';
 import { useWardrobeContext } from '../context/WardrobeContext';
 import { SmartBuyReportView } from '../components/gaps/SmartBuyReportView';
 import { WearAnalyticsView } from '../components/analytics/WearAnalyticsView';
@@ -6,9 +7,22 @@ import { TrendDiscoveryScreen } from './TrendDiscoveryScreen';
 import { useBackButton } from '../hooks/useBackButton';
 import { BackButtonPriority } from '../services/backButtonManager';
 
-export const GapsScreen: React.FC = () => {
+import { WardrobeItem } from '../types';
+
+interface GapsScreenProps {
+  initialView?: 'gaps' | 'analytics' | 'trends';
+  onGoToDress?: (anchorItem?: WardrobeItem, occasion?: string) => void;
+}
+
+export const GapsScreen: React.FC<GapsScreenProps> = ({ initialView = 'gaps', onGoToDress }) => {
   const { theme, toggleTheme, items } = useWardrobeContext();
-  const [activeView, setActiveView] = useState<'gaps' | 'analytics' | 'trends'>('gaps');
+  const [activeView, setActiveView] = useState<'gaps' | 'analytics' | 'trends'>(initialView);
+
+  useEffect(() => {
+    if (initialView) {
+      setActiveView(initialView);
+    }
+  }, [initialView]);
 
   useBackButton(
     BackButtonPriority.SUB_NAVIGATION,
@@ -26,7 +40,7 @@ export const GapsScreen: React.FC = () => {
   const ethnicCount = items.filter((i) => i.category === 'Ethnic').length;
 
   return (
-    <div className="pb-28 sm:pb-24 md:pb-8 animate-fade-in space-y-4">
+    <div className="pb-36 sm:pb-32 md:pb-8 animate-fade-in space-y-4">
       {/* Compact Editorial Header: "INSIGHT · Smart Buy 2.0 / Analytics / Trends" */}
       <header className="flex items-center justify-between border-b border-border/80 pb-3">
         <div>
@@ -53,7 +67,7 @@ export const GapsScreen: React.FC = () => {
           className="md:hidden flex h-9 w-9 min-h-11 min-w-11 items-center justify-center rounded-full border border-border text-muted transition-colors hover:border-(--ink) hover:text-(--ink) active:scale-95 tactile-press"
           aria-label="Toggle theme"
         >
-          {theme === 'light' ? '☾' : '☼'}
+          {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
         </button>
       </header>
 
@@ -62,7 +76,7 @@ export const GapsScreen: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveView('gaps')}
-          className={`min-h-11 px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-full transition-all tactile-press-sm ${
+          className={`min-h-11 px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-full transition-all couture-press tactile-press-sm ${
             activeView === 'gaps'
               ? 'bg-(--ink) text-(--paper) shadow-2xs'
               : 'text-muted hover:text-(--ink)'
@@ -74,7 +88,7 @@ export const GapsScreen: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveView('analytics')}
-          className={`min-h-11 px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-full transition-all tactile-press-sm ${
+          className={`min-h-11 px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-full transition-all couture-press tactile-press-sm ${
             activeView === 'analytics'
               ? 'bg-(--ink) text-(--paper) shadow-2xs'
               : 'text-muted hover:text-(--ink)'
@@ -86,7 +100,7 @@ export const GapsScreen: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveView('trends')}
-          className={`min-h-11 px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-full transition-all tactile-press-sm ${
+          className={`min-h-11 px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-full transition-all couture-press tactile-press-sm ${
             activeView === 'trends'
               ? 'bg-(--ink) text-(--paper) shadow-2xs'
               : 'text-muted hover:text-(--ink)'
@@ -101,7 +115,7 @@ export const GapsScreen: React.FC = () => {
       {activeView === 'analytics' ? (
         <WearAnalyticsView />
       ) : activeView === 'trends' ? (
-        <TrendDiscoveryScreen />
+        <TrendDiscoveryScreen onGoToDress={onGoToDress} />
       ) : (
         <SmartBuyReportView />
       )}

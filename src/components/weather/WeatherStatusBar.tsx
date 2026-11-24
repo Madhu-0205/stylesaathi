@@ -139,7 +139,7 @@ export const WeatherStatusBar: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsModalOpen(true)}
-                className="inline-flex min-h-6 items-center gap-1 text-[11px] font-semibold text-(--ink) hover:text-(--kumkum) transition-colors py-0.5"
+                className="inline-flex min-h-11 items-center gap-1 text-xs font-semibold text-(--ink) hover:text-(--kumkum) transition-colors px-2 py-1 rounded-md"
                 title="Change wardrobe location"
                 aria-label={`Current location: ${location.city}. Click to change city`}
               >

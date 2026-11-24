@@ -14,8 +14,10 @@ import {
   ShadowAnchorPreservation,
   ShadowHardConstraintViolations,
   ShadowUnknownAttributeHandling,
+  ShadowMissingMetadataIndicators,
   ShadowCulturalContextualConsistency,
   ShadowExecutionLatency,
+  ShadowWeatherFreshness,
 } from './types';
 
 // ============================================================================
@@ -24,8 +26,19 @@ import {
 
 let shadowEvaluationEnabled = true;
 let isExecutingShadow = false;
-const SHADOW_HISTORY_MAX = 50;
+export const SHADOW_HISTORY_MAX = 50;
 const shadowHistory: ShadowComparisonReport[] = [];
+
+/**
+ * Atomically appends a report to the bounded shadow ring buffer,
+ * enforcing the strict maximum capacity of 50 records (FIFO eviction).
+ */
+function appendToRingBuffer(report: ShadowComparisonReport): void {
+  shadowHistory.unshift(report);
+  while (shadowHistory.length > SHADOW_HISTORY_MAX) {
+    shadowHistory.pop();
+  }
+}
 
 /**
  * Returns whether shadow ensemble evaluation is currently enabled.
@@ -60,6 +73,94 @@ export function getShadowComparisonHistory(limit = 10): ShadowComparisonReport[]
  */
 export function clearShadowComparisonHistory(): void {
   shadowHistory.length = 0;
+}
+
+/**
+ * Computes live operational metrics across the shadow ring buffer.
+ */
+export function getShadowEvaluationMetrics(): {
+  totalEvaluations: number;
+  successfulEvaluations: number;
+  failedEvaluations: number;
+  failureRate: number;
+  averageBaselineMs: number;
+  averageShadowMs: number;
+  averageAddedMs: number;
+  bufferCapacity: number;
+  bufferOccupancy: number;
+} {
+  const total = shadowHistory.length;
+  if (total === 0) {
+    return {
+      totalEvaluations: 0,
+      successfulEvaluations: 0,
+      failedEvaluations: 0,
+      failureRate: 0,
+      averageBaselineMs: 0,
+      averageShadowMs: 0,
+      averageAddedMs: 0,
+      bufferCapacity: SHADOW_HISTORY_MAX,
+      bufferOccupancy: 0,
+    };
+  }
+  const failed = shadowHistory.filter((r) => r.evaluationSuccess === false).length;
+  const successful = total - failed;
+  const baselineSum = shadowHistory.reduce((acc, r) => acc + (r.executionLatency.baselineMs || 0), 0);
+  const shadowSum = shadowHistory.reduce((acc, r) => acc + (r.executionLatency.ensembleMs || 0), 0);
+  return {
+    totalEvaluations: total,
+    successfulEvaluations: successful,
+    failedEvaluations: failed,
+    failureRate: Math.round((failed / total) * 1000) / 1000,
+    averageBaselineMs: Math.round((baselineSum / total) * 100) / 100,
+    averageShadowMs: Math.round((shadowSum / total) * 100) / 100,
+    averageAddedMs: Math.round((shadowSum / total) * 100) / 100,
+    bufferCapacity: SHADOW_HISTORY_MAX,
+    bufferOccupancy: total,
+  };
+}
+
+/**
+ * Canonical Weather Freshness Classifier:
+ * - Fresh: under 30 minutes (< 30m).
+ * - Stale: 30 minutes to 3 hours (30m <= age <= 180m).
+ * - Expired: over 3 hours (> 180m).
+ * - Simulated: explicitly identified as simulated.
+ * - Missing: no usable snapshot.
+ */
+export function classifyWeatherFreshness(
+  context?: RecommendationRequest['context'] | null,
+  now: number = Date.now()
+): ShadowWeatherFreshness {
+  if (!context || !context.weather || context.source === 'unavailable' || context.freshness === 'unavailable') {
+    return 'missing';
+  }
+  if (
+    context.source === 'simulated' ||
+    (context.weather as { source?: string }).source === 'simulated' ||
+    (context.weather as { source?: string }).source === 'fallback'
+  ) {
+    return 'simulated';
+  }
+  const weatherTimestamp =
+    context.weather.observedAt || (context.weather as { timestamp?: number }).timestamp;
+  if (!weatherTimestamp || weatherTimestamp <= 0) {
+    if (context.freshness === 'expired') return 'expired';
+    if (context.freshness === 'stale') return 'stale';
+    return 'fresh';
+  }
+  const ageMs = now - weatherTimestamp;
+  if (ageMs < 0) {
+    return 'fresh';
+  }
+  const ageMinutes = ageMs / (60 * 1000);
+  if (ageMinutes < 30) {
+    return 'fresh';
+  }
+  if (ageMinutes <= 180) {
+    return 'stale';
+  }
+  return 'expired';
 }
 
 // ============================================================================
@@ -125,10 +226,10 @@ export function executeShadowEvaluation(
   const anchorItem = request.anchorItemId
     ? request.items.find((i) => i.id === request.anchorItemId)
     : undefined;
-  const isPlanningMode = Boolean(
-    request.allowPlanningMode ||
-    (anchorItem && (anchorItem.status === 'needs_washing' || anchorItem.status === 'in_laundry'))
-  );
+  const isPlanningMode =
+    request.allowPlanningMode === true ||
+    (request.allowPlanningMode !== false &&
+      Boolean(anchorItem && (anchorItem.status === 'needs_washing' || anchorItem.status === 'in_laundry')));
 
   try {
     const ensembleEngine = new EnsembleRecommendationEngine();
@@ -375,6 +476,31 @@ export function executeShadowEvaluation(
     };
 
     // ------------------------------------------------------------------------
+    // 5b. Missing Metadata Indicators
+    // ------------------------------------------------------------------------
+    let missingFabricCount = 0;
+    let missingFitCount = 0;
+    let missingSeasonsCount = 0;
+    let missingColorCount = 0;
+    let unconfirmedCount = 0;
+
+    for (const item of request.items) {
+      if (!item.fabric || item.fabric === 'unknown') missingFabricCount++;
+      if (!item.fit || (item.fit as string) === 'unknown') missingFitCount++;
+      if (!item.seasons || item.seasons.length === 0) missingSeasonsCount++;
+      if (!item.colors || item.colors.length === 0) missingColorCount++;
+      if (!item.userVerified) unconfirmedCount++;
+    }
+
+    const missingMetadataIndicators: ShadowMissingMetadataIndicators = {
+      missingFabricCount,
+      missingFitCount,
+      missingSeasonsCount,
+      missingColorCount,
+      unconfirmedCount,
+    };
+
+    // ------------------------------------------------------------------------
     // 6. Cultural & Contextual Consistency
     // ------------------------------------------------------------------------
     let culturalSignalsDetected = 0;
@@ -438,36 +564,120 @@ export function executeShadowEvaluation(
       request.context.source !== 'simulated' &&
       request.context.source !== 'unavailable';
 
+    const weatherFreshness = classifyWeatherFreshness(request.context);
+
+    const evaluationId = `shadow_eval_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
     const report: ShadowComparisonReport = {
+      evaluationId,
       timestamp: Date.now(),
+      engineVersions: {
+        baseline: '2.0.0-baseline',
+        shadow: ensembleEngine.version || '3.0.0-ensemble',
+      },
+      evaluationSuccess: true,
       requestContext: {
         occasion: request.occasion,
         season: request.season,
         itemCount: request.items.length,
         anchorItemId: request.anchorItemId,
         hasGenuineWeather: Boolean(hasGenuineWeather),
+        weatherFreshness,
         hasStyleProfile: Boolean(request.styleProfile),
       },
+      baselineRecommendationIds: baselineOutfits.map((o) => o.id),
+      shadowRecommendationIds: ensembleOutfits.map((o) => o.id),
       candidateOverlap,
       rankingDifferences,
       anchorPreservation,
       hardConstraintViolations,
       unknownAttributeHandling,
+      missingMetadataIndicators,
       culturalContextualConsistency,
       executionLatency,
     };
 
-    // Maintain in-memory ring buffer
-    shadowHistory.unshift(report);
-    if (shadowHistory.length > SHADOW_HISTORY_MAX) {
-      shadowHistory.pop();
-    }
-
+    appendToRingBuffer(report);
     return report;
   } catch (err) {
     if (typeof console !== 'undefined' && console.warn) {
       console.warn('[ShadowEvaluator] Non-fatal shadow evaluation failure:', err);
     }
+    // Record shadow failure in ring buffer so failure rate can be measured without failing baseline
+    const failureReport: ShadowComparisonReport = {
+      evaluationId: `shadow_failed_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+      timestamp: Date.now(),
+      engineVersions: {
+        baseline: '2.0.0-baseline',
+        shadow: '3.0.0-ensemble',
+      },
+      evaluationSuccess: false,
+      failureReason: err instanceof Error ? err.message : String(err),
+      requestContext: {
+        occasion: request.occasion,
+        season: request.season,
+        itemCount: request.items.length,
+        anchorItemId: request.anchorItemId,
+        hasGenuineWeather: Boolean(
+          request.context?.weather != null &&
+          request.context.source !== 'simulated' &&
+          request.context.source !== 'unavailable'
+        ),
+        weatherFreshness: classifyWeatherFreshness(request.context),
+        hasStyleProfile: Boolean(request.styleProfile),
+      },
+      baselineRecommendationIds: baselineResult.set.outfits?.map((o) => o.id) || [],
+      shadowRecommendationIds: [],
+      candidateOverlap: {
+        baselineCount: baselineResult.set.outfits?.length || 0,
+        ensembleCount: 0,
+        sharedTopCandidateIds: [],
+        topPickJaccardOverlap: 0,
+      },
+      rankingDifferences: {
+        baselineTopScore: baselineResult.set.outfits?.[0]?.score || 0,
+        ensembleTopScore: 0,
+        scoreDelta: 0,
+        rankInversionsCount: 0,
+        explanation: 'Shadow execution failed; fallback to baseline only.',
+      },
+      anchorPreservation: {
+        anchorItemId: request.anchorItemId,
+        baselinePreserved: true,
+        ensemblePreserved: false,
+        isConsistent: false,
+      },
+      hardConstraintViolations: {
+        baselineViolationsDetectedByEnsemble: [],
+        ensembleViolationsDetected: [],
+        weakestEdgeClashesCaught: 0,
+        formalitySpreadViolationsPrevented: 0,
+      },
+      unknownAttributeHandling: {
+        baselineUnconfirmedItemsCount: 0,
+        ensembleUnconfirmedItemsCount: 0,
+        uncertaintyShrinkageApplied: false,
+      },
+      missingMetadataIndicators: {
+        missingFabricCount: 0,
+        missingFitCount: 0,
+        missingSeasonsCount: 0,
+        missingColorCount: 0,
+        unconfirmedCount: 0,
+      },
+      culturalContextualConsistency: {
+        culturalHarmonious: true,
+        culturalSignalsDetected: 0,
+        culturalMismatchesCaught: [],
+        weatherAlignmentConsistent: true,
+      },
+      executionLatency: {
+        baselineMs: Math.max(0, Math.round((baselineResult.telemetry?.timings?.totalMs || 0) * 100) / 100),
+        ensembleMs: 0,
+        totalMs: Math.max(0, Math.round((baselineResult.telemetry?.timings?.totalMs || 0) * 100) / 100),
+      },
+    };
+    appendToRingBuffer(failureReport);
     return null;
   } finally {
     isExecutingShadow = false;

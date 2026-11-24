@@ -39,7 +39,7 @@ export function preRankSlotCandidates(
     if (!styleProfile) return false;
 
     if (styleProfile.avoidedColors) {
-      for (const color of item.colors) {
+      for (const color of item.colors || []) {
         if (styleProfile.avoidedColors.includes(color.toLowerCase())) return true;
         const colorAff = styleProfile.colorAffinities?.[color]?.score ?? 0;
         if (colorAff < -0.3) return true;
@@ -154,11 +154,11 @@ function computeQuickCoreScore(
   if (item.favorite) score += 3.0;
 
   // Occasion direct match
-  if (item.occasions.includes(occasion)) score += 2.0;
+  if (item.occasions?.includes(occasion)) score += 2.0;
 
   // Personal Style Brain learned affinities
   if (styleProfile) {
-    for (const c of item.colors) {
+    for (const c of item.colors || []) {
       score += (styleProfile.colorAffinities?.[c]?.score ?? 0) * 0.8;
     }
     if (item.fabric) {

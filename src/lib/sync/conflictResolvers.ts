@@ -8,8 +8,88 @@ function parseServerTimestamp(ts?: string | number | null): number {
 }
 
 /**
+ * Resolves conflict between deleted (tombstone) and active states:
+ * - If both are deleted: the newer deletion wins.
+ * - If one is deleted and one is active:
+ *   - If the active record was updated STRICTLY AFTER the deletion time,
+ *     the active record represents an intentional restoration -> active record wins.
+ *   - Otherwise, the active record is a stale write attempting zombie resurrection -> tombstone wins.
+ */
+function resolveTombstoneConflict<
+  T extends {
+    isDeleted?: boolean;
+    deletedAt?: number;
+    serverUpdatedAt?: string;
+    clientUpdatedAt?: number;
+    createdAt?: number;
+    revision?: number;
+    serverRevision?: number;
+  }
+>(local: T, remote: T): { resolved: boolean; winner?: T } {
+  const localDeleted = Boolean(local.isDeleted);
+  const remoteDeleted = Boolean(remote.isDeleted);
+
+  if (!localDeleted && !remoteDeleted) {
+    return { resolved: false };
+  }
+
+  const localRev = typeof (local as any).revision === 'number' ? (local as any).revision : (local as any).serverRevision;
+  const remoteRev = typeof (remote as any).revision === 'number' ? (remote as any).revision : (remote as any).serverRevision;
+  const hasRevisions = typeof localRev === 'number' && typeof remoteRev === 'number';
+
+  if (localDeleted && remoteDeleted) {
+    if (hasRevisions && localRev !== remoteRev) {
+      return { resolved: true, winner: localRev > remoteRev ? local : remote };
+    }
+    const localDel = Math.max(local.deletedAt || 0, parseServerTimestamp(local.serverUpdatedAt));
+    const remoteDel = Math.max(remote.deletedAt || 0, parseServerTimestamp(remote.serverUpdatedAt));
+    return { resolved: true, winner: localDel >= remoteDel ? local : remote };
+  }
+
+  // Local is deleted, remote is active
+  if (localDeleted && !remoteDeleted) {
+    const localDelTime = Math.max(local.deletedAt || 0, parseServerTimestamp(local.serverUpdatedAt));
+    const remoteClientTime = remote.clientUpdatedAt || remote.createdAt || 0;
+
+    // Phase 3C.6: An active record is an intentional restoration if:
+    // It has a strictly higher server revision (remoteRev > localRev) OR, for legacy unversioned data,
+    // its edit timestamp is strictly greater than the local deletion timestamp (remoteClientTime > localDelTime).
+    const isRemoteRestoration =
+      (hasRevisions && remoteRev > localRev) ||
+      (!hasRevisions && remoteClientTime > localDelTime);
+
+    if (isRemoteRestoration) {
+      return { resolved: true, winner: { ...remote, isDeleted: false, deletedAt: undefined } };
+    }
+    // Remote is stale, tombstone wins to prevent zombie resurrection
+    return {
+      resolved: true,
+      winner: { ...local, isDeleted: true, deletedAt: local.deletedAt || Date.now() },
+    };
+  }
+
+  // Local is active, remote is deleted
+  const remoteDelTime = Math.max(remote.deletedAt || 0, parseServerTimestamp(remote.serverUpdatedAt));
+  const localClientTime = local.clientUpdatedAt || local.createdAt || 0;
+
+  const isLocalRestoration =
+    (hasRevisions && localRev > remoteRev) ||
+    (!hasRevisions && localClientTime > remoteDelTime);
+
+  if (isLocalRestoration) {
+    return { resolved: true, winner: { ...local, isDeleted: false, deletedAt: undefined } };
+  }
+  // Local is stale, remote tombstone wins
+  return {
+    resolved: true,
+    winner: { ...remote, isDeleted: true, deletedAt: remote.deletedAt || Date.now() },
+  };
+}
+
+/**
  * Resolves conflict between local and remote WardrobeItem:
- * 1. Tombstone protection: if either is deleted, deleted state wins permanently.
+ * 1. Tombstone & Restoration:
+ *    - Deleted wins unless active record has newer timestamp/version indicating explicit restoration.
  * 2. Clock-Skew-Safe Server Timeline:
  *    - client_updated_at is NEVER directly compared against server_updated_at.
  *    - Authoritative ordering uses database-controlled server_updated_at.
@@ -18,58 +98,57 @@ function parseServerTimestamp(ts?: string | number | null): number {
  * 3. Image Authority:
  *    - active_image_version_id and storage_path are authoritative.
  *    - An obsolete/stale photo_url NEVER overrides activeImageVersionId or storagePath.
+ * 4. Attribute Provenance & Verification Authority:
+ *    - User-verified attributes must NEVER be overwritten by unverified AI guesses.
  */
 export function resolveWardrobeItemConflict(
   local: WardrobeItem,
   remote: WardrobeItem
 ): WardrobeItem {
-  // 1. TOMBSTONES - Deleted records always win to prevent zombie resurrection
-  if (local.isDeleted && !remote.isDeleted) {
+  // 1. Tombstone & Restoration Resolution
+  const tombstoneDecision = resolveTombstoneConflict(local, remote);
+  if (tombstoneDecision.resolved && tombstoneDecision.winner?.isDeleted) {
     return {
-      ...local,
-      deletedAt: local.deletedAt || Date.now(),
+      ...tombstoneDecision.winner,
+      photo: local.photo || tombstoneDecision.winner.photo,
     };
   }
-  if (!local.isDeleted && remote.isDeleted) {
-    return {
-      ...remote,
-      deletedAt: remote.deletedAt || Date.now(),
-    };
-  }
-  if (local.isDeleted && remote.isDeleted) {
-    const localDel = local.deletedAt || 0;
-    const remoteDel = remote.deletedAt || 0;
-    return localDel >= remoteDel ? local : remote;
-  }
 
-  // 2. Server-Authoritative Timeline Comparison
-  const localServerTime = parseServerTimestamp(local.serverUpdatedAt);
-  const remoteServerTime = parseServerTimestamp(remote.serverUpdatedAt);
-
+  // If one was restored, the restored active record is the starting base
   let winner: WardrobeItem;
-
-  if (remoteServerTime > localServerTime) {
-    winner = remote;
-  } else if (localServerTime > remoteServerTime) {
-    winner = local;
+  if (tombstoneDecision.resolved && !tombstoneDecision.winner?.isDeleted) {
+    winner = tombstoneDecision.winner!;
   } else {
-    // Both share the same server commit point or are uncommitted
-    // Never compare clientUpdatedAt to serverUpdatedAt!
-    // Deterministically compare clientUpdatedAt against clientUpdatedAt only
-    const localClient = local.clientUpdatedAt || local.createdAt || 0;
-    const remoteClient = remote.clientUpdatedAt || remote.createdAt || 0;
-    if (localClient !== remoteClient) {
-      winner = localClient > remoteClient ? local : remote;
+    // 2. Server-Authoritative Revision & Timeline Comparison
+    const localRev = typeof (local as any).revision === 'number' ? (local as any).revision : (local as any).serverRevision;
+    const remoteRev = typeof (remote as any).revision === 'number' ? (remote as any).revision : (remote as any).serverRevision;
+
+    if (typeof localRev === 'number' && typeof remoteRev === 'number' && localRev !== remoteRev) {
+      winner = remoteRev > localRev ? remote : local;
     } else {
-      // Deterministic tie-breaker based on ID/name
-      winner = (local.id || '').localeCompare(remote.id || '') >= 0 ? local : remote;
+      const localServerTime = parseServerTimestamp(local.serverUpdatedAt);
+      const remoteServerTime = parseServerTimestamp(remote.serverUpdatedAt);
+
+      if (remoteServerTime > localServerTime) {
+        winner = remote;
+      } else if (localServerTime > remoteServerTime) {
+        winner = local;
+      } else {
+        // Both share the same server commit point or are uncommitted
+        // Deterministically compare clientUpdatedAt against clientUpdatedAt only
+        const localClient = local.clientUpdatedAt || local.createdAt || 0;
+        const remoteClient = remote.clientUpdatedAt || remote.createdAt || 0;
+        if (localClient !== remoteClient) {
+          winner = localClient > remoteClient ? local : remote;
+        } else {
+          // Deterministic tie-breaker based on ID
+          winner = (local.id || '').localeCompare(remote.id || '') >= 0 ? local : remote;
+        }
+      }
     }
   }
 
   // 3. Authoritative Image Source of Truth:
-  // The authoritative cloud image identity is:
-  //   active_image_version_id -> wardrobe_image_versions.storage_path
-  // photo_url is ephemeral display cache / legacy and must NEVER override the active image version.
   const activeImageId =
     winner.activeImageVersionId ||
     local.activeImageVersionId ||
@@ -84,7 +163,7 @@ export function resolveWardrobeItemConflict(
     local.storagePath ||
     remote.storagePath;
 
-  // Derive photoUrl safely: only match the active image version, never allow a stale photo_url to override
+  // Derive photoUrl safely
   let photoUrl: string | undefined;
   if (activeImageId) {
     if (winner.activeImageVersionId === activeImageId && winner.photoUrl) {
@@ -99,7 +178,6 @@ export function resolveWardrobeItemConflict(
   }
 
   // 4. Attribute Provenance & Verification Authority:
-  // User-verified attributes must NEVER be overwritten by unverified AI guesses.
   const isWinnerVerified = Boolean(winner.userVerified);
   const isLocalVerified = Boolean(local.userVerified);
   const isRemoteVerified = Boolean(remote.userVerified);
@@ -131,6 +209,7 @@ export function resolveWardrobeItemConflict(
 
   return {
     ...winner,
+    photo: local.photo || winner.photo,
     activeImageVersionId: activeImageId,
     photoId: activeImageId,
     storagePath: storagePath,
@@ -146,7 +225,7 @@ export function resolveWardrobeItemConflict(
 
 /**
  * Resolves conflict between local and remote CalendarPlan for the same date:
- * 1. Tombstone protection: deleted wins.
+ * 1. Tombstone & Restoration.
  * 2. Monotonic status invariant:
  *    - planned -> worn (ALLOWED)
  *    - planned -> cancelled (ALLOWED)
@@ -156,23 +235,19 @@ export function resolveWardrobeItemConflict(
  *        worn -> cancelled (FORBIDDEN)
  *        cancelled -> planned (FORBIDDEN)
  *        cancelled -> worn (FORBIDDEN)
- * 3. Server timestamp resolution for plan content (outfit, occasion, accessory).
+ * 3. Server timestamp resolution for plan content.
  */
 export function resolveCalendarPlanConflict(
   local: OutfitPlan,
   remote: OutfitPlan
 ): OutfitPlan {
-  // 1. Tombstone protection
-  if (local.isDeleted && !remote.isDeleted) return local;
-  if (!local.isDeleted && remote.isDeleted) return remote;
-  if (local.isDeleted && remote.isDeleted) {
-    return (local.deletedAt || 0) >= (remote.deletedAt || 0) ? local : remote;
+  // 1. Tombstone & Restoration
+  const tombstoneDecision = resolveTombstoneConflict(local, remote);
+  if (tombstoneDecision.resolved && tombstoneDecision.winner?.isDeleted) {
+    return tombstoneDecision.winner;
   }
 
   // 2. Monotonic Status Invariant:
-  // - Local 'worn' is terminal against stale sync (cannot revert to planned or cancelled).
-  // - Local 'cancelled' cannot be resurrected to planned or changed to worn by stale sync.
-  // - Local 'planned' can transition to remote 'worn' or 'cancelled'.
   let effectiveStatus: PlanStatus = 'planned';
   if (local.status === 'worn') {
     effectiveStatus = 'worn';
@@ -186,19 +261,30 @@ export function resolveCalendarPlanConflict(
     effectiveStatus = 'planned';
   }
 
-  // 3. Server-Authoritative Timeline for plan content
-  const localServerTime = parseServerTimestamp(local.serverUpdatedAt);
-  const remoteServerTime = parseServerTimestamp(remote.serverUpdatedAt);
-
+  // 3. Server-Authoritative Revision & Timeline for plan content
   let winner: OutfitPlan;
-  if (remoteServerTime > localServerTime) {
-    winner = remote;
-  } else if (localServerTime > remoteServerTime) {
-    winner = local;
+  if (tombstoneDecision.resolved && !tombstoneDecision.winner?.isDeleted) {
+    winner = tombstoneDecision.winner!;
   } else {
-    const localClient = local.clientUpdatedAt || local.updatedAt || local.createdAt || 0;
-    const remoteClient = remote.clientUpdatedAt || remote.updatedAt || remote.createdAt || 0;
-    winner = localClient >= remoteClient ? local : remote;
+    const localRev = typeof (local as any).revision === 'number' ? (local as any).revision : (local as any).serverRevision;
+    const remoteRev = typeof (remote as any).revision === 'number' ? (remote as any).revision : (remote as any).serverRevision;
+
+    if (typeof localRev === 'number' && typeof remoteRev === 'number' && localRev !== remoteRev) {
+      winner = remoteRev > localRev ? remote : local;
+    } else {
+      const localServerTime = parseServerTimestamp(local.serverUpdatedAt);
+      const remoteServerTime = parseServerTimestamp(remote.serverUpdatedAt);
+
+      if (remoteServerTime > localServerTime) {
+        winner = remote;
+      } else if (localServerTime > remoteServerTime) {
+        winner = local;
+      } else {
+        const localClient = local.clientUpdatedAt || local.updatedAt || local.createdAt || 0;
+        const remoteClient = remote.clientUpdatedAt || remote.updatedAt || remote.createdAt || 0;
+        winner = localClient >= remoteClient ? local : remote;
+      }
+    }
   }
 
   return {
@@ -209,12 +295,19 @@ export function resolveCalendarPlanConflict(
 
 /**
  * Resolves conflict between local and remote StylePreferences:
- * Server-authoritative timeline comparison.
+ * Server-authoritative revision & timeline comparison.
  */
 export function resolvePreferencesConflict(
   local: StylePreferences,
   remote: StylePreferences
 ): StylePreferences {
+  const localRev = typeof (local as any).revision === 'number' ? (local as any).revision : (local as any).serverRevision;
+  const remoteRev = typeof (remote as any).revision === 'number' ? (remote as any).revision : (remote as any).serverRevision;
+
+  if (typeof localRev === 'number' && typeof remoteRev === 'number' && localRev !== remoteRev) {
+    return remoteRev > localRev ? remote : local;
+  }
+
   const localServerTime = parseServerTimestamp(local.serverUpdatedAt);
   const remoteServerTime = parseServerTimestamp(remote.serverUpdatedAt);
 
@@ -228,16 +321,28 @@ export function resolvePreferencesConflict(
 
 /**
  * Resolves conflict between local and remote SavedOutfit:
- * Tombstone protection + Server-authoritative timeline.
+ * 1. Tombstone & Restoration.
+ * 2. Server-authoritative revision & timeline.
  */
 export function resolveSavedOutfitConflict(
   local: SavedOutfit,
   remote: SavedOutfit
 ): SavedOutfit {
-  if (local.isDeleted && !remote.isDeleted) return local;
-  if (!local.isDeleted && remote.isDeleted) return remote;
-  if (local.isDeleted && remote.isDeleted) {
-    return (local.deletedAt || 0) >= (remote.deletedAt || 0) ? local : remote;
+  // 1. Tombstone & Restoration
+  const tombstoneDecision = resolveTombstoneConflict(local, remote);
+  if (tombstoneDecision.resolved && tombstoneDecision.winner?.isDeleted) {
+    return tombstoneDecision.winner;
+  }
+
+  if (tombstoneDecision.resolved && !tombstoneDecision.winner?.isDeleted) {
+    return tombstoneDecision.winner!;
+  }
+
+  const localRev = typeof (local as any).revision === 'number' ? (local as any).revision : (local as any).serverRevision;
+  const remoteRev = typeof (remote as any).revision === 'number' ? (remote as any).revision : (remote as any).serverRevision;
+
+  if (typeof localRev === 'number' && typeof remoteRev === 'number' && localRev !== remoteRev) {
+    return remoteRev > localRev ? remote : local;
   }
 
   const localServerTime = parseServerTimestamp(local.serverUpdatedAt);

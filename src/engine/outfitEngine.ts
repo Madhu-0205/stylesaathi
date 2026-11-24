@@ -15,7 +15,7 @@ export function generateOutfits(
 ): GeneratedOutfit[] {
   // Never suggest laundry items or items needing washing
   const eligible = items.filter(
-    (i) => i.status === 'clean' && seasonFit(i, season) && occasionFit(i, occasion)
+    (i) => i.status === 'clean' && seasonFit(i, season) !== false && occasionFit(i, occasion)
   );
 
   const occasionTemplates = TEMPLATES.filter((t) => {

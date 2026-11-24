@@ -41,7 +41,7 @@ export const CombinationsModal: React.FC<CombinationsModalProps> = ({
                 {candidate.name}
               </h4>
               <p className="text-xs text-muted font-medium">
-                {candidate.priceRange || '₹1,299–₹1,999'} · Unlocks {newOutfitsUnlocked} combinations
+                {candidate.priceRange || 'Essential Staple'} · Unlocks {newOutfitsUnlocked} combinations
               </p>
             </div>
           </div>

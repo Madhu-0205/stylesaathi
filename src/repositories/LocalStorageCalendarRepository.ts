@@ -77,6 +77,33 @@ export class LocalStorageCalendarRepository implements CalendarRepository {
     this.setRaw(CALENDAR_PLANS_KEY, JSON.stringify(plans));
   }
 
+  async upsertPlansBulk(plans: OutfitPlan[]): Promise<void> {
+    if (!plans || plans.length === 0) return;
+    const existingPlans = await this.getAllPlansRaw();
+    const idMap = new Map<string, number>();
+    const dateMap = new Map<string, number>();
+
+    for (let i = 0; i < existingPlans.length; i++) {
+      if (existingPlans[i].id) idMap.set(existingPlans[i].id, i);
+      if (existingPlans[i].date) dateMap.set(existingPlans[i].date, i);
+    }
+
+    for (const plan of plans) {
+      const idx =
+        (plan.id ? idMap.get(plan.id) : undefined) ??
+        (plan.date ? dateMap.get(plan.date) : undefined);
+      if (idx !== undefined) {
+        existingPlans[idx] = plan;
+      } else {
+        existingPlans.push(plan);
+        const newIdx = existingPlans.length - 1;
+        if (plan.id) idMap.set(plan.id, newIdx);
+        if (plan.date) dateMap.set(plan.date, newIdx);
+      }
+    }
+    this.setRaw(CALENDAR_PLANS_KEY, JSON.stringify(existingPlans));
+  }
+
   async savePlan(plan: OutfitPlan): Promise<void> {
     const plans = await this.getAllPlansRaw();
     const existingIndex = plans.findIndex((p) => p.date === plan.date || p.id === plan.id);

@@ -52,11 +52,14 @@
 
   /* Surfaces & Ink (Warm Ivory & Pure Paper) */
   --ivory: #F8F5F0;
+  --parchment: #FAF6F0;
   --paper: #FFFDF9;
   --background: #F8F5F0;
   --card: #FFFDF9;
   --text: #121110;
   --ink: #121110;
+  --charcoal: #141312;
+  --umber: #2B2521;
   --muted: #6E6862;
   --muted-light: #9C958E;
   --border: #E8E2D8;
@@ -69,6 +72,7 @@
   --indigo: #1C2A39;
   --burnished-gold: #9E7B3B;
   --gold-rule: #BF9E58;
+  --champagne: #C5A880;
 
   /* Primary Accent Token */
   --accent: #8A1B36;
@@ -135,6 +139,9 @@
   --background: #141312;
   --card: #1D1B1A;
   --paper: #1D1B1A;
+  --parchment: #181716;
+  --charcoal: #141312;
+  --umber: #221D1A;
   --text: #F5F1ED;
   --ink: #F5F1ED;
   --muted: #9E968E;
@@ -147,6 +154,7 @@
   --accent-hover: #E3597F;
   --burnished-gold: #C49F5A;
   --gold-rule: #A88445;
+  --champagne: #D4B98B;
 
   --success: #4D8F5F;
   --warning: #CCA03B;
@@ -263,6 +271,30 @@ body {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.editorial-masthead {
+  font-family: var(--font-serif);
+  font-size: clamp(2.25rem, 6vw, 3.25rem);
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  font-weight: 400;
+}
+
+.editorial-lead {
+  font-family: var(--font-serif);
+  font-size: clamp(1.15rem, 2.5vw, 1.35rem);
+  line-height: 1.45;
+  letter-spacing: -0.015em;
+  color: var(--muted);
+}
+
+.editorial-tag {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
@@ -407,6 +439,37 @@ body {
 
 .spring-transition {
   transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Luxury Card Hover Lift: strictly gated by mouse capability to prevent sticky hovers on touch devices */
+@media (hover: hover) and (pointer: fine) {
+  .card-hover-lift {
+    transition: transform 240ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 240ms cubic-bezier(0.16, 1, 0.3, 1), border-color 240ms ease;
+  }
+  .card-hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px -4px rgba(18, 17, 16, 0.08), 0 2px 6px -2px rgba(18, 17, 16, 0.04);
+  }
+  .dark .card-hover-lift:hover {
+    box-shadow: 0 8px 28px -4px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* Page Enter Transition */
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-page-enter {
+  animation: pageEnter 280ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
 }
 
 /* Milestone B: Material-Aware Lighting & Tactical Sheen */
@@ -872,14 +935,18 @@ html, body {
   --color-foreground: var(--foreground);
   --color-background: var(--background);
   --color-ivory: var(--ivory);
+  --color-parchment: var(--parchment);
   --color-paper: var(--paper);
   --color-ink: var(--ink);
+  --color-charcoal: var(--charcoal);
+  --color-umber: var(--umber);
   --color-kumkum: var(--kumkum);
   --color-marigold: var(--marigold);
   --color-mehndi: var(--mehndi);
   --color-indigo: var(--indigo);
   --color-burnished-gold: var(--burnished-gold);
   --color-gold-rule: var(--gold-rule);
+  --color-champagne: var(--champagne);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -887,6 +954,64 @@ html, body {
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* MASTER LUXURY REINVENTION TOKENS & UTILITIES */
+.couture-press {
+  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1), opacity 160ms ease-out;
+}
+.couture-press:active {
+  transform: scale(0.97);
+}
+
+.aspect-couture {
+  aspect-ratio: 3 / 4;
+}
+
+.couture-card {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 1.5rem;
+  box-shadow: 0 2px 10px -2px rgba(18, 17, 16, 0.04), 0 1px 3px -1px rgba(18, 17, 16, 0.03);
+  transition: transform 300ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 300ms cubic-bezier(0.23, 1, 0.32, 1), border-color 300ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .couture-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px -4px rgba(18, 17, 16, 0.08), 0 4px 10px -2px rgba(18, 17, 16, 0.04);
+    border-color: rgba(138, 27, 54, 0.25);
+  }
+}
+
+.dark .couture-card {
+  box-shadow: 0 2px 12px -2px rgba(0, 0, 0, 0.4);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dark .couture-card:hover {
+    box-shadow: 0 14px 32px -4px rgba(0, 0, 0, 0.6);
+    border-color: rgba(212, 67, 106, 0.35);
+  }
+}
+
+.gold-shimmer {
+  background: linear-gradient(135deg, rgba(197, 168, 128, 0.15) 0%, rgba(197, 168, 128, 0.05) 50%, rgba(197, 168, 128, 0.2) 100%);
+}
+
+.animate-page-enter {
+  animation: couturePageEnter 260ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+@keyframes couturePageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @layer base {

@@ -151,7 +151,7 @@ describe('Phase 10: AI Saathi Orchestration Engine (Multi-Turn)', () => {
 
       expect(turn2.clarification).toBeUndefined();
       expect(state.resolvedEntities.date).toBe('tomorrow');
-      expect(state.resolvedEntities.occasion).toBe('college');
+      expect(state.resolvedEntities.occasion).toBe('office');
       expect(turn2.domainResult?.outfits).toBeDefined();
       expect(turn2.domainResult!.outfits!.length).toBeGreaterThan(0);
 

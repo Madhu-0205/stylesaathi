@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { WardrobeItem } from '../../types';
 import { getImageUrl } from '../../services/imageStore';
 import { ClothingFallback } from './ClothingFallback';
+import { resolveItemPhoto } from '../../assets/wardrobe';
 
 interface ItemImageProps {
   item: WardrobeItem;
@@ -22,8 +23,9 @@ export const ItemImage: React.FC<ItemImageProps> = ({
   isHero = false,
   showLabel = false,
 }) => {
-  const [resolvedSrc, setResolvedSrc] = useState<string | null>(item.photo || null);
-  const [isLoading, setIsLoading] = useState<boolean>(Boolean(item.photoId && !item.photo));
+  const initialSrc = resolveItemPhoto(item);
+  const [resolvedSrc, setResolvedSrc] = useState<string | null>(initialSrc);
+  const [isLoading, setIsLoading] = useState<boolean>(Boolean(item.photoId && !initialSrc));
   const [hasError, setHasError] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
 
@@ -32,9 +34,10 @@ export const ItemImage: React.FC<ItemImageProps> = ({
     setHasError(false);
     setImgLoaded(false);
 
-    // If an asset URL or existing string is present, use it directly
-    if (item.photo) {
-      setResolvedSrc(item.photo);
+    // If a static or catalog asset is resolved, use it directly
+    const staticSrc = resolveItemPhoto(item);
+    if (staticSrc) {
+      setResolvedSrc(staticSrc);
       setIsLoading(false);
       return;
     }
@@ -63,7 +66,7 @@ export const ItemImage: React.FC<ItemImageProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [item.photo, item.photoId]);
+  }, [item.id, item.photo, item.photoId]);
 
   // If loading or if no photo or image failed to load, show the colored placeholder tile
   if (isLoading || !resolvedSrc || hasError) {

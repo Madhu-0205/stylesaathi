@@ -199,6 +199,14 @@ export interface ShadowUnknownAttributeHandling {
   uncertaintyShrinkageApplied: boolean;
 }
 
+export interface ShadowMissingMetadataIndicators {
+  missingFabricCount: number;
+  missingFitCount: number;
+  missingSeasonsCount: number;
+  missingColorCount: number;
+  unconfirmedCount: number;
+}
+
 export interface ShadowCulturalContextualConsistency {
   culturalHarmonious: boolean;
   culturalSignalsDetected: number;
@@ -212,21 +220,39 @@ export interface ShadowExecutionLatency {
   totalMs: number;
 }
 
+export type ShadowWeatherFreshness =
+  | 'fresh'
+  | 'stale'
+  | 'expired'
+  | 'missing'
+  | 'simulated';
+
 export interface ShadowComparisonReport {
+  evaluationId: string;
   timestamp: number;
+  engineVersions: {
+    baseline: string;
+    shadow: string;
+  };
+  evaluationSuccess: boolean;
+  failureReason?: string;
   requestContext: {
     occasion: Occasion;
     season: Season;
     itemCount: number;
     anchorItemId?: string;
     hasGenuineWeather: boolean;
+    weatherFreshness: ShadowWeatherFreshness;
     hasStyleProfile: boolean;
   };
+  baselineRecommendationIds: string[];
+  shadowRecommendationIds: string[];
   candidateOverlap: ShadowCandidateOverlap;
   rankingDifferences: ShadowRankingDifferences;
   anchorPreservation: ShadowAnchorPreservation;
   hardConstraintViolations: ShadowHardConstraintViolations;
   unknownAttributeHandling: ShadowUnknownAttributeHandling;
+  missingMetadataIndicators: ShadowMissingMetadataIndicators;
   culturalContextualConsistency: ShadowCulturalContextualConsistency;
   executionLatency: ShadowExecutionLatency;
 }

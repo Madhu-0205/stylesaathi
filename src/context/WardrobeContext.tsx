@@ -9,6 +9,9 @@ import {
   WearEvent,
   StyleSignalEvent,
   PersonalStyleProfile,
+  StyleDNAProfile,
+  FabricType,
+  SilhouetteFit,
 } from '../types';
 import { wardrobeRepository } from '../repositories/LocalStorageWardrobeRepository';
 import { preferencesRepository, DEFAULT_STYLE_PREFERENCES } from '../repositories/LocalStoragePreferencesRepository';
@@ -16,8 +19,10 @@ import { calendarRepository } from '../repositories/LocalStorageCalendarReposito
 import { wearEventsRepository } from '../repositories/LocalStorageWearEventsRepository';
 import { styleSignalsRepository } from '../repositories/LocalStorageStyleSignalsRepository';
 import { derivePersonalStyleProfile } from '../engine/styleBrain';
+import { deriveStyleDNAProfile } from '../engine/styleDNA';
 import { validateOutfitWearability } from '../engine/hardConstraints';
 import { sampleWardrobe } from '../data/sampleWardrobe';
+import { isDemoItem, isDemoOutfit, getDemoWardrobe } from '../services/demoWardrobeService';
 import { clearImages, deleteImage } from '../services/imageStore';
 import { migrateLegacyPhotos } from '../services/migration';
 import { syncQueue } from '../lib/sync/syncQueue';
@@ -36,6 +41,9 @@ interface SettingsData {
 
 interface WardrobeContextValue {
   items: WardrobeItem[];
+  isDemoMode: boolean;
+  enterDemoMode: () => void;
+  exitDemoMode: () => void;
   loading: boolean;
   theme: 'light' | 'dark';
   onboarded: boolean;
@@ -46,6 +54,20 @@ interface WardrobeContextValue {
   plans: OutfitPlan[];
   styleSignals: StyleSignalEvent[];
   styleProfile: PersonalStyleProfile;
+  styleDNA: StyleDNAProfile;
+  correctDNAPreference: (
+    dimension: 'color' | 'fabric' | 'pattern' | 'fit' | 'category' | 'styleFamily' | 'occasion' | 'aesthetic',
+    key: string,
+    targetAffinity: number
+  ) => Promise<void>;
+  removeDNAPreference: (
+    dimension: 'color' | 'fabric' | 'pattern' | 'fit',
+    key: string
+  ) => Promise<void>;
+  confirmDNAPreference: (
+    dimension: 'color' | 'fabric' | 'pattern' | 'fit',
+    key: string
+  ) => Promise<void>;
   toast: string | null;
   showToast: (msg: string) => void;
   clearToast: () => void;
@@ -75,6 +97,17 @@ const WardrobeContext = createContext<WardrobeContextValue | null>(null);
 
 export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<WardrobeItem[]>([]);
+  const [isDemoMode, setIsDemoMode] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return window.sessionStorage?.getItem('stylesaathi_demo_mode') === 'true' ||
+               window.localStorage?.getItem('stylesaathi_demo_mode') === 'true';
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  });
   const [savedOutfits, setSavedOutfits] = useState<SavedOutfit[]>([]);
   const [preferences, setPreferences] = useState<StylePreferences>(DEFAULT_STYLE_PREFERENCES);
   const [plans, setPlans] = useState<OutfitPlan[]>([]);
@@ -83,9 +116,41 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
 
+  const enterDemoMode = useCallback(() => {
+    setIsDemoMode(true);
+    try {
+      if (typeof window !== 'undefined') {
+        window.sessionStorage?.setItem('stylesaathi_demo_mode', 'true');
+      }
+    } catch {}
+    setToast('Switched to Demonstration Mode · Read-Only Capsule');
+  }, []);
+
+  const exitDemoMode = useCallback(() => {
+    setIsDemoMode(false);
+    try {
+      if (typeof window !== 'undefined') {
+        window.sessionStorage?.removeItem('stylesaathi_demo_mode');
+        window.localStorage?.removeItem('stylesaathi_demo_mode');
+      }
+    } catch {}
+    setToast('Exited Demonstration Mode · Personal Wardrobe Restored');
+  }, []);
+
+  const displayedItems = useMemo(() => {
+    if (isDemoMode) {
+      return getDemoWardrobe();
+    }
+    return items;
+  }, [isDemoMode, items]);
+
   const styleProfile = useMemo(() => {
-    return derivePersonalStyleProfile(styleSignals, wearEvents, items, preferences);
-  }, [styleSignals, wearEvents, items, preferences]);
+    return derivePersonalStyleProfile(styleSignals, wearEvents, displayedItems, preferences);
+  }, [styleSignals, wearEvents, displayedItems, preferences]);
+
+  const styleDNA = useMemo(() => {
+    return deriveStyleDNAProfile(styleProfile, displayedItems, wearEvents, preferences, styleSignals);
+  }, [styleProfile, displayedItems, wearEvents, preferences, styleSignals]);
 
   const [settings, setSettings] = useState<SettingsData>(() => {
     try {
@@ -186,6 +251,10 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [refreshData]);
 
   const addItem = useCallback(async (item: WardrobeItem) => {
+    if (isDemoMode || isDemoItem(item)) {
+      setToast('Cannot add items in Demonstration Mode');
+      return;
+    }
     await wardrobeRepository.addItem(item);
     setItems((prev) => [item, ...prev.filter((i) => i.id !== item.id)]);
 
@@ -219,9 +288,13 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } catch (err) {
       console.warn('Sync enqueue failed for addItem:', err);
     }
-  }, []);
+  }, [isDemoMode]);
 
   const updateItem = useCallback(async (id: string, patch: Partial<WardrobeItem>) => {
+    if (isDemoMode || isDemoItem(id)) {
+      setToast('Demonstration items are read-only');
+      return;
+    }
     await wardrobeRepository.updateItem(id, patch);
     setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
 
@@ -239,10 +312,14 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } catch (err) {
       console.warn('Sync enqueue failed for updateItem:', err);
     }
-  }, []);
+  }, [isDemoMode]);
 
   const deleteItem = useCallback(
     async (id: string) => {
+      if (isDemoMode || isDemoItem(id)) {
+        setToast('Demonstration items cannot be deleted');
+        return;
+      }
       try {
         const itemToDelete = items.find((i) => i.id === id);
         if (itemToDelete?.photoId) {
@@ -267,24 +344,13 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         console.warn('Sync enqueue failed for deleteItem:', err);
       }
     },
-    [items]
+    [isDemoMode, items]
   );
 
   const loadSample = useCallback(async () => {
-    setLoading(true);
-    try {
-      await clearImages();
-    } catch (err) {
-      console.warn('Failed to clear images during loadSample:', err);
-    }
-    await wardrobeRepository.clear();
-    for (const item of sampleWardrobe) {
-      await wardrobeRepository.addItem(item);
-    }
-    setItems(sampleWardrobe);
+    enterDemoMode();
     setSettings((s) => ({ ...s, onboarded: true }));
-    setLoading(false);
-  }, []);
+  }, [enterDemoMode]);
 
   const resetWardrobe = useCallback(async () => {
     try {
@@ -334,6 +400,10 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const updatePreferences = useCallback(
     async (patch: Partial<StylePreferences>) => {
+      if (isDemoMode) {
+        setToast('Cannot update preferences in Demonstration Mode');
+        return;
+      }
       const updated: StylePreferences = {
         ...preferences,
         ...patch,
@@ -360,6 +430,14 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const savePlan = useCallback(
     async (planData: Omit<OutfitPlan, 'id' | 'createdAt' | 'updatedAt'> | OutfitPlan) => {
+      if (
+        isDemoMode ||
+        ('outfit' in planData && isDemoOutfit(planData.outfit)) ||
+        ('accessory' in planData && planData.accessory && isDemoItem(planData.accessory))
+      ) {
+        setToast('Cannot schedule outfits in Demonstration Mode');
+        return planData as OutfitPlan;
+      }
       const id =
         'id' in planData && planData.id
           ? planData.id
@@ -447,6 +525,13 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const recordSignal = useCallback(
     async (signalInput: Omit<StyleSignalEvent, 'id' | 'userId' | 'createdAt'> | StyleSignalEvent) => {
+      if (
+        isDemoMode ||
+        ('itemIds' in signalInput && signalInput.itemIds?.some((id) => isDemoItem(id))) ||
+        ('outfitId' in signalInput && signalInput.outfitId && isDemoItem(signalInput.outfitId))
+      ) {
+        return;
+      }
       const user = syncService.getCurrentUser();
       const userId = user?.id || 'local';
       const now = Date.now();
@@ -490,16 +575,147 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setStyleSignals([]);
   }, []);
 
+  const correctDNAPreference = useCallback(
+    async (
+      dimension: 'color' | 'fabric' | 'pattern' | 'fit' | 'category' | 'styleFamily' | 'occasion' | 'aesthetic',
+      key: string,
+      targetAffinity: number
+    ) => {
+      if (isDemoMode) {
+        setToast('Cannot alter Style DNA in Demonstration Mode');
+        return;
+      }
+      // 1. If it maps directly to explicit StylePreferences, update preferences
+      if (dimension === 'color') {
+        const prev = preferences.preferredColors || [];
+        const norm = key.toLowerCase();
+        let next: string[];
+        if (targetAffinity > 0.2) {
+          next = prev.includes(norm) ? prev : [...prev, norm];
+        } else {
+          next = prev.filter((c) => c.toLowerCase() !== norm);
+        }
+        await updatePreferences({ preferredColors: next });
+      } else if (dimension === 'fit') {
+        const prev = preferences.preferredFits || [];
+        const fitKey = key as SilhouetteFit;
+        let next: SilhouetteFit[];
+        if (targetAffinity > 0.2) {
+          next = prev.includes(fitKey) ? prev : [...prev, fitKey];
+        } else {
+          next = prev.filter((f) => f !== fitKey);
+        }
+        await updatePreferences({ preferredFits: next });
+      } else if (dimension === 'fabric') {
+        const prev = preferences.fabricSensitivities || [];
+        const fabKey = key as FabricType;
+        let next: FabricType[];
+        if (targetAffinity < -0.3) {
+          next = prev.includes(fabKey) ? prev : [...prev, fabKey];
+        } else {
+          next = prev.filter((f) => f !== fabKey);
+        }
+        await updatePreferences({ fabricSensitivities: next });
+      } else if (dimension === 'styleFamily' || dimension === 'aesthetic') {
+        const prevPref = preferences.preferredAesthetics || [];
+        const prevDis = preferences.dislikedStyles || [];
+        if (targetAffinity > 0.2) {
+          await updatePreferences({
+            preferredAesthetics: prevPref.includes(key) ? prevPref : [...prevPref, key],
+            dislikedStyles: prevDis.filter((d) => d.toLowerCase() !== key.toLowerCase()),
+          });
+        } else if (targetAffinity < -0.2) {
+          await updatePreferences({
+            preferredAesthetics: prevPref.filter((a) => a.toLowerCase() !== key.toLowerCase()),
+            dislikedStyles: prevDis.includes(key) ? prevDis : [...prevDis, key],
+          });
+        }
+      }
+
+      // 2. Persist diagnostic explicit signal
+      await recordSignal({
+        signalType: targetAffinity > 0 ? 'favorited' : 'rejected',
+        itemIds: [],
+        rejectionReason: targetAffinity < 0 ? 'not_my_style' : undefined,
+        note: `Explicit user calibration for ${dimension}: ${key} (${targetAffinity})`,
+      });
+
+      setToast(`Style DNA updated: ${key}`);
+    },
+    [preferences, updatePreferences, recordSignal]
+  );
+
+  const removeDNAPreference = useCallback(
+    async (dimension: 'color' | 'fabric' | 'pattern' | 'fit', key: string) => {
+      if (isDemoMode) {
+        setToast('Cannot alter Style DNA in Demonstration Mode');
+        return;
+      }
+      if (dimension === 'color') {
+        const prev = preferences.preferredColors || [];
+        const next = prev.filter((c) => c.toLowerCase() !== key.toLowerCase());
+        await updatePreferences({ preferredColors: next });
+      } else if (dimension === 'fit') {
+        const prev = preferences.preferredFits || [];
+        const next = prev.filter((f) => f !== key);
+        await updatePreferences({ preferredFits: next });
+      } else if (dimension === 'fabric') {
+        const prev = preferences.fabricSensitivities || [];
+        const next = prev.filter((f) => f !== key);
+        await updatePreferences({ fabricSensitivities: next });
+      }
+      setToast(`Removed ${key} from Style DNA`);
+    },
+    [preferences, updatePreferences]
+  );
+
+  const confirmDNAPreference = useCallback(
+    async (dimension: 'color' | 'fabric' | 'pattern' | 'fit', key: string) => {
+      await correctDNAPreference(dimension, key, 0.85);
+      setToast(`Confirmed ${key} in Style DNA`);
+    },
+    [correctDNAPreference]
+  );
+
   const markOutfitWornOnDate = useCallback(
     async (outfit: GeneratedOutfit, dateStr: string, accessory?: WardrobeItem | null) => {
+      if (isDemoMode || isDemoOutfit(outfit) || (accessory && isDemoItem(accessory))) {
+        showToast('Cannot record wear events in Demonstration Mode');
+        return;
+      }
       const allPieces = Object.values(outfit.slots).flat();
       if (accessory) {
         allPieces.push(accessory);
       }
 
-      // LAUNDRY HARD CONSTRAINT: Actual wear logging is strictly blocked for unwashed garments.
-      // Planning mode allows styling exploration, but wear confirmation requires clean garments.
-      const wearCheck = validateOutfitWearability(outfit, accessory);
+      // 1. LIVE WARDROBE GROUNDING: Verify every piece still exists in the user's active wardrobe
+      const missingPieces = allPieces.filter((p) => !items.some((live) => live.id === p.id));
+      if (missingPieces.length > 0) {
+        const names = missingPieces.map((p) => p.name || 'Unknown item').join(', ');
+        const errorMsg = `Cannot log wear: Garment "${names}" no longer exists in your wardrobe.`;
+        showToast(errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      // 2. Map all pieces to their live counterparts in current wardrobe
+      const livePieces = allPieces.map((p) => items.find((live) => live.id === p.id)!);
+
+      // 3. LAUNDRY HARD CONSTRAINT: Actual wear logging is strictly blocked for unwashed garments.
+      // Planning mode allows styling exploration, but wear confirmation requires clean garments from live state.
+      const unwearablePieces = livePieces.filter((p) => p.status !== 'clean');
+      if (unwearablePieces.length > 0) {
+        const names = unwearablePieces.map((p) => p.name).join(', ');
+        const errorMsg = `Cannot log wear: ${names} ${unwearablePieces.length === 1 ? 'needs' : 'need'} washing before wearing.`;
+        showToast(errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      const liveSlots: Record<string, WardrobeItem[]> = {};
+      for (const [slotKey, slotItems] of Object.entries(outfit.slots)) {
+        liveSlots[slotKey] = slotItems.map((p) => items.find((live) => live.id === p.id)!);
+      }
+      const liveAccessory = accessory ? items.find((live) => live.id === accessory.id) || null : null;
+      const wearCheck = validateOutfitWearability({ ...outfit, slots: liveSlots }, liveAccessory);
       if (!wearCheck.canWear) {
         showToast(wearCheck.error!);
         throw new Error(wearCheck.error);
@@ -510,7 +726,7 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const userId = user?.id || 'local';
       const newWearEvents: WearEvent[] = [];
 
-      for (const piece of allPieces) {
+      for (const piece of livePieces) {
         const nextTimesWorn = (piece.timesWorn || 0) + 1;
         await updateItem(piece.id, {
           timesWorn: nextTimesWorn,
@@ -578,6 +794,10 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   );
 
   const saveOutfit = useCallback(async (outfit: GeneratedOutfit, name?: string) => {
+    if (isDemoMode || isDemoOutfit(outfit)) {
+      setToast('Cannot save outfits in Demonstration Mode');
+      return null as any;
+    }
     const saved = await wardrobeRepository.saveOutfit(outfit, name);
     setSavedOutfits((prev) => [saved, ...prev]);
 
@@ -622,7 +842,10 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const value = useMemo<WardrobeContextValue>(
     () => ({
-      items,
+      items: displayedItems,
+      isDemoMode,
+      enterDemoMode,
+      exitDemoMode,
       loading,
       theme: settings.theme,
       onboarded: settings.onboarded,
@@ -633,6 +856,10 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       plans,
       styleSignals,
       styleProfile,
+      styleDNA,
+      correctDNAPreference,
+      removeDNAPreference,
+      confirmDNAPreference,
       toast,
       showToast,
       clearToast,
@@ -658,7 +885,10 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       refreshData,
     }),
     [
-      items,
+      displayedItems,
+      isDemoMode,
+      enterDemoMode,
+      exitDemoMode,
       loading,
       settings.theme,
       settings.onboarded,
@@ -669,6 +899,10 @@ export const WardrobeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       plans,
       styleSignals,
       styleProfile,
+      styleDNA,
+      correctDNAPreference,
+      removeDNAPreference,
+      confirmDNAPreference,
       toast,
       showToast,
       clearToast,

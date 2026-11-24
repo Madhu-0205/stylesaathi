@@ -1,0 +1,31 @@
+name = "stylesaathi-api"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Cloudflare D1 Database Binding (Local & Development)
+[[d1_databases]]
+binding = "DB"
+database_name = "stylesaathi-db"
+database_id = "local-stylesaathi-db-id"
+migrations_dir = "migrations"
+
+[vars]
+APP_ENV = "development"
+ALLOWED_ORIGINS = "https://stylesaathi.pages.dev,http://localhost:5173,http://localhost:4173,capacitor://localhost,https://localhost"
+
+# Cloudflare D1 Database Binding (Staging Environment Isolation)
+[env.staging]
+name = "stylesaathi-api-staging"
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "stylesaathi-db-staging"
+database_id = "c8a7b07e-0664-4533-af17-86374fd3a8cd"
+migrations_dir = "migrations"
+
+[env.staging.vars]
+APP_ENV = "staging"
+ALLOWED_ORIGINS = "https://staging.stylesaathi.pages.dev,https://stylesaathi-staging.pages.dev,capacitor://localhost,https://localhost"
+APP_URL = "https://staging.stylesaathi.pages.dev"
+

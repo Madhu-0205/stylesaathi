@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Sun,
   Moon,
@@ -13,7 +13,12 @@ import {
   RefreshCw,
   WifiOff,
   Bookmark,
+  AlertTriangle,
+  Compass,
+  BarChart3,
+  ChevronRight,
 } from 'lucide-react';
+import { NavTab } from '../components/navigation/BottomNav';
 import { useWardrobeContext } from '../context/WardrobeContext';
 import { useAuth } from '../context/AuthContext';
 import { AuthView } from '../components/auth/AuthView';
@@ -23,6 +28,8 @@ import { syncService } from '../lib/sync/syncService';
 import { Button } from '@/components/ui/button';
 import { SavedOutfitsModal } from '../components/dressme/SavedOutfitsModal';
 import { PlanLookModal } from '../components/calendar/PlanLookModal';
+import { SyncRecoveryModal } from '../components/sync/SyncRecoveryModal';
+import { StyleDNAStudio } from '../components/profile/StyleDNAStudio';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -101,7 +108,11 @@ const PRESENTATION_CHOICES: {
   { id: 'androgynous', label: 'Androgynous' },
 ];
 
-export const ProfileScreen: React.FC = () => {
+interface ProfileScreenProps {
+  onNavigateTab?: (tab: NavTab) => void;
+}
+
+export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigateTab }) => {
   const {
     items,
     savedOutfits,
@@ -110,6 +121,10 @@ export const ProfileScreen: React.FC = () => {
     preferences,
     updatePreferences,
     styleProfile,
+    styleDNA,
+    correctDNAPreference,
+    removeDNAPreference,
+    confirmDNAPreference,
     resetLearnedStyle,
     loadSample,
     resetWardrobe,
@@ -117,12 +132,20 @@ export const ProfileScreen: React.FC = () => {
     showToast,
   } = useWardrobeContext();
 
-  const { user, isGuest, isAuthenticated, signOut, deleteAccount } = useAuth();
+  const { user, isGuest, isAuthenticated, signOut, deleteAccount, authError } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
+
+  // Auto-surface Auth Modal if redirected back with an authentication error
+  useEffect(() => {
+    if (authError) {
+      setShowAuthModal(true);
+    }
+  }, [authError]);
   const [showSavedModal, setShowSavedModal] = useState(false);
+  const [showSyncRecovery, setShowSyncRecovery] = useState(false);
   const [planningOutfit, setPlanningOutfit] = useState<GeneratedOutfit | null>(null);
   const [alertAction, setAlertAction] = useState<'clear' | 'reset' | 'reset_style' | 'delete_account' | null>(null);
-  const { statusLabel, isOnline, status: syncStatus, pendingCount } = useSyncStatus();
+  const { statusLabel, isOnline, status: syncStatus, pendingCount, deadLetterCount } = useSyncStatus();
 
   // Metrics
   const totalPieces = items.length;
@@ -190,7 +213,7 @@ export const ProfileScreen: React.FC = () => {
   };
 
   return (
-    <div className="pb-28 sm:pb-24 md:pb-8 animate-fade-in space-y-4">
+    <div className="pb-36 sm:pb-32 md:pb-8 animate-fade-in space-y-4">
       {/* Compact Editorial Header: "YOU · Personal Archive" */}
       <header className="flex items-center justify-between border-b border-border/80 pb-3">
         <div>
@@ -226,12 +249,12 @@ export const ProfileScreen: React.FC = () => {
           className="md:hidden flex h-9 w-9 min-h-11 min-w-11 items-center justify-center rounded-full border border-border text-muted transition-colors hover:border-(--ink) hover:text-(--ink) active:scale-95 tactile-press"
           aria-label="Toggle theme"
         >
-          {theme === 'light' ? '☾' : '☼'}
+          {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
         </button>
       </header>
 
       {/* Account Profile Status Banner */}
-      <section className="rounded-3xl glass-card specular-border p-5 sm:p-6 shadow-2xs">
+      <section className="rounded-3xl glass-card couture-card specular-border p-5 sm:p-6 shadow-2xs card-hover-lift">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-(--ivory) border border-border text-(--ink) font-serif font-bold text-base shadow-2xs">
@@ -284,6 +307,8 @@ export const ProfileScreen: React.FC = () => {
           <div className="flex items-center gap-2">
             {!isOnline ? (
               <WifiOff className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+            ) : deadLetterCount > 0 ? (
+              <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
             ) : syncStatus === 'syncing' ? (
               <RefreshCw className="h-3.5 w-3.5 text-(--burnished-gold) animate-spin shrink-0" />
             ) : (
@@ -292,25 +317,99 @@ export const ProfileScreen: React.FC = () => {
             <span className="text-[11px] font-medium">{statusLabel}</span>
           </div>
 
-          {isAuthenticated && (pendingCount > 0 || !isOnline) && (
-            <button
-              type="button"
-              onClick={() => syncService.processQueue()}
-              disabled={syncStatus === 'syncing'}
-              className="text-[10px] font-bold uppercase tracking-wider text-(--burnished-gold) hover:underline flex items-center gap-1 min-h-8"
-            >
-              <span>Sync now</span>
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {deadLetterCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowSyncRecovery(true)}
+                className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 px-2.5 py-1 rounded-md flex items-center gap-1 min-h-8 transition-colors"
+              >
+                <span>Resolve ({deadLetterCount})</span>
+              </button>
+            )}
+
+            {isAuthenticated && deadLetterCount === 0 && (pendingCount > 0 || !isOnline) && (
+              <button
+                type="button"
+                onClick={() => syncService.processQueue()}
+                disabled={syncStatus === 'syncing'}
+                className="text-[10px] font-bold uppercase tracking-wider text-(--burnished-gold) hover:underline flex items-center gap-1 min-h-8"
+              >
+                <span>Sync now</span>
+              </button>
+            )}
+          </div>
         </div>
       </section>
+
+      {/* Editorial Wardrobe Intelligence Hub (Wardrobe Gaps & Smart Buy, Wear Analytics) */}
+      <section className="rounded-3xl couture-card specular-border p-5 sm:p-6 shadow-2xs space-y-4 card-hover-lift">
+        <div className="flex items-center justify-between border-b border-border/60 pb-3">
+          <div>
+            <div className="flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-(--burnished-gold)" />
+              <span className="editorial-kicker text-(--kumkum)">WARDROBE INTELLIGENCE</span>
+            </div>
+            <h3 className="font-serif text-lg text-(--ink)">Insights, Analytics &amp; Strategic Additions</h3>
+          </div>
+          <span className="text-[10px] text-muted font-medium uppercase tracking-widest hidden sm:inline">Archive Intelligence</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Smart Buy & Wardrobe Gaps Card */}
+          <button
+            type="button"
+            onClick={() => onNavigateTab?.('Insight')}
+            className="flex items-start justify-between p-4 rounded-2xl bg-(--ivory)/70 hover:bg-(--ivory) border border-border/80 text-left transition-all duration-200 group active:scale-[0.99] tactile-press focus-editorial min-h-12"
+          >
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Compass className="h-4 w-4 text-(--kumkum)" />
+                <span className="text-xs font-semibold uppercase tracking-wider text-(--ink)">Smart Buy &amp; Wardrobe Gaps</span>
+              </div>
+              <p className="text-[11px] text-muted leading-relaxed">
+                Identify physical inventory gaps, essential missing pieces &amp; strategic additions for complete styling.
+              </p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted group-hover:text-(--ink) group-hover:translate-x-0.5 transition-transform mt-0.5 shrink-0 ml-2" />
+          </button>
+
+          {/* Wear & Rotation Analytics Card */}
+          <button
+            type="button"
+            onClick={() => onNavigateTab?.('Insight')}
+            className="flex items-start justify-between p-4 rounded-2xl bg-(--ivory)/70 hover:bg-(--ivory) border border-border/80 text-left transition-all duration-200 group active:scale-[0.99] tactile-press focus-editorial min-h-12"
+          >
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-(--burnished-gold)" />
+                <span className="text-xs font-semibold uppercase tracking-wider text-(--ink)">Wear &amp; Rotation Analytics</span>
+              </div>
+              <p className="text-[11px] text-muted leading-relaxed">
+                Review cost-per-wear, rotation velocity, forgotten pieces &amp; sustainable wardrobe health metrics.
+              </p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted group-hover:text-(--ink) group-hover:translate-x-0.5 transition-transform mt-0.5 shrink-0 ml-2" />
+          </button>
+        </div>
+      </section>
+
+      {/* Style DNA Atelier Studio */}
+      <StyleDNAStudio
+        styleDNA={styleDNA}
+        onConfirmPreference={confirmDNAPreference}
+        onCorrectPreference={correctDNAPreference}
+        onRemovePreference={removeDNAPreference}
+        onResetLearnedStyle={() => setAlertAction('reset_style')}
+        onNavigateTab={onNavigateTab}
+      />
 
       {/* Main Profile Grid: Style DNA & Archive Controls */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 items-start">
         {/* Left Column: Style DNA & Styling Mode */}
         <div className="space-y-4">
           {/* Aesthetic & Context Preferences */}
-          <section className="rounded-3xl glass-card specular-border p-5 sm:p-6 shadow-2xs space-y-4">
+          <section className="rounded-3xl couture-card specular-border p-5 sm:p-6 shadow-2xs space-y-4">
             <div className="flex items-baseline justify-between border-b border-border pb-3">
               <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
                 STYLE PREFERENCES
@@ -510,124 +609,12 @@ export const ProfileScreen: React.FC = () => {
               </div>
             </div>
           </section>
-
-          {/* Learned Style Brain Section */}
-          <section className="rounded-3xl glass-card specular-border p-5 sm:p-6 shadow-2xs space-y-4">
-            <div className="flex items-baseline justify-between border-b border-border pb-3">
-              <div className="flex items-center gap-1.5">
-                <Sparkles className="h-3.5 w-3.5 text-(--burnished-gold)" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
-                  LEARNED STYLE BRAIN
-                </span>
-              </div>
-              <span className="text-[10px] text-muted">
-                {styleProfile.totalSignalsCount >= 3
-                  ? `${Math.round(styleProfile.overallConfidence * 100)}% Confidence · ${styleProfile.totalSignalsCount} Signals`
-                  : 'Observing Habits'}
-              </span>
-            </div>
-
-            {styleProfile.totalSignalsCount < 3 ? (
-              <div className="rounded-2xl border border-dashed border-border bg-(--ivory)/60 p-4 text-center">
-                <p className="text-xs text-(--ink) font-medium">Style intuition is taking shape</p>
-                <p className="text-[11px] text-muted mt-1 leading-relaxed">
-                  As you wear, plan, save, or pass on outfits in Dress Me, StyleSaathi privately learns which colors, fabrics, and fits you naturally reach for.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3.5 text-xs">
-                {/* Top Colors */}
-                {styleProfile.topColors.length > 0 && (
-                  <div>
-                    <span className="block text-[9.5px] font-bold uppercase tracking-wider text-muted mb-1.5">
-                      Colors You Gravitate Toward
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {styleProfile.topColors.map((color) => (
-                        <span
-                          key={color}
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-(--ivory) px-2.5 py-1 text-xs font-semibold capitalize text-(--ink)"
-                        >
-                          <span className="h-2 w-2 rounded-full border border-black/10" style={{ backgroundColor: color }} />
-                          <span>{color}</span>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Preferred Fabrics */}
-                {styleProfile.topFabrics.length > 0 && (
-                  <div>
-                    <span className="block text-[9.5px] font-bold uppercase tracking-wider text-muted mb-1.5">
-                      Go-To Fabrics &amp; Textures
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {styleProfile.topFabrics.map((fabric) => (
-                        <span
-                          key={fabric}
-                          className="rounded-xl border border-border bg-card px-2.5 py-1 text-xs font-medium capitalize text-(--ink)"
-                        >
-                          {fabric.replace(/_/g, ' ')}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Preferred Silhouettes */}
-                {styleProfile.topFits.length > 0 && (
-                  <div>
-                    <span className="block text-[9.5px] font-bold uppercase tracking-wider text-muted mb-1.5">
-                      Preferred Silhouettes &amp; Fits
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {styleProfile.topFits.map((fit) => (
-                        <span
-                          key={fit}
-                          className="rounded-xl border border-border bg-card px-2.5 py-1 text-xs font-medium capitalize text-(--ink)"
-                        >
-                          {fit.replace(/_/g, ' ')} fit
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Recent Style Phase Exploration */}
-                {styleProfile.recentExplorations.length > 0 && (
-                  <div className="rounded-2xl border border-(--burnished-gold)/40 bg-(--ivory) p-3">
-                    <span className="block text-[9px] font-bold uppercase tracking-wider text-(--burnished-gold) mb-0.5">
-                      RECENT EXPLORATION
-                    </span>
-                    <span className="text-[11.5px] text-(--ink)">
-                      You&apos;ve recently been exploring {styleProfile.recentExplorations.join(', ')}.
-                    </span>
-                  </div>
-                )}
-
-                {/* Reset Learned Memory Button (User Control Principle) */}
-                <div className="pt-2 border-t border-border/60 flex justify-between items-center">
-                  <span className="text-[10px] text-muted">
-                    Explicit preferences above always override learned memory.
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setAlertAction('reset_style')}
-                    className="text-[11px] font-semibold text-(--kumkum) hover:underline"
-                  >
-                    Reset Style Memory
-                  </button>
-                </div>
-              </div>
-            )}
-          </section>
         </div>
 
         {/* Right Column: Appearance & Archive Management */}
         <div className="space-y-4">
           {/* Appearance Section */}
-          <section className="rounded-3xl glass-card specular-border p-5 sm:p-6 shadow-2xs">
+          <section className="rounded-3xl couture-card specular-border p-5 sm:p-6 shadow-2xs">
             <div className="flex items-baseline justify-between border-b border-border pb-3 mb-3.5">
               <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
                 APPEARANCE
@@ -664,7 +651,7 @@ export const ProfileScreen: React.FC = () => {
           </section>
 
           {/* Wardrobe Management Actions */}
-          <section className="rounded-3xl glass-card specular-border p-5 sm:p-6 shadow-2xs space-y-3">
+          <section className="rounded-3xl couture-card specular-border p-5 sm:p-6 shadow-2xs space-y-3">
             <div className="flex items-baseline justify-between border-b border-border pb-3 mb-1">
               <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-(--kumkum)">
                 WARDROBE DATA
@@ -808,6 +795,12 @@ export const ProfileScreen: React.FC = () => {
           occasion="everyday"
         />
       )}
+
+      {/* Cloud Sync Dead-Letter Recovery Modal */}
+      <SyncRecoveryModal
+        isOpen={showSyncRecovery}
+        onClose={() => setShowSyncRecovery(false)}
+      />
     </div>
   );
 };

@@ -14,6 +14,7 @@ interface TopNavProps {
 }
 
 const TABS: { id: NavTab; label: string; icon: React.FC<{ className?: string }> }[] = [
+  { id: 'Today', label: 'TODAY', icon: Sun },
   { id: 'Wardrobe', label: 'WARDROBE', icon: Shirt },
   { id: 'Dress', label: 'DRESS', icon: Sparkles },
   { id: 'Calendar', label: 'CALENDAR', icon: Calendar },
@@ -31,12 +32,12 @@ export const TopNav: React.FC<TopNavProps> = ({
   toggleTheme,
 }) => {
   return (
-    <header className="sticky top-0 z-40 w-full glass-header border-b border-border/60 transition-colors backdrop-blur-xl bg-(--background)/85">
+    <header className="sticky top-0 z-40 w-full glass-header border-b border-border/60 transition-colors backdrop-blur-xl bg-(--background)/85 overflow-x-clip">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Official Editorial Brand Identity */}
         <div
           className="flex items-center cursor-pointer select-none py-1 hover:opacity-90 transition-opacity"
-          onClick={() => onChangeTab('Wardrobe')}
+          onClick={() => onChangeTab('Today')}
           aria-label="StyleSaathi Home"
         >
           <StyleSaathiLogo variant="full" size="sm" showTagline={true} />
@@ -56,10 +57,10 @@ export const TopNav: React.FC<TopNavProps> = ({
                 type="button"
                 onClick={() => onChangeTab(tab.id)}
                 aria-current={isActive ? 'page' : undefined}
-                className={`relative flex min-h-11 items-center gap-2 rounded-full px-4 sm:px-5 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition-all duration-200 select-none active:scale-95 ${
+                className={`relative flex min-h-11 items-center gap-1.5 lg:gap-2 rounded-full px-2.5 lg:px-3.5 xl:px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition-all duration-200 select-none active:scale-95 tactile-press-sm ${
                   isActive
-                    ? 'text-(--ink) bg-(--paper) font-bold shadow-xs'
-                    : 'text-muted hover:text-(--ink) hover:bg-(--paper)/40'
+                    ? 'text-(--ink) bg-(--paper) font-bold shadow-xs border border-border/80'
+                    : 'text-muted hover:text-(--ink) hover:bg-(--paper)/40 border border-transparent'
                 }`}
               >
                 <Icon

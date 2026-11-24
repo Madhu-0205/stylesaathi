@@ -1319,14 +1319,14 @@ export function getPersonalStyleExplanations(
   const reasons: string[] = [];
 
   // Check top fabrics
-  const matchingTopFabric = pieces.find((p) => p.fabric && profile.topFabrics.includes(p.fabric));
+  const matchingTopFabric = pieces.find((p) => p.fabric && profile.topFabrics?.includes(p.fabric));
   if (matchingTopFabric?.fabric) {
     const formattedFabric = matchingTopFabric.fabric.replace(/_/g, ' ');
     reasons.push(`Features breathable ${formattedFabric}, aligned with your fabric preferences`);
   }
 
   // Check top fits
-  const matchingTopFit = pieces.find((p) => p.fit && profile.topFits.includes(p.fit));
+  const matchingTopFit = pieces.find((p) => p.fit && profile.topFits?.includes(p.fit));
   if (matchingTopFit?.fit) {
     const formattedFit = matchingTopFit.fit.replace(/_/g, ' ');
     reasons.push(`Cut in a ${formattedFit} silhouette you frequently choose`);
@@ -1335,7 +1335,7 @@ export function getPersonalStyleExplanations(
   // Check top colors
   const matchingTopColor = pieces
     .flatMap((p) => p.colors)
-    .find((c) => profile.topColors.includes(c.toLowerCase()));
+    .find((c) => profile.topColors?.includes(c.toLowerCase()));
   if (matchingTopColor) {
     reasons.push(`Anchored in ${matchingTopColor}, one of your most-worn tones`);
   }
@@ -1345,7 +1345,7 @@ export function getPersonalStyleExplanations(
     for (let i = 0; i < pieces.length; i++) {
       for (let j = i + 1; j < pieces.length; j++) {
         const key = getCombinationKey(pieces[i].id, pieces[j].id);
-        const comboAff = profile.combinationAffinities[key];
+        const comboAff = profile.combinationAffinities?.[key];
         if (comboAff && comboAff.score >= 0.5 && comboAff.sampleCount >= 2) {
           reasons.push(`Pairs pieces you frequently choose to wear together`);
           break;

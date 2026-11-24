@@ -1,5 +1,6 @@
 import { get, set, del, entries, clear, createStore, UseStore } from 'idb-keyval';
 import { SyncMutation } from '../../types';
+import { isDemoPayload, isDemoItem } from '../../services/demoWardrobeService';
 
 const DB_NAME = 'stylesaathi-sync-queue-db';
 const STORE_NAME = 'mutations';
@@ -31,9 +32,33 @@ function notifyListeners() {
 
 export class SyncQueue {
   private customStore: UseStore | undefined;
+  private quotaPausedUntil = 0;
 
   constructor(customStore?: UseStore) {
     this.customStore = customStore || queueStore;
+  }
+
+  /**
+   * Pauses queue execution when Cloudflare D1 quota exhaustion is encountered.
+   */
+  pauseForQuota(durationMs = 3600000): void {
+    this.quotaPausedUntil = Date.now() + durationMs;
+    notifyListeners();
+  }
+
+  /**
+   * Resumes queue execution after quota reset window.
+   */
+  resumeFromQuota(): void {
+    this.quotaPausedUntil = 0;
+    notifyListeners();
+  }
+
+  /**
+   * Checks whether the queue is currently paused due to quota exhaustion.
+   */
+  isQuotaPaused(): boolean {
+    return Date.now() < this.quotaPausedUntil;
   }
 
   private async getStoreEntries(): Promise<[string, SyncMutation][]> {
@@ -104,6 +129,15 @@ export class SyncQueue {
       dependencies?: string[];
     }
   ): Promise<SyncMutation> {
+    if (
+      isDemoPayload((mutationInput as any).payload) ||
+      isDemoItem((mutationInput as any).entityId) ||
+      isDemoItem((mutationInput as any).id)
+    ) {
+      throw new Error(
+        `[DemoIsolation] Prohibited sync queue mutation: Demonstration item cannot be enqueued for cloud sync`
+      );
+    }
     const id =
       (mutationInput as any).mutationId ||
       mutationInput.id ||
@@ -112,10 +146,16 @@ export class SyncQueue {
         : `mut-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
 
     const now = Date.now();
+    const userId =
+      (mutationInput as any).userId ||
+      (mutationInput as any).payload?.userId ||
+      (mutationInput as any).payload?.outfit?.userId;
+
     const mutation: SyncMutation = {
       ...(mutationInput as any),
       id,
       mutationId: id,
+      userId: userId || undefined,
       createdAt: (mutationInput as any).createdAt || now,
       clientTimestamp: now,
       attemptCount: 0,
@@ -142,13 +182,23 @@ export class SyncQueue {
 
   /**
    * Returns next runnable mutation whose dependencies have completed and retry window is open.
+   * If userId is provided, guarantees tenant isolation by only picking mutations for that user.
    */
-  async peekNext(): Promise<SyncMutation | null> {
+  async peekNext(userId?: string): Promise<SyncMutation | null> {
+    if (this.isQuotaPaused()) {
+      return null;
+    }
+
     const now = Date.now();
     const all = await this.getAllMutations();
     const existingIds = new Set(all.map((m) => m.id));
 
     for (const m of all) {
+      // Must belong to the current authenticated user if specified
+      if (userId && m.userId && m.userId !== userId) {
+        continue;
+      }
+
       // Must be pending and ready for retry
       if (m.status !== 'pending' || m.nextRetryAt > now) {
         continue;
@@ -164,6 +214,36 @@ export class SyncQueue {
     }
 
     return null;
+  }
+
+  /**
+   * Retrieves a single mutation by its ID.
+   */
+  async getMutation(id: string): Promise<SyncMutation | null> {
+    const all = await this.getAllMutations();
+    return all.find((m) => m.id === id) || null;
+  }
+
+  /**
+   * Retrieves all dead-lettered mutations, optionally filtered by user ID.
+   */
+  async getDeadLetterMutations(userId?: string): Promise<SyncMutation[]> {
+    const all = await this.getAllMutations();
+    return all.filter((m) => {
+      if (m.status !== 'dead_letter') return false;
+      if (userId && m.userId && m.userId !== userId) return false;
+      return true;
+    });
+  }
+
+  /**
+   * Discards a mutation from the persistent queue (used when explicitly discarded by user).
+   */
+  async discardMutation(id: string): Promise<boolean> {
+    const mutation = await this.getMutation(id);
+    if (!mutation) return false;
+    await this.removeMutation(id);
+    return true;
   }
 
   /**
@@ -190,11 +270,31 @@ export class SyncQueue {
 
   /**
    * Records a failure and updates retry backoff or marks as dead_letter.
+   * If isQuota is true: does NOT increment attemptCount, does NOT dead-letter, and pauses the queue.
    */
-  async markFailed(id: string, errorMessage: string, isPermanent = false): Promise<void> {
+  async markFailed(
+    id: string,
+    errorMessage: string,
+    isPermanent = false,
+    isQuota = false
+  ): Promise<void> {
     const all = await this.getAllMutations();
     const mutation = all.find((m) => m.id === id);
     if (!mutation) return;
+
+    if (isQuota) {
+      // Quota failures MUST NOT increment attemptCount or dead-letter the mutation
+      const nextRetryAt = Date.now() + 3600000;
+      const updated: SyncMutation = {
+        ...mutation,
+        lastError: errorMessage || 'D1_QUOTA_EXCEEDED',
+        nextRetryAt,
+        status: 'pending',
+      };
+      await this.setMutation(id, updated);
+      this.pauseForQuota(3600000);
+      return;
+    }
 
     const attempts = mutation.attemptCount + 1;
     const isExhausted = isPermanent || attempts >= mutation.maxAttempts;
@@ -216,9 +316,29 @@ export class SyncQueue {
   }
 
   /**
-   * Returns current statistics of the queue.
+   * Called when server reports quota exhaustion: resets in-flight mutations to pending
+   * without incrementing attempt count, and pauses the queue.
    */
-  async getStats(): Promise<{
+  async markQuotaExhausted(retryAfterMs = 3600000): Promise<void> {
+    this.pauseForQuota(retryAfterMs);
+    const all = await this.getAllMutations();
+    for (const m of all) {
+      if (m.status === 'in_flight') {
+        const reset: SyncMutation = {
+          ...m,
+          status: 'pending',
+          lastError: 'D1_QUOTA_EXCEEDED',
+          nextRetryAt: Date.now() + retryAfterMs,
+        };
+        await this.setMutation(m.id, reset);
+      }
+    }
+  }
+
+  /**
+   * Returns current statistics of the queue, optionally filtered by user ID.
+   */
+  async getStats(userId?: string): Promise<{
     pending: number;
     inFlight: number;
     failed: number;
@@ -230,8 +350,13 @@ export class SyncQueue {
     let inFlight = 0;
     let failed = 0;
     let deadLetter = 0;
+    let total = 0;
 
     for (const m of all) {
+      if (userId && m.userId && m.userId !== userId) {
+        continue;
+      }
+      total++;
       if (m.status === 'pending') {
         if (m.attemptCount > 0) failed++;
         else pending++;
@@ -247,7 +372,7 @@ export class SyncQueue {
       inFlight,
       failed,
       deadLetter,
-      total: all.length,
+      total,
     };
   }
 

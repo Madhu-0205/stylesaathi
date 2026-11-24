@@ -1,5 +1,11 @@
 import { getSupabaseClient, isSupabaseConfigured } from '../supabase';
+import { getInMemorySessionToken } from '../auth/pkce';
 import { syncQueue } from './syncQueue';
+import {
+  workerSyncClient,
+  QuotaExceededError,
+  isQuotaExhaustedError,
+} from './workerSyncClient';
 import {
   resolveWardrobeItemConflict,
   resolveCalendarPlanConflict,
@@ -39,9 +45,23 @@ class SyncService {
   private lastError: string | null = null;
   private isProcessing = false;
   private currentUser: User | null = null;
+  private authToken: string | null = null;
   private listeners = new Set<SyncStatusListener>();
   private lastSyncKey = 'stylesaathi-last-sync-time';
   private memoryStorage = new Map<string, string>();
+  private syncBackend: 'worker' | 'supabase' = 'supabase';
+
+  setSyncBackend(backend: 'worker' | 'supabase'): void {
+    this.syncBackend = backend;
+  }
+
+  getSyncBackend(): 'worker' | 'supabase' {
+    return this.syncBackend;
+  }
+
+  isWorkerBackend(): boolean {
+    return this.syncBackend === 'worker' || !isSupabaseConfigured();
+  }
 
   getStorageItem(key: string): string | null {
     try {
@@ -96,6 +116,14 @@ class SyncService {
     return this.currentUser;
   }
 
+  setAuthToken(token: string | null): void {
+    this.authToken = token;
+  }
+
+  getAuthToken(): string | null {
+    return this.authToken || getInMemorySessionToken();
+  }
+
   getStatus(): SyncStatus {
     return this.status;
   }
@@ -135,7 +163,15 @@ class SyncService {
    */
   async processQueue(): Promise<void> {
     if (this.isProcessing) return;
-    if (!isSupabaseConfigured() || !this.currentUser || this.currentUser.isGuest) {
+    if (syncQueue.isQuotaPaused()) {
+      this.updateStatus('error', 'Sync paused: cloud daily quota reached. Local changes are safe.');
+      return;
+    }
+    if (!this.currentUser || this.currentUser.isGuest) {
+      return;
+    }
+    const isWorker = this.isWorkerBackend();
+    if (!isWorker && !isSupabaseConfigured()) {
       return;
     }
     if (typeof navigator !== 'undefined' && typeof navigator.onLine === 'boolean' && !navigator.onLine) {
@@ -146,12 +182,12 @@ class SyncService {
     this.isProcessing = true;
     this.updateStatus('syncing');
 
-    const supabase = getSupabaseClient();
+    const supabase = !isWorker && isSupabaseConfigured() ? getSupabaseClient() : null;
     const user = this.currentUser;
 
     try {
       while (true) {
-        const mutation = await syncQueue.peekNext();
+        const mutation = await syncQueue.peekNext(user.id);
         if (!mutation) {
           break; // Queue is empty or remaining items are waiting on retry/deps
         }
@@ -159,14 +195,31 @@ class SyncService {
         await syncQueue.markInFlight(mutation.id);
 
         try {
-          await this.executeRemoteMutation(supabase, user, mutation);
+          if (isWorker) {
+            await this.executeRemoteMutationWorker(mutation);
+          } else if (supabase) {
+            await this.executeRemoteMutation(supabase, user, mutation);
+          }
           await syncQueue.markSuccess(mutation.id);
         } catch (err: any) {
           console.error(`Mutation ${mutation.id} execution failed:`, err);
+          if (err instanceof QuotaExceededError || isQuotaExhaustedError(err?.status, err?.message)) {
+            // WORKSTREAM 5: Quota failures must NOT dead-letter mutations
+            await syncQueue.markFailed(mutation.id, err.message, false, true);
+            this.updateStatus('error', 'Sync paused: cloud daily quota reached. Local changes are safe.');
+            break;
+          }
+          if (err.status === 401 || err.message?.includes('401') || err.message?.includes('Unauthorized')) {
+            // Phase 3F.10A.5: Authentication required (HTTP 401).
+            // Do NOT dead-letter or destroy local offline mutations or IndexedDB data!
+            await syncQueue.markFailed(mutation.id, 'Authentication required (HTTP 401)', false);
+            this.updateStatus('error', 'Sync paused: authentication required. Local changes are safe.');
+            break;
+          }
           const isPermanent =
+            err.isPermanent ||
             err.code === '42501' || // RLS violation
-            err.code === '23503' || // Foreign key constraint violation
-            err.status === 401; // Unauthorized
+            err.code === '23503'; // Foreign key constraint violation
           await syncQueue.markFailed(mutation.id, err.message || 'Unknown error', isPermanent);
           if (!isPermanent) {
             // Transient error (network/server), stop loop until next retry window
@@ -175,16 +228,161 @@ class SyncService {
         }
       }
 
-      const stats = await syncQueue.getStats();
-      if (stats.failed > 0 || stats.deadLetter > 0) {
+      const stats = await syncQueue.getStats(user.id);
+      if (syncQueue.isQuotaPaused()) {
+        this.updateStatus('error', 'Sync paused: cloud daily quota reached. Local changes are safe.');
+      } else if (this.lastError?.includes('authentication required')) {
+        // Preserve authentication required status and error message
+        this.updateStatus('error', this.lastError);
+      } else if (stats.failed > 0 || stats.deadLetter > 0) {
         this.updateStatus('error', `${stats.failed + stats.deadLetter} sync items need attention`);
       } else {
         this.updateStatus('synced');
       }
     } catch (globalErr: any) {
-      this.updateStatus('error', globalErr.message);
+      if (globalErr instanceof QuotaExceededError || isQuotaExhaustedError(globalErr?.status, globalErr?.message)) {
+        await syncQueue.markQuotaExhausted(globalErr.retryAfterMs || 3600000);
+        this.updateStatus('error', 'Sync paused: cloud daily quota reached. Local changes are safe.');
+      } else if (globalErr?.status === 401 || globalErr?.message?.includes('401')) {
+        this.updateStatus('error', 'Sync paused: authentication required. Local changes are safe.');
+      } else {
+        this.updateStatus('error', globalErr.message);
+      }
     } finally {
       this.isProcessing = false;
+    }
+  }
+
+  /**
+   * Execute a single typed mutation against the Cloudflare Worker + D1 delta sync backend.
+   */
+  private async executeRemoteMutationWorker(mutation: SyncMutation): Promise<void> {
+    const token = this.getAuthToken() || undefined;
+    const res = await workerSyncClient.pushMutations([mutation], token);
+    const result = res.results?.[0];
+    if (!result) return;
+
+    if (result.status === 'conflict_server_wins') {
+      if (result.conflictData) {
+        await this.reconcileConflictData(mutation.entityType, result.conflictData);
+      }
+    } else if (result.status === 'rejected') {
+      const err: any = new Error(result.error || 'Mutation rejected by server');
+      err.code = 'REJECTED';
+      err.isPermanent = true;
+      throw err;
+    }
+  }
+
+  /**
+   * Reconciles server conflict data when server-wins is returned on push.
+   */
+  private async reconcileConflictData(entityType: string, conflictData: any): Promise<void> {
+    switch (entityType) {
+      case 'wardrobe_item': {
+        const localItems = (await wardrobeRepository.getAllItemsRaw?.()) || [];
+        const local = localItems.find((i) => i.id === conflictData.id);
+        if (local) {
+          const remoteItem: WardrobeItem = {
+            id: conflictData.id,
+            userId: conflictData.user_id,
+            name: conflictData.name,
+            photoId: conflictData.photo_id,
+            photoUrl: conflictData.photo_url,
+            category: conflictData.category,
+            subcategory: conflictData.subcategory,
+            colors: typeof conflictData.colors === 'string' ? JSON.parse(conflictData.colors) : conflictData.colors || [],
+            seasons: typeof conflictData.seasons === 'string' ? JSON.parse(conflictData.seasons) : conflictData.seasons || [],
+            occasions: typeof conflictData.occasions === 'string' ? JSON.parse(conflictData.occasions) : conflictData.occasions || [],
+            formality: conflictData.formality,
+            brand: conflictData.brand,
+            status: conflictData.status,
+            favorite: Boolean(conflictData.favorite),
+            note: conflictData.note || '',
+            timesWorn: conflictData.times_worn || 0,
+            lastWorn: conflictData.last_worn,
+            isDeleted: Boolean(conflictData.is_deleted),
+            deletedAt: conflictData.deleted_at ? new Date(conflictData.deleted_at).getTime() : undefined,
+            serverUpdatedAt: conflictData.server_updated_at,
+            revision: conflictData.revision,
+            serverRevision: conflictData.revision,
+          } as any;
+          const winner = resolveWardrobeItemConflict(local, remoteItem);
+          winner.photo = local.photo || winner.photo;
+          await wardrobeRepository.upsertItemRaw?.(winner);
+        }
+        break;
+      }
+      case 'calendar_plan': {
+        const localPlans = (await calendarRepository.getAllPlansRaw?.()) || [];
+        const local = localPlans.find((p) => p.date === conflictData.date || p.id === conflictData.id);
+        if (local) {
+          const remotePlan: OutfitPlan = {
+            id: conflictData.id,
+            userId: conflictData.user_id,
+            date: conflictData.date,
+            outfit: typeof conflictData.outfit === 'string' ? JSON.parse(conflictData.outfit) : conflictData.outfit || {},
+            accessory: typeof conflictData.accessory === 'string' ? JSON.parse(conflictData.accessory) : conflictData.accessory,
+            occasion: conflictData.occasion,
+            status: conflictData.status,
+            createdAt: new Date(conflictData.created_at).getTime(),
+            updatedAt: new Date(conflictData.server_updated_at).getTime(),
+            isDeleted: Boolean(conflictData.is_deleted),
+            deletedAt: conflictData.deleted_at ? new Date(conflictData.deleted_at).getTime() : undefined,
+            serverUpdatedAt: conflictData.server_updated_at,
+            revision: conflictData.revision,
+            serverRevision: conflictData.revision,
+          } as any;
+          const winner = resolveCalendarPlanConflict(local, remotePlan);
+          await calendarRepository.upsertPlanRaw?.(winner);
+        }
+        break;
+      }
+      case 'saved_outfit': {
+        const localOutfits = (await wardrobeRepository.getAllSavedOutfitsRaw?.()) || [];
+        const local = localOutfits.find((o) => o.id === conflictData.id);
+        if (local) {
+          const remoteOutfit: SavedOutfit = {
+            id: conflictData.id,
+            name: conflictData.name,
+            outfit: {
+              id: conflictData.id,
+              name: conflictData.name,
+              template: conflictData.template,
+              slots: typeof conflictData.slots === 'string' ? JSON.parse(conflictData.slots) : conflictData.slots || {},
+              score: conflictData.score,
+              why: conflictData.why,
+            } as any,
+            savedAt: new Date(conflictData.created_at || conflictData.server_updated_at).getTime(),
+            isDeleted: Boolean(conflictData.is_deleted),
+            deletedAt: conflictData.deleted_at ? new Date(conflictData.deleted_at).getTime() : undefined,
+            serverUpdatedAt: conflictData.server_updated_at,
+            revision: conflictData.revision,
+            serverRevision: conflictData.revision,
+          } as any;
+          const winner = resolveSavedOutfitConflict(local, remoteOutfit);
+          await wardrobeRepository.upsertSavedOutfitRaw?.(winner);
+        }
+        break;
+      }
+      case 'style_preferences': {
+        const local = await preferencesRepository.getPreferences();
+        if (local) {
+          const remotePref: StylePreferences = {
+            userId: conflictData.user_id,
+            preferredContexts: typeof conflictData.preferred_contexts === 'string' ? JSON.parse(conflictData.preferred_contexts) : conflictData.preferred_contexts || [],
+            preferredAesthetics: typeof conflictData.preferred_aesthetics === 'string' ? JSON.parse(conflictData.preferred_aesthetics) : conflictData.preferred_aesthetics || [],
+            stylingMode: conflictData.styling_mode || 'variety',
+            updatedAt: new Date(conflictData.server_updated_at || Date.now()).getTime(),
+            serverUpdatedAt: conflictData.server_updated_at,
+            revision: conflictData.revision,
+            serverRevision: conflictData.revision,
+          } as any;
+          const winner = resolvePreferencesConflict(local, remotePref);
+          await preferencesRepository.upsertPreferencesRaw?.(winner);
+        }
+        break;
+      }
     }
   }
 
@@ -517,13 +715,224 @@ class SyncService {
   }
 
   /**
+   * Pulls remote deltas from Cloudflare Worker + D1 backend and reconciles with local repositories.
+   */
+  private async pullRemoteDeltasWorker(): Promise<void> {
+    try {
+      const lastSync = this.getStorageItem(this.lastSyncKey);
+      let cursor: string | null = null;
+      let hasMore = true;
+
+      while (hasMore) {
+        const token = this.getAuthToken() || undefined;
+        const pullRes = await workerSyncClient.pullDeltas({
+          since: lastSync,
+          cursor,
+          limit: 100,
+        }, token);
+
+        const changes = pullRes.changes;
+
+        // 1. Reconcile wardrobe items
+        if (changes.wardrobe_items && changes.wardrobe_items.length > 0) {
+          const localItems = (await wardrobeRepository.getAllItemsRaw?.()) || [];
+          for (const r of changes.wardrobe_items) {
+            const remoteItem: WardrobeItem = {
+              id: r.id,
+              userId: r.user_id,
+              name: r.name,
+              photoId: r.photo_id,
+              photoUrl: r.photo_url,
+              category: r.category,
+              subcategory: r.subcategory,
+              colors: Array.isArray(r.colors) ? r.colors : [],
+              seasons: Array.isArray(r.seasons) ? r.seasons : [],
+              occasions: Array.isArray(r.occasions) ? r.occasions : [],
+              formality: r.formality,
+              brand: r.brand,
+              status: r.status,
+              favorite: Boolean(r.favorite),
+              note: r.note || '',
+              timesWorn: r.times_worn || 0,
+              lastWorn: r.last_worn,
+              fabric: r.fabric,
+              pattern: r.pattern,
+              fit: r.fit,
+              purchasePrice: r.purchase_price,
+              culturalContext: r.cultural_context,
+              userVerified: Boolean(r.user_verified),
+              isDeleted: Boolean(r.is_deleted),
+              deletedAt: r.deleted_at ? new Date(r.deleted_at).getTime() : undefined,
+              serverUpdatedAt: r.server_updated_at,
+              revision: r.revision,
+              serverRevision: r.revision,
+            } as any;
+
+            const local = localItems.find((i) => i.id === remoteItem.id);
+            if (local) {
+              const winner = resolveWardrobeItemConflict(local, remoteItem);
+              winner.photo = local.photo || winner.photo;
+              await wardrobeRepository.upsertItemRaw?.(winner);
+            } else {
+              await wardrobeRepository.upsertItemRaw?.(remoteItem);
+            }
+          }
+        }
+
+        // 2. Reconcile saved outfits
+        if (changes.saved_outfits && changes.saved_outfits.length > 0) {
+          const localOutfits = (await wardrobeRepository.getAllSavedOutfitsRaw?.()) || [];
+          for (const r of changes.saved_outfits) {
+            const remoteOutfit: SavedOutfit = {
+              id: r.id,
+              name: r.name,
+              outfit: {
+                id: r.id,
+                name: r.name,
+                template: r.template,
+                slots: typeof r.slots === 'object' ? r.slots : {},
+                score: r.score || 0,
+                why: r.why || '',
+              } as any,
+              savedAt: new Date(r.created_at || r.server_updated_at).getTime(),
+              isDeleted: Boolean(r.is_deleted),
+              deletedAt: r.deleted_at ? new Date(r.deleted_at).getTime() : undefined,
+              serverUpdatedAt: r.server_updated_at,
+              revision: r.revision,
+              serverRevision: r.revision,
+            } as any;
+
+            const local = localOutfits.find((o) => o.id === remoteOutfit.id);
+            if (local) {
+              const winner = resolveSavedOutfitConflict(local, remoteOutfit);
+              await wardrobeRepository.upsertSavedOutfitRaw?.(winner);
+            } else {
+              await wardrobeRepository.upsertSavedOutfitRaw?.(remoteOutfit);
+            }
+          }
+        }
+
+        // 3. Reconcile calendar plans
+        if (changes.calendar_plans && changes.calendar_plans.length > 0) {
+          const localPlans = (await calendarRepository.getAllPlansRaw?.()) || [];
+          for (const r of changes.calendar_plans) {
+            const remotePlan: OutfitPlan = {
+              id: r.id,
+              userId: r.user_id,
+              date: r.date,
+              outfit: typeof r.outfit === 'object' ? r.outfit : {},
+              accessory: typeof r.accessory === 'object' ? r.accessory : undefined,
+              occasion: r.occasion,
+              status: r.status,
+              createdAt: new Date(r.created_at).getTime(),
+              updatedAt: new Date(r.server_updated_at).getTime(),
+              isDeleted: Boolean(r.is_deleted),
+              deletedAt: r.deleted_at ? new Date(r.deleted_at).getTime() : undefined,
+              serverUpdatedAt: r.server_updated_at,
+              revision: r.revision,
+              serverRevision: r.revision,
+            } as any;
+
+            const local = localPlans.find((p) => p.date === remotePlan.date || p.id === remotePlan.id);
+            if (local) {
+              const winner = resolveCalendarPlanConflict(local, remotePlan);
+              await calendarRepository.upsertPlanRaw?.(winner);
+            } else {
+              await calendarRepository.upsertPlanRaw?.(remotePlan);
+            }
+          }
+        }
+
+        // 4. Reconcile style preferences
+        if (changes.style_preferences) {
+          const sp = changes.style_preferences;
+          const remotePref: StylePreferences = {
+            userId: sp.user_id,
+            preferredContexts: Array.isArray(sp.preferred_contexts) ? sp.preferred_contexts : [],
+            preferredAesthetics: Array.isArray(sp.preferred_aesthetics) ? sp.preferred_aesthetics : [],
+            stylingMode: sp.styling_mode || 'variety',
+            updatedAt: new Date(sp.server_updated_at || Date.now()).getTime(),
+            serverUpdatedAt: sp.server_updated_at,
+            revision: sp.revision,
+            serverRevision: sp.revision,
+          } as any;
+          const local = await preferencesRepository.getPreferences();
+          if (local) {
+            const winner = resolvePreferencesConflict(local, remotePref);
+            await preferencesRepository.upsertPreferencesRaw?.(winner);
+          } else {
+            await preferencesRepository.upsertPreferencesRaw?.(remotePref);
+          }
+        }
+
+        // 5. Wear events
+        if (changes.wear_events && changes.wear_events.length > 0) {
+          const events: WearEvent[] = changes.wear_events.map((w: any) => ({
+            id: w.id,
+            userId: w.user_id,
+            wardrobeItemId: w.wardrobe_item_id,
+            outfitId: w.outfit_id,
+            plannedDate: w.planned_date,
+            wornAt: w.worn_at,
+            createdAt: new Date(w.created_at).getTime(),
+          }));
+          await wearEventsRepository.addEvents(events);
+        }
+
+        // 6. Style signals
+        if (changes.style_signals && changes.style_signals.length > 0) {
+          const signals: StyleSignalEvent[] = changes.style_signals.map((s: any) => ({
+            id: s.id,
+            userId: s.user_id,
+            signalType: s.signal_type,
+            outfitId: s.outfit_id || undefined,
+            itemIds: Array.isArray(s.item_ids) ? s.item_ids : [],
+            occasion: s.occasion || undefined,
+            season: s.season || undefined,
+            rejectionReason: s.rejection_reason || undefined,
+            note: s.note || undefined,
+            createdAt: new Date(s.created_at).getTime(),
+          }));
+          await styleSignalsRepository.addSignals(signals);
+        }
+
+        hasMore = pullRes.hasMore && Boolean(pullRes.nextCursor);
+        cursor = pullRes.nextCursor;
+      }
+
+      this.setStorageItem(this.lastSyncKey, new Date().toISOString());
+    } catch (err: any) {
+      if (err instanceof QuotaExceededError || isQuotaExhaustedError(err?.status, err?.message)) {
+        await syncQueue.markQuotaExhausted(err.retryAfterMs || 3600000);
+        this.updateStatus('error', 'Sync paused: cloud daily quota reached. Local changes are safe.');
+      } else if (err?.status === 401 || err?.message?.includes('401')) {
+        this.updateStatus('error', 'Sync paused: authentication required. Local changes are safe.');
+      } else {
+        console.warn('Worker delta pull non-fatal warning:', err);
+      }
+    }
+  }
+
+  /**
    * Pulls remote deltas since the last sync time and reconciles with local storage.
    */
   async pullRemoteDeltas(): Promise<void> {
-    if (!isSupabaseConfigured() || !this.currentUser || this.currentUser.isGuest) {
+    if (syncQueue.isQuotaPaused()) {
       return;
     }
-    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    if (!this.currentUser || this.currentUser.isGuest) {
+      return;
+    }
+    const isWorker = this.isWorkerBackend();
+    if (!isWorker && !isSupabaseConfigured()) {
+      return;
+    }
+    if (typeof navigator !== 'undefined' && typeof navigator.onLine === 'boolean' && !navigator.onLine) {
+      return;
+    }
+
+    if (isWorker) {
+      await this.pullRemoteDeltasWorker();
       return;
     }
 
@@ -913,6 +1322,346 @@ class SyncService {
       this.updateStatus('error', `Migration interrupted: ${err.message}`);
       // RULE 10: Never wipe guest data on error
     }
+  }
+
+  // ============================================================================
+  // PHASE 3C.8: DEAD-LETTER RECOVERY & USER-CONTROLLED RESOLUTION
+  // ============================================================================
+
+  /**
+   * Retrieves all dead-lettered mutations for the current user.
+   */
+  async getDeadLetterMutations(userId?: string): Promise<SyncMutation[]> {
+    const targetUserId = userId || this.currentUser?.id;
+    return await syncQueue.getDeadLetterMutations(targetUserId);
+  }
+
+  /**
+   * Reconciles a dead-letter mutation against latest server state,
+   * updates the local repository non-destructively, and enqueues a fresh mutation
+   * with updated expectedRevision and new mutation ID.
+   */
+  async reconcileAndRetryDeadLetter(
+    mutationId: string
+  ): Promise<{ success: boolean; error?: string; newMutationId?: string }> {
+    const mutation = await syncQueue.getMutation(mutationId);
+    if (!mutation) {
+      return { success: false, error: 'Mutation not found in queue' };
+    }
+
+    if (mutation.status !== 'dead_letter') {
+      return { success: false, error: 'Only dead-lettered mutations can be manually reconciled' };
+    }
+
+    const currentUserId = this.currentUser?.id;
+    if (mutation.userId && currentUserId && mutation.userId !== currentUserId) {
+      return { success: false, error: 'Cannot reconcile mutation belonging to another user' };
+    }
+
+    const isWorker = this.isWorkerBackend();
+    if (!isWorker && !isSupabaseConfigured()) {
+      return { success: false, error: 'Sync backend not configured' };
+    }
+
+    try {
+      let serverRecord: any = null;
+
+      // 1. Fetch latest server state via pull deltas
+      if (isWorker) {
+        try {
+          const token = this.getAuthToken() || undefined;
+          const pullRes = await workerSyncClient.pullDeltas({ limit: 100 }, token);
+          const changes = pullRes.changes;
+
+          if (mutation.entityType === 'wardrobe_item') {
+            serverRecord = changes.wardrobe_items?.find((r) => r.id === mutation.entityId);
+          } else if (mutation.entityType === 'saved_outfit') {
+            serverRecord = changes.saved_outfits?.find((r) => r.id === mutation.entityId);
+          } else if (mutation.entityType === 'calendar_plan') {
+            serverRecord = changes.calendar_plans?.find(
+              (r) => r.id === mutation.entityId || (mutation.payload as any)?.date === r.date
+            );
+          } else if (mutation.entityType === 'style_preferences') {
+            serverRecord = changes.style_preferences;
+          }
+        } catch (pullErr) {
+          console.warn('Pull deltas during reconciliation warning:', pullErr);
+        }
+      }
+
+      // 2. Perform safe, non-destructive reconciliation with local repository
+      let reconciledPayload = (mutation as any).payload;
+      const nextExpectedRevision =
+        typeof serverRecord?.revision === 'number'
+          ? serverRecord.revision
+          : typeof (mutation as any).expectedRevision === 'number'
+          ? (mutation as any).expectedRevision
+          : 1;
+
+      if (mutation.entityType === 'wardrobe_item' && mutation.operation === 'UPSERT') {
+        const localItems = (await wardrobeRepository.getAllItemsRaw?.()) || [];
+        const local = localItems.find((i) => i.id === mutation.entityId) || (mutation.payload as WardrobeItem);
+        if (serverRecord) {
+          const remoteItem: WardrobeItem = {
+            id: serverRecord.id,
+            userId: serverRecord.user_id,
+            name: serverRecord.name,
+            photoId: serverRecord.photo_id,
+            photoUrl: serverRecord.photo_url,
+            category: serverRecord.category,
+            subcategory: serverRecord.subcategory,
+            colors: Array.isArray(serverRecord.colors) ? serverRecord.colors : [],
+            seasons: Array.isArray(serverRecord.seasons) ? serverRecord.seasons : [],
+            occasions: Array.isArray(serverRecord.occasions) ? serverRecord.occasions : [],
+            formality: serverRecord.formality,
+            brand: serverRecord.brand,
+            status: serverRecord.status,
+            favorite: Boolean(serverRecord.favorite),
+            note: serverRecord.note || '',
+            timesWorn: serverRecord.times_worn || 0,
+            lastWorn: serverRecord.last_worn,
+            fabric: serverRecord.fabric,
+            pattern: serverRecord.pattern,
+            fit: serverRecord.fit,
+            purchasePrice: serverRecord.purchase_price,
+            culturalContext: serverRecord.cultural_context,
+            userVerified: Boolean(serverRecord.user_verified),
+            isDeleted: Boolean(serverRecord.is_deleted),
+            deletedAt: serverRecord.deleted_at ? new Date(serverRecord.deleted_at).getTime() : undefined,
+            serverUpdatedAt: serverRecord.server_updated_at,
+            revision: serverRecord.revision,
+            serverRevision: serverRecord.revision,
+          } as any;
+
+          const winner = resolveWardrobeItemConflict(local, remoteItem);
+          winner.photo = local.photo || winner.photo; // Strictly preserve local garment images!
+          await wardrobeRepository.upsertItemRaw?.(winner);
+          reconciledPayload = winner;
+        } else if (local) {
+          reconciledPayload = local;
+        }
+      } else if (mutation.entityType === 'saved_outfit' && mutation.operation === 'UPSERT') {
+        const localOutfits = (await wardrobeRepository.getAllSavedOutfitsRaw?.()) || [];
+        const local = localOutfits.find((o) => o.id === mutation.entityId) || (mutation.payload as SavedOutfit);
+        if (serverRecord) {
+          const remoteOutfit: SavedOutfit = {
+            id: serverRecord.id,
+            name: serverRecord.name,
+            outfit: {
+              id: serverRecord.id,
+              name: serverRecord.name,
+              template: serverRecord.template,
+              slots: typeof serverRecord.slots === 'object' ? serverRecord.slots : {},
+              score: serverRecord.score || 0,
+              why: serverRecord.why || '',
+            } as any,
+            savedAt: new Date(serverRecord.created_at || serverRecord.server_updated_at).getTime(),
+            isDeleted: Boolean(serverRecord.is_deleted),
+            deletedAt: serverRecord.deleted_at ? new Date(serverRecord.deleted_at).getTime() : undefined,
+            serverUpdatedAt: serverRecord.server_updated_at,
+            revision: serverRecord.revision,
+            serverRevision: serverRecord.revision,
+          } as any;
+          const winner = resolveSavedOutfitConflict(local, remoteOutfit);
+          await wardrobeRepository.upsertSavedOutfitRaw?.(winner);
+          reconciledPayload = winner;
+        }
+      } else if (mutation.entityType === 'calendar_plan' && mutation.operation === 'UPSERT') {
+        const localPlans = (await calendarRepository.getAllPlansRaw?.()) || [];
+        const local = localPlans.find((p) => p.id === mutation.entityId) || (mutation.payload as OutfitPlan);
+        if (serverRecord) {
+          const remotePlan: OutfitPlan = {
+            id: serverRecord.id,
+            userId: serverRecord.user_id,
+            date: serverRecord.date,
+            outfit: typeof serverRecord.outfit === 'object' ? serverRecord.outfit : {},
+            accessory: typeof serverRecord.accessory === 'object' ? serverRecord.accessory : undefined,
+            occasion: serverRecord.occasion,
+            status: serverRecord.status,
+            createdAt: new Date(serverRecord.created_at).getTime(),
+            updatedAt: new Date(serverRecord.server_updated_at).getTime(),
+            isDeleted: Boolean(serverRecord.is_deleted),
+            deletedAt: serverRecord.deleted_at ? new Date(serverRecord.deleted_at).getTime() : undefined,
+            serverUpdatedAt: serverRecord.server_updated_at,
+            revision: serverRecord.revision,
+            serverRevision: serverRecord.revision,
+          } as any;
+          const winner = resolveCalendarPlanConflict(local, remotePlan);
+          await calendarRepository.upsertPlanRaw?.(winner);
+          reconciledPayload = winner;
+        }
+      } else if (mutation.entityType === 'style_preferences') {
+        if (serverRecord) {
+          const remotePref: StylePreferences = {
+            userId: serverRecord.user_id,
+            preferredContexts: Array.isArray(serverRecord.preferred_contexts) ? serverRecord.preferred_contexts : [],
+            preferredAesthetics: Array.isArray(serverRecord.preferred_aesthetics) ? serverRecord.preferred_aesthetics : [],
+            stylingMode: serverRecord.styling_mode || 'variety',
+            updatedAt: new Date(serverRecord.server_updated_at || Date.now()).getTime(),
+            serverUpdatedAt: serverRecord.server_updated_at,
+            revision: serverRecord.revision,
+            serverRevision: serverRecord.revision,
+          } as any;
+          const local = await preferencesRepository.getPreferences();
+          if (local) {
+            const winner = resolvePreferencesConflict(local, remotePref);
+            await preferencesRepository.upsertPreferencesRaw?.(winner);
+            reconciledPayload = winner;
+          } else {
+            await preferencesRepository.upsertPreferencesRaw?.(remotePref);
+            reconciledPayload = remotePref;
+          }
+        }
+      }
+
+      // 3. Generate a brand new mutation ID (idempotency safety: never reuse key with modified payload)
+      const newMutationId =
+        typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `reconciled-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
+      // 4. Enqueue the fresh mutation with updated expectedRevision and clean pending status
+      await syncQueue.enqueue({
+        id: newMutationId,
+        entityType: mutation.entityType,
+        entityId: mutation.entityId,
+        operation: mutation.operation,
+        payload: reconciledPayload,
+        userId: currentUserId || mutation.userId,
+        expectedRevision: nextExpectedRevision,
+        reconciledAt: Date.now(),
+        originalMutationId: mutation.id,
+      } as any);
+
+      // 5. Safely discard the old dead-letter mutation
+      await syncQueue.discardMutation(mutation.id);
+
+      return { success: true, newMutationId };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Reconciliation failed' };
+    }
+  }
+
+  /**
+   * Discards a dead-letter mutation when user explicitly chooses to discard.
+   */
+  async discardDeadLetter(mutationId: string): Promise<boolean> {
+    const mutation = await syncQueue.getMutation(mutationId);
+    if (!mutation) return false;
+    const currentUserId = this.currentUser?.id;
+    if (mutation.userId && currentUserId && mutation.userId !== currentUserId) {
+      return false;
+    }
+    const discarded = await syncQueue.discardMutation(mutationId);
+    if (discarded) {
+      const stats = await syncQueue.getStats(currentUserId);
+      if (stats.failed > 0 || stats.deadLetter > 0) {
+        this.updateStatus('error', `${stats.failed + stats.deadLetter} sync items need attention`);
+      } else {
+        this.updateStatus('synced');
+      }
+    }
+    return discarded;
+  }
+
+  /**
+   * Exports unresolved dead-letter mutations into a clean, recoverable JSON structure without secrets or tokens.
+   */
+  async exportDeadLetters(): Promise<{
+    application: string;
+    version: string;
+    exportedAt: string;
+    totalUnresolved: number;
+    mutations: any[];
+  }> {
+    const deadLetters = await syncQueue.getDeadLetterMutations(this.currentUser?.id);
+    const sanitized = deadLetters.map((m) => {
+      const cleanPayload: Record<string, any> = {};
+      const raw = (m as any).payload || {};
+      for (const [k, v] of Object.entries(raw)) {
+        if (k === 'photo' && typeof v === 'string' && (v.startsWith('data:') || v.startsWith('blob:'))) {
+          continue; // Strip large local base64/blob
+        }
+        cleanPayload[k] = v;
+      }
+      return {
+        id: m.id,
+        entityType: m.entityType,
+        entityId: m.entityId,
+        operation: m.operation,
+        clientTimestamp: m.clientTimestamp,
+        createdAt: m.createdAt,
+        lastError: m.lastError,
+        payload: cleanPayload,
+      };
+    });
+
+    return {
+      application: 'StyleSaathi',
+      version: '3.0',
+      exportedAt: new Date().toISOString(),
+      totalUnresolved: sanitized.length,
+      mutations: sanitized,
+    };
+  }
+
+  /**
+   * Restores previously exported unresolved mutations safely into the local queue and repositories.
+   */
+  async importUnresolvedMutations(
+    data: any
+  ): Promise<{ importedCount: number; errors: string[] }> {
+    if (!data || !Array.isArray(data.mutations)) {
+      return { importedCount: 0, errors: ['Invalid export format: missing mutations array'] };
+    }
+
+    let importedCount = 0;
+    const errors: string[] = [];
+    const currentUserId = this.currentUser?.id;
+
+    for (const m of data.mutations) {
+      if (!m.entityType || !m.entityId || !m.payload) {
+        errors.push(`Skipping malformed mutation ${m.id || 'unknown'}`);
+        continue;
+      }
+
+      try {
+        const newId =
+          typeof crypto !== 'undefined' && crypto.randomUUID
+            ? crypto.randomUUID()
+            : `import-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
+        // Enqueue with fresh ID
+        await syncQueue.enqueue({
+          id: newId,
+          entityType: m.entityType,
+          entityId: m.entityId,
+          operation: m.operation || 'UPSERT',
+          payload: m.payload,
+          userId: currentUserId,
+          status: 'pending',
+        } as any);
+
+        // Also restore into local repository if needed
+        if (m.entityType === 'wardrobe_item' && m.payload.name) {
+          await wardrobeRepository.upsertItemRaw?.(m.payload);
+        } else if (m.entityType === 'saved_outfit') {
+          await wardrobeRepository.upsertSavedOutfitRaw?.(m.payload);
+        } else if (m.entityType === 'calendar_plan') {
+          await calendarRepository.upsertPlanRaw?.(m.payload);
+        }
+
+        importedCount++;
+      } catch (err: any) {
+        errors.push(`Failed to import mutation for ${m.entityId}: ${err.message}`);
+      }
+    }
+
+    if (importedCount > 0) {
+      this.processQueue().catch(() => {});
+    }
+
+    return { importedCount, errors };
   }
 }
 

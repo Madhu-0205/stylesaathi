@@ -1,0 +1,118 @@
+{
+  "timestamp": "2026-11-11T16:15:15.326Z",
+  "viewportsTested": [
+    "390 × 844 (Mobile)",
+    "430 × 932 (Mobile Pro Max)",
+    "768 × 1024 (Tablet)",
+    "1440 × 900 (Desktop)"
+  ],
+  "screensAudited": [],
+  "scrollingFindings": [
+    {
+      "tab": "Today",
+      "docHeight": 3460,
+      "viewHeight": 844,
+      "maxScroll": 2616,
+      "finalScrollY": 2616,
+      "navFixed": true,
+      "navTop": 768,
+      "aiTop": 714,
+      "aiBottom": 768,
+      "isObscuredByNav": true,
+      "hasBottomPadding": true
+    },
+    {
+      "tab": "Wardrobe",
+      "docHeight": 6737,
+      "viewHeight": 844,
+      "maxScroll": 5893,
+      "finalScrollY": 5893,
+      "navFixed": true,
+      "navTop": 768,
+      "aiTop": 714,
+      "aiBottom": 768,
+      "isObscuredByNav": true,
+      "hasBottomPadding": true
+    },
+    {
+      "tab": "Dress",
+      "docHeight": 2163,
+      "viewHeight": 844,
+      "maxScroll": 1319,
+      "finalScrollY": 1319,
+      "navFixed": true,
+      "navTop": 768,
+      "aiTop": 714,
+      "aiBottom": 768,
+      "isObscuredByNav": true,
+      "hasBottomPadding": true
+    },
+    {
+      "tab": "Calendar",
+      "docHeight": 1394,
+      "viewHeight": 844,
+      "maxScroll": 550,
+      "finalScrollY": 550,
+      "navFixed": true,
+      "navTop": 768,
+      "aiTop": 714,
+      "aiBottom": 768,
+      "isObscuredByNav": true,
+      "hasBottomPadding": true
+    },
+    {
+      "tab": "Insight",
+      "docHeight": 1053,
+      "viewHeight": 844,
+      "maxScroll": 209,
+      "finalScrollY": 209,
+      "navFixed": true,
+      "navTop": 768,
+      "aiTop": 714,
+      "aiBottom": 768,
+      "isObscuredByNav": true,
+      "hasBottomPadding": true
+    },
+    {
+      "tab": "You",
+      "docHeight": 3028,
+      "viewHeight": 844,
+      "maxScroll": 2184,
+      "finalScrollY": 2184,
+      "navFixed": true,
+      "navTop": 768,
+      "aiTop": 714,
+      "aiBottom": 768,
+      "isObscuredByNav": true,
+      "hasBottomPadding": true
+    }
+  ],
+  "interactionResults": {
+    "Today_OccasionFilter": {
+      "success": false
+    },
+    "Today_RefreshOutfits": {
+      "success": true
+    },
+    "DressMe_Shuffle": {
+      "success": true
+    },
+    "Calendar_AgendaToggle": {
+      "success": true
+    },
+    "Calendar_MonthToggle": {
+      "success": true
+    },
+    "Profile_VibeToggle": {
+      "success": true
+    }
+  },
+  "performanceMetrics": {
+    "domCount": 526,
+    "clsScore": 0,
+    "avgFrameDurationMs": 16.31,
+    "approxFps": 61,
+    "droppedFrames": 0
+  },
+  "visualFindings": []
+}

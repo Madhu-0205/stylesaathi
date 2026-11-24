@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { syncService, SyncStatus } from '../lib/sync/syncService';
 import { syncQueue } from '../lib/sync/syncQueue';
+import type { SyncMutation } from '../types';
 
 export interface SyncStatusInfo {
   status: SyncStatus;
   lastError: string | null;
   pendingCount: number;
+  deadLetterCount: number;
+  unresolvedMutations: SyncMutation[];
   isOnline: boolean;
   statusLabel: string;
 }
@@ -14,6 +17,8 @@ export function useSyncStatus(): SyncStatusInfo {
   const [status, setStatus] = useState<SyncStatus>(syncService.getStatus());
   const [lastError, setLastError] = useState<string | null>(syncService.getLastError());
   const [pendingCount, setPendingCount] = useState<number>(0);
+  const [deadLetterCount, setDeadLetterCount] = useState<number>(0);
+  const [unresolvedMutations, setUnresolvedMutations] = useState<SyncMutation[]>([]);
   const [isOnline, setIsOnline] = useState<boolean>(
     typeof navigator !== 'undefined' ? navigator.onLine : true
   );
@@ -34,8 +39,12 @@ export function useSyncStatus(): SyncStatusInfo {
 
     const updateStats = async () => {
       try {
-        const stats = await syncQueue.getStats();
+        const user = syncService.getCurrentUser();
+        const stats = await syncQueue.getStats(user?.id);
         setPendingCount(stats.pending + stats.inFlight);
+        setDeadLetterCount(stats.deadLetter);
+        const deadLetters = await syncQueue.getDeadLetterMutations(user?.id);
+        setUnresolvedMutations(deadLetters);
       } catch {}
     };
 
@@ -55,6 +64,8 @@ export function useSyncStatus(): SyncStatusInfo {
   let statusLabel = 'Saved on this device';
   if (!isOnline) {
     statusLabel = "Saved on this device · Syncing when you're back online";
+  } else if (deadLetterCount > 0) {
+    statusLabel = `Sync needs attention · ${deadLetterCount} item(s) unmerged`;
   } else if (status === 'syncing') {
     statusLabel = 'Syncing changes with cloud...';
   } else if (status === 'synced' && pendingCount === 0) {
@@ -67,6 +78,8 @@ export function useSyncStatus(): SyncStatusInfo {
     status,
     lastError,
     pendingCount,
+    deadLetterCount,
+    unresolvedMutations,
     isOnline,
     statusLabel,
   };

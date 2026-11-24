@@ -116,7 +116,7 @@ export const NeedleCommandBar: React.FC<NeedleCommandBarProps> = ({ onNavigateTa
             if (e.target === e.currentTarget) setIsOpen(false);
           }}
         >
-          <div className="relative w-full max-w-2xl rounded-2xl border border-border bg-card shadow-2xl overflow-hidden transition-all">
+          <div className="relative w-full max-w-2xl rounded-3xl couture-card shadow-2xl overflow-hidden transition-all specular-border">
             {/* Input Form */}
             <form onSubmit={handleSubmit} className="relative flex items-center border-b border-border p-4">
               <Search className="h-5 w-5 text-muted-foreground ml-1 mr-3 shrink-0" />
@@ -174,7 +174,7 @@ export const NeedleCommandBar: React.FC<NeedleCommandBarProps> = ({ onNavigateTa
                         key={s}
                         type="button"
                         onClick={() => handleSelectSuggestion(s)}
-                        className="rounded-full border border-border/80 bg-muted/40 px-3 py-1.5 text-xs text-foreground/80 hover:border-primary/40 hover:bg-muted transition-colors text-left"
+                        className="min-h-11 flex items-center rounded-full border border-border/80 bg-muted/40 px-3.5 py-2 text-xs text-foreground/80 hover:border-primary/40 hover:bg-muted transition-colors text-left tactile-press-sm"
                       >
                         {s}
                       </button>

@@ -125,9 +125,10 @@ export function generateEnsembleCandidates(
   const isAnchorLocked = anchor?.isLocked ?? false;
 
   // Filter available companion pool (companion pieces must strictly be clean and season-appropriate)
+  // StyleSaathi 4.0.2 (P2-B): items with missing/unknown seasons remain eligible (neutral, not blocked)
   const eligiblePool = items.filter((i) => {
     if (anchorItem && i.id === anchorItem.id) return false;
-    return i.status === 'clean' && seasonFit(i, season);
+    return i.status === 'clean' && seasonFit(i, season) !== false;
   });
 
   // Group by category for quick lookup
