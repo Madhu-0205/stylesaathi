@@ -13,8 +13,6 @@ import {
   Compass,
   Layers,
   ChevronRight,
-  ThumbsDown,
-  Info,
   AlertCircle,
 } from 'lucide-react';
 import { useWardrobeContext } from '../context/WardrobeContext';
@@ -662,13 +660,6 @@ export const TodayScreen: React.FC<TodayScreenProps> = ({
               }}
               isPlannedToday={Boolean(todayPlan)}
             />
-
-            {/* Verification Contract Satisfaction */}
-            {(() => {
-              const outfit = heroOutfit;
-              const scorePercent = formatRecommendationScore(outfit.score);
-              return null;
-            })()}
 
             {/* 6. ALTERNATIVE LOOKS STRIP */}
             {alternativeOutfits.length > 0 && (

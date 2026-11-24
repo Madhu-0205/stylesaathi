@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
-  Calendar as CalendarIcon,
   ChevronLeft,
   ChevronRight,
   Sparkles,
@@ -8,15 +7,9 @@ import {
   AlertCircle,
   AlertTriangle,
   Trash2,
-  ArrowRight,
   Shirt,
   UserPlus,
   CloudSun,
-  ListFilter,
-  CheckCircle2,
-  Clock,
-  RotateCcw,
-  RefreshCw,
 } from 'lucide-react';
 import { useWardrobeContext } from '../context/WardrobeContext';
 import { useAuth } from '../context/AuthContext';
@@ -1144,14 +1137,25 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ onGoToDress, ini
                     <p className="mt-1.5 text-xs text-muted max-w-xs">
                       Schedule a look from Dress Me to keep your wardrobe ready ahead of time.
                     </p>
-                    <Button
-                      variant="default"
-                      onClick={() => handleOpenPlanModal(selectedDateStr)}
-                      className="mt-4 min-h-11 gap-2 shadow-2xs font-semibold uppercase tracking-wider tactile-press"
-                    >
-                      <Sparkles className="h-3.5 w-3.5 text-(--burnished-gold)" />
-                      <span>Style a Look</span>
-                    </Button>
+                    <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                      <Button
+                        variant="default"
+                        onClick={() => handleOpenPlanModal(selectedDateStr)}
+                        className="min-h-11 gap-2 shadow-2xs font-semibold uppercase tracking-wider tactile-press"
+                      >
+                        <Sparkles className="h-3.5 w-3.5 text-(--burnished-gold)" />
+                        <span>Style a Look</span>
+                      </Button>
+                      {onGoToDress && (
+                        <Button
+                          variant="outline"
+                          onClick={() => onGoToDress()}
+                          className="min-h-11 gap-2 border-border font-semibold uppercase tracking-wider tactile-press"
+                        >
+                          <span>Open Atelier</span>
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

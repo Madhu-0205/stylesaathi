@@ -120,7 +120,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigateTab }) =
     toggleTheme,
     preferences,
     updatePreferences,
-    styleProfile,
     styleDNA,
     correctDNAPreference,
     removeDNAPreference,

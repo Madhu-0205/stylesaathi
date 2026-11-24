@@ -14,7 +14,6 @@ import { useWardrobeContext } from '../context/WardrobeContext';
 import { useAuth } from '../context/AuthContext';
 import { STYLE_VIBES } from '../data/taxonomy';
 import { StyleSaathiLogo } from '../components/brand/StyleSaathiLogo';
-import { Button } from '@/components/ui/button';
 
 export const CONTEXT_CHOICES = [
   { id: 'everyday', label: 'Everyday Ease', desc: 'Comfortable, breathable staples for daily life' },

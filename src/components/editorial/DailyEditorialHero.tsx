@@ -5,10 +5,8 @@ import {
   ThumbsDown,
   Sparkles,
   ArrowRight,
-  Info,
   ChevronDown,
   ChevronUp,
-  Shirt,
   Layers,
   ChevronRight,
 } from 'lucide-react';

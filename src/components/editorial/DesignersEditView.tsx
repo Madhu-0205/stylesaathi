@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import {
   DESIGNERS_EDIT_PHILOSOPHIES,
-  EditorialPhilosophy,
 } from '../../engine/knowledge/designersEditCatalog';
 import { Button } from '@/components/ui/button';
 

@@ -4,7 +4,6 @@ import {
   Heart,
   X,
   RotateCcw,
-  Sparkles,
   Thermometer,
   Briefcase,
   Coffee,
@@ -86,7 +85,6 @@ export const OutfitFeedbackSheet: React.FC<OutfitFeedbackSheetProps> = ({
   onFeedbackApplied,
   onFeedbackUndone,
 }) => {
-  const [selectedReason, setSelectedReason] = useState<RejectionReason | null>(null);
   const [lastSignalId, setLastSignalId] = useState<string | null>(null);
   const [showUndoToast, setShowUndoToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -116,7 +114,6 @@ export const OutfitFeedbackSheet: React.FC<OutfitFeedbackSheetProps> = ({
   };
 
   const handleRejection = async (reason: RejectionReason) => {
-    setSelectedReason(reason);
     const signal: StyleSignalEvent = {
       id: `sig_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       userId: 'local_user',

@@ -10,7 +10,6 @@ import {
   PatternType,
   SilhouetteFit,
   CulturalContext,
-  ConfidenceLevel,
 } from '../../types';
 import {
   CATEGORIES,
@@ -62,7 +61,6 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
   const [purchasePrice, setPurchasePrice] = useState<string>('');
   const [culturalContext, setCulturalContext] = useState<CulturalContext>('contemporary');
   const [aiConfidence, setAiConfidence] = useState<number>(0.75);
-  const [confidenceLevel, setConfidenceLevel] = useState<ConfidenceLevel>('MEDIUM');
   const [userVerified, setUserVerified] = useState<boolean>(false);
 
   const resetForm = () => {
@@ -87,7 +85,6 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
     setPurchasePrice('');
     setCulturalContext('contemporary');
     setAiConfidence(0.75);
-    setConfidenceLevel('MEDIUM');
     setUserVerified(false);
     setShowAdvanced(false);
   };
@@ -124,7 +121,6 @@ export const AddItemSheet: React.FC<AddItemSheetProps> = ({
       if (tagResult.fit) setFit(tagResult.fit);
       if (tagResult.culturalContext) setCulturalContext(tagResult.culturalContext);
       if (tagResult.confidence !== undefined) setAiConfidence(tagResult.confidence);
-      if (tagResult.confidenceLevel) setConfidenceLevel(tagResult.confidenceLevel);
       setUserVerified(false);
 
       // 3. Smart initial name suggestion

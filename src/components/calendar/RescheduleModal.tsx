@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar as CalendarIcon, X, Check, ArrowRight } from 'lucide-react';
+import { Calendar as CalendarIcon, X, Check } from 'lucide-react';
 import { OutfitPlan } from '../../types';
 import { Button } from '@/components/ui/button';
 

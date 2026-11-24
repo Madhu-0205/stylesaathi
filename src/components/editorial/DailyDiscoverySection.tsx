@@ -1,13 +1,11 @@
 import React from 'react';
 import {
-  RotateCcw,
   Sparkles,
   Calendar,
   Layers,
   ArrowRight,
   Lightbulb,
   Compass,
-  Shirt,
   ChevronRight,
 } from 'lucide-react';
 import { WardrobeItem, OutfitPlan, Occasion } from '../../types';
